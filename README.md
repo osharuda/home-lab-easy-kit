@@ -188,7 +188,7 @@ The following table describes pin configurations available in STM32F103x. It is 
 |:------|:----------|:------------|
 |`"GPIO_Mode_IN_FLOATING"`| Input  | Pin is floating
 |`"GPIO_Mode_IPU"`        | Input  | Pin is pulled up to VCC
-|`"GPIO_Mode_IPD"`        | Input  | Pin is pilled down to GND
+|`"GPIO_Mode_IPD"`        | Input  | Pin is pulled down to GND
 |`"GPIO_Mode_Out_OD"`     | Output | Open drain
 |`"GPIO_Mode_Out_PP"`     | Output | Push pull
 
