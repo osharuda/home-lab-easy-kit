@@ -1,0 +1,112 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "device_name" : "raspi_extender",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 32,
+      "requires" :  {"i2c" : "I2C2"}}},
+
+  "devices" : {
+
+    "DeskDevCustomizer" : {
+      "controls" : {
+        "dev_id" : 1,
+        "requires" : {  "up"      : { "gpio" : "PA_3" },
+                        "down"    : { "gpio" : "PA_2" },
+                        "left"    : { "gpio" : "PA_5" },
+                        "right"   : { "gpio" : "PA_4" },
+                        "encoder" : {"A" : { "gpio" : "PA_7"}, "B" : {"gpio" : "PA_6"}}}}},
+
+    "RTCCustomizer" : {
+      "rtc": {
+        "dev_id": 2,
+        "requires": { "bkp" : "BKP_DR1",
+                      "rtc" : "RTC"}}},
+
+    "IRRCCustomizer" : {
+      "irrc": {
+        "dev_id": 3,
+        "buffer_size" : 64,
+        "requires": {"data" : {"gpio" : "PA_1"}}}},
+
+    "UartProxyCustomizer" : {
+      "uart_proxy_0" : {
+        "dev_id" : 4,
+        "hint" : "gsmmodem",
+        "buffer_size" : 2000,
+        "baud_rate" : 9600,
+        "requires" : { "usart" : "USART1"}}},
+
+    "LCD1602aCustomizer" : {
+      "lcd": {
+        "dev_id" : 5,
+        "wellcome" : ["-=RPi Extender=-","   loading ..."],
+        "requires" : {"enable" : {"gpio" : "PB_14"},
+                      "reg_sel" : {"gpio" : "PB_13"},
+                      "data4" : {"gpio" : "PB_6"},
+                      "data5" : {"gpio" : "PB_7"},
+                      "data6" : {"gpio" : "PB_8"},
+                      "data7" : {"gpio" : "PB_9"},
+                      "light" : {"gpio" : "PB_0"}}}},
+
+    "GPIODevCustomizer": {
+      "gpio" : {
+        "dev_id" : 6,
+        "description" : {
+            "in" : {
+                           "type" : "GPIO_Mode_IPU",
+                           "gpio" : "PA_11"},
+            "out" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PC_13",
+                           "default" : 1 }}}},
+
+    "SPWMCustomizer": {
+      "spwm" : {
+        "dev_id" : 7,
+        "prescaler" : 1,
+        "description" : {"L0" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_1",
+                           "default" : 1}},
+      "requires" :  {"timer" :  "TIM4"}}},
+
+    "ADCDevCustomizer": {
+      "adc_0" : {
+        "dev_id" : 8,
+        "buffer_size" : 96,
+        "use_dma" : 1,
+        "vref" : 3.2,
+        "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
+                         "override" :  {"input_0" : "ADC_SampleTime_28Cycles5" }},
+        "requires" :  { "ADC" : {"adc" : "ADC1"},
+                        "TIMER" : {"timer" :  "TIM2"},
+                        "input_0" : {"adc_input" : "ADC_Channel_0"},
+                        "input_vref" : {"adc_input" : "ADC_Channel_Vrefint"},
+                        "input_temp" : {"adc_input" : "ADC_Channel_TempSensor"}}}},
+
+        "StepMotorDevCustomizer": {
+        "motor_group_1" : {
+          "dev_id" : 9,
+          "motors" : {
+            "m0" : {
+              "buffer_size" : 512,
+              "steps_per_revolution" : 200,
+              "drive_type" : "a4998",
+              "default_speed" : 10000,
+              "error_action" : "stop",
+              "step"  : {"gpio" :  "PA_8"},
+              "dir"   : {"default" : "CW"},
+              "m1"   : {"default" : 0},
+              "m2"   : {"default" : 0},
+              "m3"   : {"default" : 0},
+              "enable": {"default" : "disable"},
+              "sleep" : {"default" : "wakeup"},
+              "cw_endstop" : {"position_limit" : "20000",  "action": "ignore"},
+              "ccw_endstop" : {"position_limit" :  "-20000", "action": "ignore"}
+              }},
+        "requires" :  { "timer" : "TIM3"}}}
+  }
+}

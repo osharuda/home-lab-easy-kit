@@ -1,0 +1,47 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "device_name" : "raspi_extender",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C2"}
+    }},
+
+  "devices" : {
+    "ADCDevCustomizer": {
+      "adc_0" : {
+        "dev_id" : 9,
+        "buffer_size" : 64,
+        "use_dma" : 1,
+        "vref" : 3.2,
+        "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
+                         "override" :  {}},
+        "requires" :  { "ADC" : {"adc" : "ADC1"},
+                        "TIMER" : {"timer" :  "TIM2"},
+                        "input_vref" : {"adc_input" : "ADC_Channel_Vrefint"},
+                        "input_temp" : {"adc_input" : "ADC_Channel_TempSensor"}}},
+
+      "adc_1" : {
+        "dev_id" : 10,
+        "buffer_size" : 640,
+        "use_dma" : 0,
+        "vref" : 3.2,
+        "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
+                         "override" :  {"input_0" : "ADC_SampleTime_28Cycles5" }},
+        "requires" :  { "ADC" : {"adc" : "ADC2"},
+                        "TIMER" : {"timer" :  "TIM3"},
+                        "input_0" : {"adc_input" : "ADC_Channel_0"},
+                        "input_1" : {"adc_input" : "ADC_Channel_1"},
+                        "input_2" : {"adc_input" : "ADC_Channel_2"},
+                        "input_3" : {"adc_input" : "ADC_Channel_3"},
+                        "input_4" : {"adc_input" : "ADC_Channel_4"},
+                        "input_5" : {"adc_input" : "ADC_Channel_5"},
+                        "input_6" : {"adc_input" : "ADC_Channel_6"},
+                        "input_7" : {"adc_input" : "ADC_Channel_7"},
+                        "input_8" : {"adc_input" : "ADC_Channel_8"},
+                        "input_9" : {"adc_input" : "ADC_Channel_9"}}}
+    }
+  }
+}

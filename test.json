@@ -1,0 +1,124 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "device_name" : "spwm_test_stand",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C2"}
+    }},
+
+  "devices" : {
+    "SPWMCustomizer": {
+      "spwm_0" : {
+        "dev_id" : 9,
+        "prescaler" : 1,
+        "description" : {"L0_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_1",
+                           "default" : 1},
+                        "L0_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_0",
+                           "default" : 1},
+                        "L0_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_7",
+                           "default" : 1},
+
+                        "L1_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_6",
+                           "default" : 1},
+                        "L1_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_5",
+                           "default" : 1},
+                        "L1_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_4",
+                           "default" : 1},
+
+                        "L2_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_3",
+                           "default" : 1},
+                        "L2_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_2",
+                           "default" : 1},
+                        "L2_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_0",
+                           "default" : 1},
+
+                        "L3_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_12",
+                           "default" : 1},
+                        "L3_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_13",
+                           "default" : 1},
+                        "L3_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_14",
+                           "default" : 1},
+
+                        "L4_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_15",
+                           "default" : 1},
+                        "L4_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_8",
+                           "default" : 1},
+                        "L4_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_9",
+                           "default" : 1},
+
+                        "L5_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_10",
+                           "default" : 1},
+                        "L5_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_11",
+                           "default" : 1},
+                        "L5_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_12",
+                           "default" : 1},
+
+                        "L6_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_15",
+                           "default" : 1},
+                        "L6_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_3",
+                           "default" : 1},
+                        "L6_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_4",
+                           "default" : 1},
+
+                        "L7_B" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_5",
+                           "default" : 1},
+                        "L7_G" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_6",
+                           "default" : 1},
+                        "L7_R" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_7",
+                           "default" : 1}
+
+        },
+      "requires" :  {"timer" :  "TIM4"}}
+}}
+}

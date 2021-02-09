@@ -1,0 +1,67 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "device_name" : "stepper_motor_test_stand",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C2"}
+    }},
+
+  "devices" : {
+
+    "SPWMCustomizer": {
+      "spwm" : {
+        "dev_id" : 7,
+        "prescaler" : 21,
+        "description" : {"L0" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PB_1",
+                           "default" : 1}},
+      "requires" :  {"timer" :  "TIM4"}}},
+
+
+
+    "StepMotorDevCustomizer": {
+      "g0" : {
+        "dev_id" : 10,
+        "motors" : {
+          "monster" : {
+            "buffer_size" : 512,
+            "steps_per_revolution" : 96,
+            "default_speed" : 10000,
+            "drive_type" : "a4998",
+            "error_action" : "stop",
+            "step"  : {"gpio" :  "PB_13"},
+            "dir"   : {"gpio" :  "PB_12", "default" : "CW"},
+            "m1"   : {"gpio" :  "PA_10", "default" : 0},
+            "m2"   : {"gpio" :  "PA_9", "default" : 0},
+            "m3"   : {"gpio" :  "PA_8", "default" : 0},
+            "enable": {"gpio" :  "PA_11", "default" : "disable"},
+            "reset" : {"gpio" :  "PB_15"},
+            "sleep" : {"gpio" :  "PB_14", "default" : "wakeup"},
+            "cw_endstop" : {"position_limit" : "20000", "action": "ignore"},
+            "ccw_endstop" : {"position_limit" :  "-20000", "action": "ignore"}
+          },
+          "guide" : {
+            "buffer_size" : 512,
+            "steps_per_revolution" : 96,
+            "default_speed" : 1000,
+            "drive_type" : "drv8825",
+            "error_action" : "stop_all",
+            "step"  : {"gpio" :  "PB_5"},
+            "dir"   : {"gpio" :  "PB_4", "default" : "CW"},
+            "m1"   : {"default" : 1},
+            "m2"   : {"default" : 1},
+            "m3"   : {"default" : 1},
+            "enable": {"gpio" :  "PB_8", "default" : "disable"},
+            "fault" : {"gpio" :  "PA_12", "active_level" :  "low", "action": "stop_all"},
+            "sleep" : {"default" : "wakeup"},
+            "cw_endstop" : {"gpio" :  "PB_6", "active_level" :  "low", "action": "stop_all"},
+            "ccw_endstop" : {"gpio" :  "PB_7", "active_level" :  "low", "action": "stop"}
+          }},
+        "requires" :  { "timer" : "TIM2"}}
+  }
+  }
+}
