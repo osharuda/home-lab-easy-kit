@@ -1,4 +1,4 @@
-# Home Lab Easy Kit {#mainpage}
+# Home Lab Easy Kit
 ![Home Lab Easy Kit](doxygen/images/logo.png)
 
 [TOC]
