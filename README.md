@@ -2,6 +2,28 @@
 ![Home Lab Easy Kit](doxygen/images/logo.png)
 
 [TOC]
+1. [Key components](#Key-components)
+2. [Hardware requirements](#Hardware-requirements)
+3. [Software requirements](#Software-requirements)
+4. [Usage instructions](#Usage-instructions)
+5. [Available peripherals](#Available-peripherals)
+6. [JSON configuration file](#JSON-configuration-file)
+    6.1. [Peripherals](#Peripherals)
+        6.1.1. [Peripherals types table](#Peripherals-types-table)
+        6.1.2. [GPIO pin configuration table](#GPIO-pin-configuration-table)
+    6.2. [DeskDevCustomizer](#DeskDevCustomizer)
+    6.3. [RTCCustomizer](#RTCCustomizer)
+    6.4. [IRRCCustomizer](#IRRCCustomizer)
+    6.5. [UartProxyCustomizer](#UartProxyCustomizer)
+    6.6. [LCD1602aCustomizer](#LCD1602aCustomizer)
+    6.7. [GPIODevCustomizer](#GPIODevCustomizer)
+    6.8. [SPWMCustomizer](#SPWMCustomizer)
+    6.9. [ADCDevCustomizer](#ADCDevCustomizer)
+    6.10. [StepMotorDevCustomizer](#StepMotorDevCustomizer)
+7. [Building and flashing firmware](#Building-and-flashing-firmware)
+8. [Linking with generated library](#Linking-with-generated-library)
+9. [Contributing](#Contributing)
+10. [License](#License)
 
 ## Description
 
