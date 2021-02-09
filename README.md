@@ -157,11 +157,11 @@ Note, `"firmware"` doesn't allow to select MCU frequency. For example, STM32F10x
 
 | Parameter  | Description                            | Value  |
 |:-----------|:---------------------------------------|:-------|
-|$$F_{mcu}$$   | MCU frequency                          | 72 MHz |
-|$$F_{gpio}$$  | Maximum output frequency               | 50 MHz |
-|$$D_{AHB}$$| AHB clock divider                         | 1      |
-|$$D_{APB1}$$| APB1 clock divider                        | 2      |
-|$$D_{APB2}$$| APB2 clock divider                        | 1      |
+|<img src="https://render.githubusercontent.com/render/math?math=F_{mcu}">   | MCU frequency                          | 72 MHz |
+|<img src="https://render.githubusercontent.com/render/math?math=F_{gpio}">  | Maximum output frequency               | 50 MHz |
+|<img src="https://render.githubusercontent.com/render/math?math=D_{AHB}">| AHB clock divider                         | 1      |
+|<img src="https://render.githubusercontent.com/render/math?math=D_{APB1}">| APB1 clock divider                        | 2      |
+|<img src="https://render.githubusercontent.com/render/math?math=D_{APB2}">| APB2 clock divider                        | 1      |
 
 
 ### Peripherals
@@ -438,7 +438,7 @@ SPWMDev provides software PWM. It means that hardware PWM is not used, because o
 
 `"Prescaller"` specifies divider for timer clock. Greater values allow to get longer PWM pulse duration, lower values decrease it. Timer counter clock frequency is described by the formula:
 
-$$ F_{cnt} = \dfrac{F_{t}}{prescaler + 1} $$
+<img src="https://render.githubusercontent.com/render/math?math=F_{cnt} = \dfrac{F_{t}}{prescaler%2B1}">
 
 Where <img src="https://render.githubusercontent.com/render/math?math=F_{cnt}"> is a counter clock frequency, <img src="https://render.githubusercontent.com/render/math?math=F_{t}"> source timer clock, which is set in this project equal to the maximum MCU frequency <img src="https://render.githubusercontent.com/render/math?math=F_{mcu}=72MHz">. In this case prescaller is 1, therefore counter clock frequency is <img src="https://render.githubusercontent.com/render/math?math=F_{cnt}=36MHz">. Refer to MCU datasheet in order to get more information regarding timer clocking.
 
@@ -448,7 +448,7 @@ Example:
 
 Let's say there is BLDC motor from old HDD and ESC motor driver which is regulated with PWM. The goal is to control motor from software. Most of the ESC drivers require PWM pulse frequency equal to 50Hz. The formula above may be transformed as:
 
-$$prescaller = \dfrac{F_{t}}{65536\cdot F_{pwm}}-1$$
+<img src="https://render.githubusercontent.com/render/math?math=prescaller = \dfrac{F_{t}}{65536\cdot F_{pwm}}-1">
 
 where <img src="https://render.githubusercontent.com/render/math?math=F_{pwm}=50Hz">, <img src="https://render.githubusercontent.com/render/math?math=F_{t}=72MHz">. In this case <img src="https://render.githubusercontent.com/render/math?math=prescaller=21">.
 Note, many ESC motor drivers require 5V PWM pulses, however STM32F103x produce 3.2V pulses, so some logical level conversion is required in this case.
