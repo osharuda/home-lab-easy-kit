@@ -711,5 +711,7 @@ limitations under the License.
 ## Remarks
 
 <a name="ft01">1</a>. STM32 describes several timer types with different features and possibilities. Some features of Home Lab Easy Kit may require some specific timers. In this case it will be stated separately.
+
 <a name="ft_2">2</a>. Some other MCU from STM32F10x family may have ADC3 onboard. To use it light modification of customizer/stm32f103.py is required.
+
 <a name="ft_3">3</a>. "Blue Pill" goes in LQFP48 package. These MCU have <img src="https://render.githubusercontent.com/render/math?math=V_{ref%2B}"> connected to <img src="https://render.githubusercontent.com/render/math?math=V_{DDA}"> internally (<img src="https://render.githubusercontent.com/render/math?math=V_{ref-}"> is connected to the <img src="https://render.githubusercontent.com/render/math?math=V_{SSA}">). In this case you have to specify <img src="https://render.githubusercontent.com/render/math?math=V_{DDA}"> voltage. Also, you may use `"ADC_Channel_Vrefint"` channel to measure reference voltage and to calculate <img src="https://render.githubusercontent.com/render/math?math=V_{DDA}">. Read more details in corresponding documentation provided by manufacturer.
