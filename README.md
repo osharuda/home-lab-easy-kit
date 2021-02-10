@@ -36,7 +36,7 @@ Purpose for Home Lab Easy Kit project is to give amateurs possibility to build e
 There are number of benefits provided by this solution:
 - Logic and heavy calculations may be moved from micro controller to computer, which performance is generally much better.
 - It is possible to use other libraries for database access, data science, networking etc.
-- Communication utilizes I2C in 8 bit addressing mode. In theory you can connect up to 256 micro controllers to single I2C port.
+- Communication utilizes I2C in 7-bit addressing mode. In theory you can connect up to 112 micro controllers to single I2C port.
 - Firmware architecture is intended to use MCU peripherals economically to allow as much peripherals to be used per micro controller as possible.
 
 For sure, user should have some theoretical and practical background related to micro controllers, electronics and what he is doing. Home Lab Easy Kit doesn't void this requirement, it just makes entrance easier and allows to save time.
@@ -151,7 +151,7 @@ The first `firmware` key describes basic firmware properties.
 | `"i2c_bus"` | Describes i2c connection with micro computer and MCU. | Object, see below | Yes |
 | `"clock_speed"` | I2C bus clock speed. This project was tested with standard frequency only (100kHz) | 100000 | Yes |
 | `"buffer_size"` | Size of the buffer for commands being sent from microcomputer to MCU, in bytes. | Number | Yes |
-| `"address"` | I2C bus address. Must be valid 8-bit i2c bus address for your project. | Number | Yes |
+| `"address"` | I2C bus address. Must be valid 7-bit i2c bus address for your project. | Number | Yes |
 | `"requires"` | This object, here and after contain description of peripherals required. | Object | Yes |
 | `"i2c"` | Represents I2C peripherals being used for communication | "I2C1" or "I2C2" | Yes |
 | `"devices"` | Describes required functionalities. | Object | Yes |
@@ -658,7 +658,7 @@ There are many ways to link generated library with main program. It worth to loo
 
 ## Contributing
 
-Everyone is welcome to participate this project. Discuss changes you want to make with author first before doing pull request. I do not promise the answer will be quick, however I'll try to everyone.
+Everyone is welcome to participate this project. Discuss changes you want to make with author first before doing pull request. I do not promise the answer will be quick, however I'll try to respond t everyone.
 
 Contribution may be made in several forms:
 1. Testing. There were some testing, but it's not enough. I am certain there are bugs, I hope not many of them. Using the project and submitting issues will be very helpful.
