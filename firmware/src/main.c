@@ -124,8 +124,8 @@ int main(void)
 #ifdef LCD1602a_DEVICE_ENABLED
     lcd_init();
 
-    lcd_string((uint8_t*)LCD1602a_WELLCOME_1, LCD1602a_LINE_1);
-    lcd_string((uint8_t*)LCD1602a_WELLCOME_2, LCD1602a_LINE_2);
+    lcd_string((uint8_t*)LCD1602a_WELCOME_1, LCD1602a_LINE_1);
+    lcd_string((uint8_t*)LCD1602a_WELCOME_2, LCD1602a_LINE_2);
 #endif
 
 #ifdef DESKDEV_DEVICE_ENABLED

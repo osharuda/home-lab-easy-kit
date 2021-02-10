@@ -46,7 +46,7 @@
     "LCD1602aCustomizer" : {
       "lcd": {
         "dev_id" : 1,
-        "wellcome" : ["-=RPi Extender=-","   loading ..."],
+        "welcome" : ["-=RPi Extender=-","   loading ..."],
         "requires" : {"enable" : {"gpio" : "PB_14"},
                       "reg_sel" : {"gpio" : "PB_13"},
                       "data4" : {"gpio" : "PB_6"},

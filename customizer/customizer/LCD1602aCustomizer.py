@@ -37,7 +37,7 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
         data6 = self.get_gpio(lcd_requires["data6"])
         data7 = self.get_gpio(lcd_requires["data7"])
         light = self.get_gpio(lcd_requires["light"])
-        wline1, wline2 = self.get_wellcome()
+        wline1, wline2 = self.get_welcome()
 
 
         vocabulary = {"__DEVICE_ID__": self.dev_config["dev_id"],
@@ -64,20 +64,20 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
                       "__LCD1602a_LIGHT_PORT__": self.mcu_hw.GPIO_to_port(light),
                       "__LCD1602a_LIGHT_PIN_MASK__": self.mcu_hw.GPIO_to_pin_mask(light),
 
-                      "__LCD1602a_WELLCOME_1__": '{0}'.format(wline1),
-                      "__LCD1602a_WELLCOME_2__": '{0}'.format(wline2)}
+                      "__LCD1602a_WELCOME_1__": '{0}'.format(wline1),
+                      "__LCD1602a_WELCOME_2__": '{0}'.format(wline2)}
 
         self.patch_templates(vocabulary)
 
-    def get_wellcome(self) -> tuple:
+    def get_welcome(self) -> tuple:
         wlines = ["",""]
-        if "wellcome" in self.dev_config.keys():
-            wls = self.dev_config["wellcome"]
+        if "welcome" in self.dev_config.keys():
+            wls = self.dev_config["welcome"]
             n = min(len(wls), 2)
             for i in range(0, n):
                 s = wls[i]
                 if len(s) > 16:
-                    raise RuntimeError("Wellcome line {0} '{1}' is longer than 16 characters ({2} characters)".format(i, s, len(s)))
+                    raise RuntimeError("Welcome line {0} '{1}' is longer than 16 characters ({2} characters)".format(i, s, len(s)))
                 else:
                     wlines[i]=s
 
