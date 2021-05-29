@@ -525,6 +525,7 @@ Be very careful with stepper motors. These devices consume significant current a
                 "error_action" : "stop",
                 "step"  : {"gpio" :  "PA_0"},
                 "dir"   : {"default" : "CW"},
+                "reset" : {"gpio" :  "PA_1"},
                 "m1"   : {"default" : 0},
                 "m2"   : {"default" : 0},
                 "m3"   : {"default" : 0},
@@ -550,6 +551,7 @@ Be very careful with stepper motors. These devices consume significant current a
 | `"error_action"` | Action to be made on error. "stop" will stop just this motor. "stop_all" will stop all motors in the virtual device. | "stop", "stop_all" | Yes |
 | `"step"` | Describes gpio pin to be used for `STEP` signal. | Object with `"gpio"` | Yes |
 | `"dir"` | Describes stepper motor default `DIR` and signal. [Details here...](#Stepper-motor-direction)| Object | Yes |
+| `"reset"` | Describes gpio pin to be used for`reset` signal.| Object with `"gpio"` | No |
 | `"m1"`, `"m2"`, `"m3"` | Objects that describe micro step pins and default values. [Details here...](#Micro-stepping)| Object | Yes |
 | `"enable"` | Describes enable signal and default enable state. [Details here...](#Enable)| Object | Yes |
 | `"sleep"` | Describes sleep signal and default sleep state. [Details here...](#Sleep)| Object | Yes |
