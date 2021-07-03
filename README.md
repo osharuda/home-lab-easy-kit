@@ -82,7 +82,8 @@ The following packages are used by Home Lab Easy Kit project:
 - `OpenOCD`: Open On-Chip Debugger project required to debug firmware. Optionally it may be used to flash firmware, or to debug it from your favorite IDE. Install `openocd` package. More information on OpenOCD project is [here](http://openocd.org/).
 - `ST-LINK/V2 tools`: This software is required to flash and debug firmware. Install `stlink-tools` package. More information is [here]()
 - `i2c-tools`: are very useful during work with i2c bus. Install `i2c-tools` package.
-- `doxygen`: Doxygen is required to generate documentaion for firmware and software parts of the project. Install `doxygen` package. More information on Doxygen may be found [here](https://www.doxygen.nl/index.html).
+- `doxygen`: Doxygen is required to generate documentation for firmware and software parts of the project. Install `doxygen` package. More information on Doxygen may be found [here](https://www.doxygen.nl/index.html).
+- `ncurses` : This library is used for minimal terminal interface used by Home Lab Easy Kit monitor. Install `libncurses-dev` package.
 - `python3`: Required to run Customizer, which is written using Python3. Python3 should be a part of the operational system.
 
 ## Usage instructions
@@ -320,7 +321,7 @@ There are wide spectrum of special three terminal receivers (like TSOP384 series
 
 Note, there are many different types of IR remote controls. They may be different by a signal standard and by IR signal carrier frequency. In order to make your IR remote control working, the following must be true:
 - IR remote control works in NEC standard. Here is a a good description of [NEC standard](https://techdocs.altium.com/display/FPGA/NEC+Infrared+Transmission+Protocol).
-- IR signal carrier frequency of your IR remote control should match with your TSOP reciever. Read IR receiver documentation carefully. This [datasheet](https://www.vishay.com/docs/82491/tsop382.pdf) describes TSOP382x and TSOP384x families of such receivers.
+- IR signal carrier frequency of your IR remote control should match with your TSOP receiver. Read IR receiver documentation carefully. This [datasheet](https://www.vishay.com/docs/82491/tsop382.pdf) describes TSOP382x and TSOP384x families of such receivers.
 
 ### LCD1602aCustomizer
 
@@ -614,7 +615,7 @@ End stops provide possibility to stop stepper motor when it reached some limit. 
 | `"gpio"` | Hardware end stop is used. Specifies GPIO pin to be used for this purpose. | `"gpio"` | No |
 | `"active_level"` | Active logical level that makes hardware end stop active. | "low" or "high" | Yes, if `"gpio"` is used |
 
-Firmware calculates postion for each stepper motor used. Position is being calculated by the following formula: <img src="https://render.githubusercontent.com/render/math?math=P=32\times N">, where <img src="https://render.githubusercontent.com/render/math?math=P"> is current position, <img src="https://render.githubusercontent.com/render/math?math=N"> number of full steps performed, 32 is a minimal fraction of step supported by micro stepping. If motor direction is clock-wise <img src="https://render.githubusercontent.com/render/math?math=P"> increases, if direction is counter-clock-wise decrease. For example, if stepper motor executes two subsequent commands to move by one counter-clock-wise and current micro stepping option will instruct to do half-step, than position will decrease by one.
+Firmware calculates position for each stepper motor used. Position is being calculated by the following formula: <img src="https://render.githubusercontent.com/render/math?math=P=32\times N">, where <img src="https://render.githubusercontent.com/render/math?math=P"> is current position, <img src="https://render.githubusercontent.com/render/math?math=N"> number of full steps performed, 32 is a minimal fraction of step supported by micro stepping. If motor direction is clock-wise <img src="https://render.githubusercontent.com/render/math?math=P"> increases, if direction is counter-clock-wise decrease. For example, if stepper motor executes two subsequent commands to move by one counter-clock-wise and current micro stepping option will instruct to do half-step, than position will decrease by one.
 
 If `"driver_type"` is "unknown" micro stepping is not supported and motor position will change by full step every `STEP` pulse.
 
@@ -638,7 +639,7 @@ When JSON configuration file is written and ready, it is time to customize proje
 ./customize.sh <JSON configuration file>
 ```
 
-Inspect the output for warnings and errors. If successful you may follow to the next [section](#Building-and-flashing-firmware). If JSON configuration file describes configuration that has conflicts, mistakes or can't be implemented than corresponding error will be shown. Errors and warnings may have different nature, for example if JSON configuration file uses the same GPIO pin for different purposes, the error will be thrown. Possibly, you will have to refer to the MCU documentation in oreder to understand and fix them correctly.
+Inspect the output for warnings and errors. If successful you may follow to the next [section](#Building-and-flashing-firmware). If JSON configuration file describes configuration that has conflicts, mistakes or can't be implemented than corresponding error will be shown. Errors and warnings may have different nature, for example if JSON configuration file uses the same GPIO pin for different purposes, the error will be thrown. Possibly, you will have to refer to the MCU documentation in order to understand and fix them correctly.
 
 
 ## Building and flashing firmware
@@ -660,7 +661,7 @@ There are many ways to link generated library with main program. It worth to loo
 
 ## Contributing
 
-Everyone is welcome to participate this project. Discuss changes you want to make with author first before doing pull request. I do not promise the answer will be quick, however I'll try to respond t everyone.
+Everyone is welcome to participate this project. Discuss changes you want to make with author first before doing pull request. I do not promise the answer will be quick, however I'll try to respond to everyone.
 
 Contribution may be made in several forms:
 1. Testing. There were some testing, but it's not enough. I am certain there are bugs, I hope not many of them. Using the project and submitting issues will be very helpful.
