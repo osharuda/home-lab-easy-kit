@@ -41,6 +41,8 @@
 {__SPWM_CHANNEL_INDEXES__}
 /// @}}
 
+#define SPWM_DEFAULT_FREQ {__SPWM_DEF_FREQ__}
+
 /// \struct tag_SPWM_SW_DESCRIPTOR
 /// \brief SPWM channel descriptor
 typedef struct tag_SPWM_SW_DESCRIPTOR {{

@@ -28,6 +28,7 @@ constexpr SPWM_SW_DESCRIPTOR SPWMDev::spwm_description[];
 
 SPWMDev::SPWMDev(std::shared_ptr<EKitBus>& ebus, int addr) : super(ebus, addr) {
 	clear_prev_data();
+	set_pwm_freq(SPWM_DEFAULT_FREQ);
 }
 
 SPWMDev::~SPWMDev() {
@@ -87,7 +88,8 @@ void SPWMDev::set(SPWM_STATE& state) {
 		pwmdata[0] = acc;
 		size_t pwmindx = 1;
 		for (auto i=pwmmap.begin(); i!=pwmmap.end(); ++i) {
-			uint16_t value = i->first;
+			uint32_t value = (static_cast<uint32_t>(i->first) * static_cast<uint32_t>(max_period)) / 0xFFFF;
+			assert(value<=0xFFFF);
 			pwmdata[pwmindx-1].n_periods = value - acc.n_periods;
 			for (int j=0; j<SPWM_PORT_COUNT; j++) {
 				acc.data[j] |= i->second.data[j];
@@ -97,7 +99,7 @@ void SPWMDev::set(SPWM_STATE& state) {
 			pwmindx++;
 		}
 
-		pwmdata[pwmindx-1].n_periods = 0xFFFF - acc.n_periods;
+		pwmdata[pwmindx-1].n_periods = max_period - acc.n_periods;
 
 
 		data_ptr = (uint8_t*)(pwmdata);
@@ -125,19 +127,39 @@ void SPWMDev::set(SPWM_STATE& state) {
 }
 
 void SPWMDev::reset() {
-	clear_prev_data();
+    clear_prev_data();
 	SPWM_STATE state;
 	set(state);
 }
 
 void SPWMDev::clear_prev_data() {
 	for (size_t i=0; i<SPWM_CHANNEL_COUNT; i++) {
-		prev_data[i] = spwm_description[i].def_val ? 0 : 0xFFFF;
+	    prev_data[i] = spwm_description[i].def_val ? 0 : max_period;
 	}	
 }
 
 std::string SPWMDev::get_dev_name() const {
     return SPWM_DEVICE_NAME;
+}
+
+void SPWMDev::set_pwm_freq(double freq) {
+    static const char* const func_name = "SPWMDev::set_pwm_freq";
+    double f_cnt = 72000000.0 / static_cast<double>(SPWM_PRESCALE_VALUE + 1);
+    uint16_t  mp;
+
+    if (freq*65536.0<f_cnt) {
+        throw EKitException(func_name, EKIT_OUT_OF_RANGE, "freq is too low.");
+    }
+
+    mp = f_cnt / freq;
+
+    if (mp<100) {
+        throw EKitException(func_name, EKIT_OUT_OF_RANGE, "maximum period is too low, try to decrease prescaler value.");
+    }
+
+    max_period = mp;
+    SPWM_STATE state;
+    set(state); // recalculate
 }
 
 #endif

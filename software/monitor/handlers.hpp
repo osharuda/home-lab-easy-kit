@@ -191,6 +191,7 @@ class CommandHandler {
 #ifdef SPWM_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(SPWMListHandler);
 	DEFINE_HANDLER_CLASS(SPWMSetHandler);
+	DEFINE_HANDLER_CLASS(SPWMSetFreqHandler);
 	DEFINE_HANDLER_CLASS(SPWMResetHandler);
 #endif
 

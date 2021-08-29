@@ -340,12 +340,14 @@ int main(int argc, char* argv[])
 
     std::shared_ptr<CommandHandler> spwm_list_handler(dynamic_cast<CommandHandler*>(new SPWMListHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
     std::shared_ptr<CommandHandler> spwm_set_handler(dynamic_cast<CommandHandler*>(new SPWMSetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
+    std::shared_ptr<CommandHandler> spwm_freq_handler(dynamic_cast<CommandHandler*>(new SPWMSetFreqHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
     std::shared_ptr<CommandHandler> spwm_reset_handler(dynamic_cast<CommandHandler*>(new SPWMResetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
 
     ui->add_command(cmd_index++, spwm_list_handler);    
-    ui->add_command(cmd_index++, spwm_set_handler);    
-    ui->add_command(cmd_index++, spwm_reset_handler);    
-#endif   
+    ui->add_command(cmd_index++, spwm_set_handler);
+    ui->add_command(cmd_index++, spwm_freq_handler);
+    ui->add_command(cmd_index++, spwm_reset_handler);
+#endif
 
 #ifdef ADCDEV_DEVICE_ENABLED
     

@@ -102,9 +102,13 @@ public:
 	/// \brief Reset all channels to their default state
 	void reset();
 
+	void set_pwm_freq(double freq);
+
     /// \brief Returns device name as specified in JSON configuration file
     /// \return string with name
     std::string get_dev_name() const override;
+
+    uint16_t max_period = 0xFFFF;
 };
 
 /// @}

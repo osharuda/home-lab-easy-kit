@@ -1084,6 +1084,30 @@ done:
 }
 
 //----------------------------------------------------------------------------------------------//
+//                                    SPWMSetFreqHandler                                        //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPWMSetFreqHandler,"spwm::", "::freq")
+std::string SPWMSetFreqHandler::help() const {
+    return tools::format_string("# %s Sets SPWM frequency.\n"
+                                "# usage:  <value> value of the output. It should be floating point value.\n",
+                                get_command_name());
+}
+void SPWMSetFreqHandler::handle(const std::vector<std::string>& args) {
+    auto spwm = dynamic_cast<SPWMDev*>(device.get());
+    check_arg_count(args, 1);
+    double val;
+
+    try {
+        val = std::stod(args[1]);
+    } catch (std::invalid_argument& e) {
+        std::string err = tools::format_string("Invalid parameter specified, must be floating point value");
+        throw CommandHandlerException(err);
+    }
+
+    spwm->set_pwm_freq(val);
+}
+
+//----------------------------------------------------------------------------------------------//
 //                                    SPWMResetHandler                                          //
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(SPWMResetHandler,"spwm::", "::reset")

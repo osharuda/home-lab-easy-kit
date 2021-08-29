@@ -38,7 +38,13 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
         spwm_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)
         self.check_resource("irq_handler", spwm_irq_handler)
         spwm_requires["irq_handler"] = spwm_irq_handler
-        prescaler = self.dev_config["prescaler"]
+        prescaler = int(self.dev_config["prescaler"])
+
+        default_freq = self.dev_config.get("frequency")
+        if default_freq:
+            default_freq = float(default_freq)
+        else:
+            default_freq = self.mcu_hw.system_clock / ((prescaler + 1) * 0xFFFF)
 
         index = 0
         for pin_name, pin_cfg in self.dev_config["description"].items():
@@ -110,6 +116,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
                       "__SPWM_CHANNEL_COUNT__": index,
                       "__SPWM_MAX_PWM_ENTRIES_COUNT__": index+1,
                       "__SPWM_PRESCALE_VALUE__": prescaler,
-                      "__SPWM_SW_DESCRIPTION__": ", ".join(pin_sw_defines)}
+                      "__SPWM_SW_DESCRIPTION__": ", ".join(pin_sw_defines),
+                      "__SPWM_DEF_FREQ__": str(default_freq)}
 
         self.patch_templates(vocabulary)

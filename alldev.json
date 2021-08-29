@@ -66,7 +66,8 @@
     "SPWMCustomizer": {
       "spwm" : {
         "dev_id" : 7,
-        "prescaler" : 1,
+        "prescaler" : 6,
+	"frequency" : 160.0,
         "description" : {"L0" : {
                            "type" : "GPIO_Mode_Out_PP",
                            "gpio" : "PB_1",
