@@ -16,6 +16,7 @@
 import json
 import hashlib
 
+
 def concat_lines(l: list) -> str:
     line_separator = '\n'
     return line_separator.join(l)
@@ -80,10 +81,11 @@ def add_to_values(d: dict, prefix=None, suffix=None):
         d[k] = v
 
 
-def set_to_ordered_list(st : set) -> list:
+def set_to_ordered_list(st: set) -> list:
     l = list(st)
     l.sort()
     return l
+
 
 def hash_dict_as_c_array(d: dict) -> str:
     s = json.dumps(d, sort_keys=True)
@@ -95,3 +97,14 @@ def hash_dict_as_c_array(d: dict) -> str:
         l.append("0x{:02X}".format(int(digest[i])))
 
     return (", ".join(l), hsh.digest_size)
+
+
+def hash_string(s: str) -> str:
+    hsh = hashlib.sha1()
+    hsh.update(s.encode('utf-8'))
+    digest = hsh.digest()
+    result = str()
+    for i in range(0, hsh.digest_size):
+        result += "{:02X}".format(int(digest[i]))
+
+    return result
