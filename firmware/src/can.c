@@ -39,8 +39,6 @@ CAN_FW_BUFFERS
 /// \brief Global array that stores all virtual Can devices configurations.
 volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 
-/// @}
-
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 /// \brief Starts CAN device (switches CAN to running mode).
 /// \param devctx - device context structure represented by #DeviceContext
@@ -84,6 +82,7 @@ void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
 /// \param message - message represented by a pointer to #CanRxMsg structure.
 /// \param status - status represented by a pointer to #CanStatus structure.
 void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
+/// @}
 
 //---------------------------- INTERRUPTS ----------------------------
 

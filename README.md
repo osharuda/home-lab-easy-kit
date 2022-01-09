@@ -20,6 +20,7 @@
     6.8. [SPWMCustomizer](#SPWMCustomizer)
     6.9. [ADCDevCustomizer](#ADCDevCustomizer)
     6.10. [StepMotorDevCustomizer](#StepMotorDevCustomizer)
+    6.11. [CanCustomizer](#CanCustomizer)
 7. [Building and flashing firmware](#Building-and-flashing-firmware)
 8. [Linking with generated library](#Linking-with-generated-library)
 9. [Contributing](#Contributing)
@@ -80,7 +81,7 @@ The following packages are used by Home Lab Easy Kit project:
 - `GNU Arm Embedded Toolchain`: It is a collection of packages required for bare-metal software development using 32-bit ARM processors. It also includes Cortex-M, used in STM32F103x. Install these packages: `binutils-arm-none-eabi`, `gcc-arm-none-eabi`, `gdb-multiarch`. Note, `tools` variable in firmware/toolchain.cmake should be modified to specify path to toolchain in order to configure project for CMake. More information about GNU Arm Embedded Toolchain project is [here](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm).
 - `STM32F10x Standard Peripherals Library`: This is a library from [STMicroelectronics](https://www.st.com) which is required to build firmware. It can be downloaded from ST web site [directly](http://www.st.com/st-web-ui/static/active/en/st_prod_software_internet/resource/technical/software/firmware/stsw-stm32054.zip). Unpack library and modify STDPERIF_PATH variable in firmware/toolchain.cmake. It is possible to get “registers may not be the same” compilation errors with this library. If the error appears use [patch](https://gist.github.com/timbrom/1942280) to fix it.
 - `OpenOCD`: Open On-Chip Debugger project required to debug firmware. Optionally it may be used to flash firmware, or to debug it from your favorite IDE. Install `openocd` package. More information on OpenOCD project is [here](http://openocd.org/).
-- `ST-LINK/V2 tools`: This software is required to flash and debug firmware. Install `stlink-tools` package. More information is [here]()
+- `ST-LINK/V2 tools`: This software is required to flash and debug firmware. Install `stlink-tools` package. More information is [here](https://github.com/stlink-org/stlink)
 - `i2c-tools`: are very useful during work with i2c bus. Install `i2c-tools` package.
 - `doxygen`: Doxygen is required to generate documentation for firmware and software parts of the project. Install `doxygen` package. More information on Doxygen may be found [here](https://www.doxygen.nl/index.html).
 - `ncurses` : This library is used for minimal terminal interface used by Home Lab Easy Kit monitor. Install `libncurses-dev` package.
@@ -639,7 +640,7 @@ DRV8825 is different to A4998. It has "Fault" line that may be used to detect fa
 
 Note, `"fault"` object is optional, however, if specified all values should be also specified.
 
-### CanDev
+### CanCustomizer
 
 CAN is a well known industrial bus which has a lot of applications. This bus is supported by STM32F103x. Unfortunately you can't connect MCU directly to CAN bus, because transceiver is required. Luckily, there are a lot of CAN transceivers available on the market in different packages (including DIP-8) which may be used by amateurs. Refer to specific IC data sheet for scheme and etc. Note, STM32f103 may use pin remapping for CAN. Both sets of pins (`PA_11`/`PA_12` and `PB_8`/`PB_9`) are 5V tolerant, so possibly, you may use transceivers with 5V logical levels. I didn't test it: in my case I used transceiver with 5V logical level interface and simple level shifter.
 
