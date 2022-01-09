@@ -99,18 +99,20 @@ List below describes sequential actions required to start:
 ## Available peripherals
 
 Currently Home Lab Easy Kit support the following functionalities that represent peripherals available on STM32F103C8T6:
-| Name      | Description | Exclusive |
-|:----------|:------------|:---------:|
-| INFODev | Firmware identification and information support | Yes |
-| ADCDev | 12-bit Analogue to Digital Converter support | No |
-| DESKDev | Simple set of four buttons and one encoder | Yes |
-| GPIODev | General purpose input/output support | Yes |
-| IRRCDev | NEC standard IR remote control support | Yes |
-| LCD1602ADev | Simple LCD1602a screen support | Yes |
-| RTCDev | Real Time Clock support | Yes |
-| SPWMDev | Multichannel software PWM support | Yes |
-| StepMotorDev | Support for A4998 and DRV8825 stepper motor drivers | No |
-| UARTDev | UART proxy ( allow to communicate with UART devices connected to micro controller ) | No |
+
+| Name      | Description | Exclusive | Remapping |
+|:----------|:------------|:----------|:----------|
+| INFODev | Firmware identification and information support | Yes | No |
+| ADCDev | 12-bit Analogue to Digital Converter support | No | No |
+| DESKDev | Simple set of four buttons and one encoder | Yes | No |
+| GPIODev | General purpose input/output support | Yes | No |
+| IRRCDev | NEC standard IR remote control support | Yes | No |
+| LCD1602ADev | Simple LCD1602a screen support | Yes | No |
+| RTCDev | Real Time Clock support | Yes | No |
+| SPWMDev | Multichannel software PWM support | Yes | No |
+| StepMotorDev | Support for A4998 and DRV8825 stepper motor drivers | No | No |
+| UARTDev | UART proxy ( allow to communicate with UART devices connected to micro controller ) | No | No |
+| CanDev | CAN bus support (beta) | No | Yes |
 
 Exclusive feature means that this feature may be enabled in a form of single virtual device. Non-exclusive features may provide several virtual devices of similar functionality but using different peripherals and working independently.
 
@@ -122,7 +124,9 @@ JSON configuration file has the following structure:
 {
     "firmware" : {
         "mcu_model" : "stm32f103",
-        "device_name" : "raspi_extender",
+        "device_name" : "test_dev",
+        "install_prefix" : "test_dev",
+        "install_path" : "/opt",
         "i2c_bus" : {
             "clock_speed" : 100000,
             "buffer_size" : 512,
@@ -145,10 +149,13 @@ JSON configuration file has the following structure:
 ```
 
 The first `firmware` key describes basic firmware properties.
+
 | Key      | Value description | Possible values | Required |
 |:---------|:------------------|:----------------|:---------|
 | `"mcu_model"` | MCU model being used, currently the only MCU is supported | "stm32f103" | Yes |
 | `"device_name"` | Name of the firmware represented by this JSON file | reasonable name in quotes | Yes |
+| `"install_prefix"` | Installation prefix for the library installation path | relative path (relative to `"install_path"`) | Yes |
+| `"install_path"` | Installation path for the library | absolute path | Yes |
 | `"i2c_bus"` | Describes i2c connection with micro computer and MCU. | Object, see below | Yes |
 | `"clock_speed"` | I2C bus clock speed. This project was tested with standard frequency only (100kHz) | 100000 | Yes |
 | `"buffer_size"` | Size of the buffer for commands being sent from microcomputer to MCU, in bytes. | Number | Yes |
@@ -177,6 +184,7 @@ Note, `"firmware"` doesn't allow to select MCU frequency. For example, STM32F10x
 Most of the features require some peripherals from MCU. Such dependencies are described as JSON object with key equal to peripheral type and value with name of the peripheral. Most of the time name is the same as how peripheral is defined in CMSIS library. Table below describes details about peripherals types, possible values, etc.
 
 #### Peripherals types table
+
 | Key (Type) | Description | Possible values (for STM32F103C8T6) |
 |:-----------|:------------|:------------------------------------|
 |`"i2c"`| I2C interface. Currently is used for communication with software only. |"I2C1" or "I2C2" |
@@ -187,6 +195,7 @@ Most of the features require some peripherals from MCU. Such dependencies are de
 |`"adc"`| Analog to digital converter | "ADC1" or "ADC2"<sup>[2](#ft02)</sup>|
 |`"adc_input"`| Analog to digital converter input |"ADC_Channel_0" ... "ADC_Channel_9", "ADC_Channel_TempSensor", "ADC_Channel_Vrefint"|
 |`"usart"`| USART interface | "USART1", "USART2", "USART3"|
+|`"can"`| CAN bus | "CAN1", "CAN1_REMAP"|
 
 
 The following table describes pin configurations available in STM32F103x. It is general across many electronic devices, however values are taken from CMSIS library.
@@ -573,7 +582,6 @@ Table below describe key/values to customize stepper motor direction:
 Actual direction values are very related, user should define what is "clock-wise" and "counter-clock_wise" for stepper being used.
 
 
-
 #### Micro stepping
 A4998 and DRV8825 use micro stepping lines in order to do micro steps ( a fraction of single step motor step ). User may either change these lines from software, or pull up or down these pins if micro steps are not required. In any case stepper motor logic implemented in firmware and software must be aware of micro steps being used. It directly impacts on stepper motor position being calculated during movement. Table below describes values to be used by `"m1"`, `"m2"`, `"m3"`.
 
@@ -631,6 +639,32 @@ DRV8825 is different to A4998. It has "Fault" line that may be used to detect fa
 
 Note, `"fault"` object is optional, however, if specified all values should be also specified.
 
+### CanDev
+
+CAN is a well known industrial bus which has a lot of applications. This bus is supported by STM32F103x. Unfortunately you can't connect MCU directly to CAN bus, because transceiver is required. Luckily, there are a lot of CAN transceivers available on the market in different packages (including DIP-8) which may be used by amateurs. Refer to specific IC data sheet for scheme and etc. Note, STM32f103 may use pin remapping for CAN. Both sets of pins (`PA_11`/`PA_12` and `PB_8`/`PB_9`) are 5V tolerant, so possibly, you may use transceivers with 5V logical levels. I didn't test it: in my case I used transceiver with 5V logical level interface and simple level shifter.
+
+**Currently this functionality is under development/verification. That's why it may work unstable; Implementation may change in future and documentation may be incomplete, inexact or absent.**
+
+Use the
+```
+"CanCustomizer": {
+      "can_0" : {
+        "dev_id" : 1,
+        "buffered_msg_count" : 256,
+        "requires" :  {"can" : "CAN1_REMAP"}
+      }
+    }
+```
+
+| Key      | Value description | Possible values | Required |
+|:---------|:------------------|:----------------|:---------|
+| `"can_0"` | Name of the CanDev virtual device. | String | Yes |
+| `"dev_id"` | Device id. | Number, [1, 15] | Yes |
+| `"buffered_msg_count"` | Size of the receive circular buffer in messages. | Number | Yes |
+| `"requires"` | Describes peripherals required by the virtual device. Just `can` should be specified. | `CAN1` or `CAN1_REMAP` | Yes |
+
+Note: STM32F103x has CAN and USB sharing a dedicated SRAM memory for data transmission and reception, so it is not possible to use CAN and USB at the same time.
+
 ## Customizing project
 
 When JSON configuration file is written and ready, it is time to customize project. To do this execute the following command from project root directory:
@@ -649,6 +683,7 @@ There are some scripts that will help you to build and flash firmware. Note, thi
 - `firmware/build.sh` - This script will build a debug version of firmware.
 - `firmware/flash.sh` - This script will flash firmware to your MCU using `ST-LINK/V2 tools`.
 - `software/build.sh` - This script will build a debug version of software.
+- `software/install.sh` - This script will build and install generated library. Use it in order to install generated library in the system. Requires root permissions.
 - `gendox.sh` - Will generate documentation using Doxygen.
 
 It is possible to flash and debug firmware using `OpenOCD` and `GDB`. There are many internet resources describing this possibility, sometimes this option is very useful, especially during heavy debugging.
@@ -658,6 +693,8 @@ Options to build and flash are not limited to these ones above. There are many o
 ## Linking with generated library
 
 There are many ways to link generated library with main program. It worth to look how Home Lab Easy Kit monitor utility is linked with library. You may see it in software/CMakeLists.txt script.
+
+An example project is generated in `software/example`. This is project has no functionality; it's purpose is to provide understanding how to link with installed library.
 
 ## Contributing
 
