@@ -1782,7 +1782,7 @@ void CanStopHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(CanStatusHandler,"can::", "::status")
 std::string CanStatusHandler::help() const {
     auto d = dynamic_cast<CanDev*>(device.get());
-    return tools::format_string("# %s Returns can device status. No parameters are required.\n",
+    return tools::format_string("# %s Returns CAN status for %s device. No parameters are required.\n",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -1907,7 +1907,7 @@ void CanFilterHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(CanReadHandler,"can::", "::read")
 std::string CanReadHandler::help() const {
     auto d = dynamic_cast<CanDev*>(device.get());
-    return tools::format_string("# %s Reads messages received by CAN and status. No parameters are required.\n",
+    return tools::format_string("# %s Reads messages received by CAN and status for %s device. No parameters are required.\n",
                                 get_command_name(),
                                 d->get_dev_name());
 }

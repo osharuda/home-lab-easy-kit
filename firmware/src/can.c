@@ -461,9 +461,15 @@ void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* messa
 
     // Using CAN_Receive() and further transformation to CanRecvMessage is not optimal solution! It is possible to further optimize it
     // by using peripheral registers directly.
-    recv_msg->id = message->StdId;
-    recv_msg->ext_id = message->ExtId;
     recv_msg->fmi = message->FMI;
+    if (message->IDE == CAN_Id_Extended) {
+        recv_msg->id = message->ExtId;
+        recv_msg->extra = CAN_MSG_EXTENDED_ID;
+    } else {
+        recv_msg->id = message->StdId;
+        recv_msg->extra = 0;
+    }
+
     recv_msg->extra = (message->IDE == CAN_Id_Extended) ? CAN_MSG_EXTENDED_ID : 0;
     recv_msg->extra |= (message->RTR == CAN_RTR_Remote) ? CAN_MSG_REMOTE_FRAME : 0;
     recv_msg->extra += message->DLC;

@@ -293,14 +293,21 @@ std::map<uint16_t, std::pair<std::string, std::string>> CanDev::state_flag_map =
 std::string CanDev::can_status_to_str(CanStatus& status) {
     std::string res = tools::flags_to_string(status.state, state_flag_map, " ");
     res += tools::str_format("data_len         = %d\n", status.data_len);
-    res += tools::str_format("last_error       = %d\n", status.last_error);
+    std::string slec = can_last_err_to_str(status.last_error);
+    res += tools::str_format("last_error       = %d => %s\n", status.last_error, slec.c_str());
     res += tools::str_format("recv_error_count = %d\n", status.recv_error_count);
     res += tools::str_format("lsb_trans_count  = %d\n", status.lsb_trans_count);
 
     return res;
 }
 std::string CanDev::can_msg_to_str(CanRecvMessage& msg) {
-    std::string res = tools::str_format("0x%X: ", msg.id);
+    std::string res;
+
+    if (msg.extra & CAN_MSG_EXTENDED_ID) {
+        res = tools::str_format("EXT: 0x%X: ", msg.id);
+    } else {
+        res = tools::str_format("STD: 0x%X: ", msg.id);
+    }
     uint8_t n_bytes = std::min(msg.extra & CAN_MSG_MAX_DATA_LEN_MASK, CAN_MSG_MAX_DATA_LEN);
 
     for (size_t i=0; i<n_bytes; i++) {
@@ -309,10 +316,6 @@ std::string CanDev::can_msg_to_str(CanRecvMessage& msg) {
 
     res += tools::str_format("   | fltid: %d", msg.fmi);
 
-    if (msg.extra & CAN_MSG_EXTENDED_ID) {
-        res += tools::str_format(" ext_id: 0x%X", msg.ext_id);
-    }
-
     if (msg.extra & CAN_MSG_REMOTE_FRAME) {
         res += " REMOTE";
     }
@@ -320,6 +323,56 @@ std::string CanDev::can_msg_to_str(CanRecvMessage& msg) {
     return res;
 }
 
+std::string CanDev::can_last_err_to_str(uint8_t lec) {
+    std::string res;
+
+    if (lec & CAN_ESR_FLAG_WARNING) {
+        res += "Warning ";
+    }
+
+    if (lec & CAN_ESR_FLAG_PASSIVE) {
+        res += "Passive ";
+    }
+
+    if (lec & CAN_ESR_FLAG_BUSOFF) {
+        res += "Bus-off ";
+    }
+
+    switch (lec & CAN_ESR_LEC_MASK) {
+        case CAN_ESR_LEC_OK:
+        break;
+
+        case CAN_ESR_LEC_STUFF_ERR:
+            res += "Stuff error;";
+        break;
+
+        case CAN_ESR_LEC_FORM_ERR:
+            res += "Form error;";
+        break;
+
+        case CAN_ESR_LEC_ACK_ERR:
+            res += "Acknowledgment error;";
+        break;
+
+        case CAN_ESR_LEC_REC_ERR:
+            res += "Bit recessive error;";
+        break;
+
+        case CAN_ESR_LEC_DOM_ERR:
+            res += "Bit dominant error;";
+        break;
+
+        case CAN_ESR_LEC_CRC_ERR:
+            res += "CRC error;";
+        break;
+
+        case CAN_ESR_LEC_SFT_ERR:
+            res += "Software error;";
+        break;
+    }
+
+    return res;
+}
 
 void CanDev::can_status(CanStatus& status) {
     static const char* const func_name = "CanDev::can_status";

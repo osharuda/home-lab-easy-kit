@@ -96,6 +96,7 @@ class CanDev final : public EKitVirtualDevice {
 
 	static std::string can_status_to_str(CanStatus& status);
 	static std::string can_msg_to_str(CanRecvMessage& msg);
+	static std::string can_last_err_to_str(uint8_t lec);
 
 	void can_read(CanStatus& status, std::vector<CanRecvMessage>& messages);
 

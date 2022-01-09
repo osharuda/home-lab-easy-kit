@@ -139,6 +139,53 @@ typedef struct tag_CanSendCommand {{
 /// \brief No mail box was found during transmission
 #define CAN_ERROR_NO_MAILBOX        (1 << 13)
 
+/// \define CAN_ESR_LEC_MASK
+/// \brief Last error code mask.
+#define CAN_ESR_LEC_MASK            (0b01110000)
+
+/// \define CAN_ESR_LEC_OK
+/// \brief Last error code: ok.
+#define CAN_ESR_LEC_OK              (0b00000000)
+
+/// \define CAN_ESR_LEC_STUFF_ERR
+/// \brief Last error code: stuff error.
+#define CAN_ESR_LEC_STUFF_ERR       (0b00010000)
+
+/// \define CAN_ESR_LEC_FORM_ERR
+/// \brief Last error code: form error.
+#define CAN_ESR_LEC_FORM_ERR       (0b00100000)
+
+/// \define CAN_ESR_LEC_ACK_ERR
+/// \brief Last error code: acknowledgment error.
+#define CAN_ESR_LEC_ACK_ERR       (0b00110000)
+
+/// \define CAN_ESR_LEC_REC_ERR
+/// \brief Last error code: bit recessive error.
+#define CAN_ESR_LEC_REC_ERR       (0b01000000)
+
+/// \define CAN_ESR_LEC_DOM_ERR
+/// \brief Last error code: bit dominant error.
+#define CAN_ESR_LEC_DOM_ERR       (0b01010000)
+
+/// \define CAN_ESR_LEC_CRC_ERR
+/// \brief Last error code: CRC error.
+#define CAN_ESR_LEC_CRC_ERR       (0b01100000)
+
+/// \define CAN_ESR_LEC_SFT_ERR
+/// \brief Last error code: set by software.
+#define CAN_ESR_LEC_SFT_ERR       (0b01110000)
+
+/// \define CAN_ESR_FLAG_WARNING
+/// \brief Error warning flag.
+#define CAN_ESR_FLAG_WARNING      (1)
+
+/// \define CAN_ESR_FLAG_PASSIVE
+/// \brief Error passive flag.
+#define CAN_ESR_FLAG_PASSIVE      (2)
+
+/// \define CAN_ESR_FLAG_BUSOFF
+/// \brief Bus-off flag.
+#define CAN_ESR_FLAG_BUSOFF       (4)
 
 /// \struct tag_CanStatus
 /// \brief This structure describes can device status.
@@ -154,9 +201,8 @@ typedef struct tag_CanStatus {{
 /// \brief This structure describes received message. This structure is wrote into output circular buffer to be read by
 ///        software.
 typedef struct tag_CanRecvMessage {{
-    uint32_t id;        ///< Standard identifier. Values: [0 ... 0x7FF].
-
-    uint32_t ext_id;     ///< Extended identifier. Values: [0 ... 0x1FFFFFFF].
+    uint32_t id;        ///< Standard 11-bit identifier (values: [0 ... 0x7FF]) or extended 29-bit identifier (values [0 ... 0x1FFFFFFF])
+                        ///  Test #extra for #CAN_MSG_EXTENDED_ID bit to distinguish standard and extended messages.
 
     uint8_t extra;      ///< Extra information for the message. For details take a look on set of CAN_MSG_XXX macro.
 
