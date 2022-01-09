@@ -79,111 +79,111 @@ typedef struct tag_CanSendCommand {{
     uint8_t data[];     ///< Data to be transmitted. Variable size array - must not exceed CAN_MSG_MAX_DATA_LEN.
 }} CanSendCommand, *PCanSendCommand;
 
-/// \define CAN_STATE_STARTED
+/// \def CAN_STATE_STARTED
 /// \brief If set device is started, otherwise device is stopped
 #define CAN_STATE_STARTED           (1 << 0)
 
-/// \define CAN_STATE_SLEEP
+/// \def CAN_STATE_SLEEP
 /// \brief If set device is in sleep mode, otherwise device has woken up.
 #define CAN_STATE_SLEEP             (1 << 1)
 
-/// \define CAN_STATE_MB_0_BUSY_BIT_OFFSET
+/// \def CAN_STATE_MB_0_BUSY_BIT_OFFSET
 /// \brief Specifies bit position of the CAN_STATE_MB_0_BUSY flag.
 #define CAN_STATE_MB_0_BUSY_BIT_OFFSET (2)
 
-/// \define CAN_STATE_MB_0_BUSY
+/// \def CAN_STATE_MB_0_BUSY
 /// \brief If set mailbox 0 is busy
 #define CAN_STATE_MB_0_BUSY         (1 << CAN_STATE_MB_0_BUSY_BIT_OFFSET)
 
-/// \define CAN_STATE_MB_1_BUSY
+/// \def CAN_STATE_MB_1_BUSY
 /// \brief If set mailbox 1 is busy
 #define CAN_STATE_MB_1_BUSY         (1 << (CAN_STATE_MB_0_BUSY_BIT_OFFSET+1))
 
-/// \define CAN_STATE_MB_2_BUSY
+/// \def CAN_STATE_MB_2_BUSY
 /// \brief If set mailbox 2 is busy
 #define CAN_STATE_MB_2_BUSY         (1 << (CAN_STATE_MB_0_BUSY_BIT_OFFSET+2))
 
-/// \define CAN_ERROR_OVERFLOW
+/// \def CAN_ERROR_OVERFLOW
 /// \brief Internal buffer overflow
 #define CAN_ERROR_OVERFLOW          (1 << 5)
 
-/// \define CAN_ERROR_FIFO_0_FULL
+/// \def CAN_ERROR_FIFO_0_FULL
 /// \brief FIFO 0 full
 #define CAN_ERROR_FIFO_0_FULL       (1 << 6)
 
-/// \define CAN_ERROR_FIFO_0_OVERFLOW
+/// \def CAN_ERROR_FIFO_0_OVERFLOW
 /// \brief FIFO 0 overflow
 #define CAN_ERROR_FIFO_0_OVERFLOW   (1 << 7)
 
-/// \define CAN_ERROR_FIFO_1_FULL
+/// \def CAN_ERROR_FIFO_1_FULL
 /// \brief FIFO 1 overflow
 #define CAN_ERROR_FIFO_1_FULL       (1 << 8)
 
-/// \define CAN_ERROR_FIFO_1_OVERFLOW
+/// \def CAN_ERROR_FIFO_1_OVERFLOW
 /// \brief FIFO 1 overflow
 #define CAN_ERROR_FIFO_1_OVERFLOW   (1 << 9)
 
-/// \define CAN_ERROR_WARNING
+/// \def CAN_ERROR_WARNING
 /// \brief Error warning
 #define CAN_ERROR_WARNING           (1 << 10)
 
-/// \define CAN_ERROR_PASSIVE
+/// \def CAN_ERROR_PASSIVE
 /// \brief Error passive
 #define CAN_ERROR_PASSIVE           (1 << 11)
 
-/// \define CAN_ERROR_BUS_OFF
+/// \def CAN_ERROR_BUS_OFF
 /// \brief Bus off
 #define CAN_ERROR_BUS_OFF           (1 << 12)
 
-/// \define CAN_ERROR_NO_MAILBOX
+/// \def CAN_ERROR_NO_MAILBOX
 /// \brief No mail box was found during transmission
 #define CAN_ERROR_NO_MAILBOX        (1 << 13)
 
-/// \define CAN_ESR_LEC_MASK
+/// \def CAN_ESR_LEC_MASK
 /// \brief Last error code mask.
 #define CAN_ESR_LEC_MASK            (0b01110000)
 
-/// \define CAN_ESR_LEC_OK
+/// \def CAN_ESR_LEC_OK
 /// \brief Last error code: ok.
 #define CAN_ESR_LEC_OK              (0b00000000)
 
-/// \define CAN_ESR_LEC_STUFF_ERR
+/// \def CAN_ESR_LEC_STUFF_ERR
 /// \brief Last error code: stuff error.
 #define CAN_ESR_LEC_STUFF_ERR       (0b00010000)
 
-/// \define CAN_ESR_LEC_FORM_ERR
+/// \def CAN_ESR_LEC_FORM_ERR
 /// \brief Last error code: form error.
 #define CAN_ESR_LEC_FORM_ERR       (0b00100000)
 
-/// \define CAN_ESR_LEC_ACK_ERR
+/// \def CAN_ESR_LEC_ACK_ERR
 /// \brief Last error code: acknowledgment error.
 #define CAN_ESR_LEC_ACK_ERR       (0b00110000)
 
-/// \define CAN_ESR_LEC_REC_ERR
+/// \def CAN_ESR_LEC_REC_ERR
 /// \brief Last error code: bit recessive error.
 #define CAN_ESR_LEC_REC_ERR       (0b01000000)
 
-/// \define CAN_ESR_LEC_DOM_ERR
+/// \def CAN_ESR_LEC_DOM_ERR
 /// \brief Last error code: bit dominant error.
 #define CAN_ESR_LEC_DOM_ERR       (0b01010000)
 
-/// \define CAN_ESR_LEC_CRC_ERR
+/// \def CAN_ESR_LEC_CRC_ERR
 /// \brief Last error code: CRC error.
 #define CAN_ESR_LEC_CRC_ERR       (0b01100000)
 
-/// \define CAN_ESR_LEC_SFT_ERR
+/// \def CAN_ESR_LEC_SFT_ERR
 /// \brief Last error code: set by software.
 #define CAN_ESR_LEC_SFT_ERR       (0b01110000)
 
-/// \define CAN_ESR_FLAG_WARNING
+/// \def CAN_ESR_FLAG_WARNING
 /// \brief Error warning flag.
 #define CAN_ESR_FLAG_WARNING      (1)
 
-/// \define CAN_ESR_FLAG_PASSIVE
+/// \def CAN_ESR_FLAG_PASSIVE
 /// \brief Error passive flag.
 #define CAN_ESR_FLAG_PASSIVE      (2)
 
-/// \define CAN_ESR_FLAG_BUSOFF
+/// \def CAN_ESR_FLAG_BUSOFF
 /// \brief Bus-off flag.
 #define CAN_ESR_FLAG_BUSOFF       (4)
 

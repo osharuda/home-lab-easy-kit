@@ -151,6 +151,11 @@ void circbuf_init_status(volatile PCircBuffer circ, volatile uint8_t* status, ui
 ///          use this function when interrupts are disabled.
 void circbuf_reset(volatile PCircBuffer circ);
 
+/// \brief Resets content of the buffer (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+void circbuf_reset_no_irq(volatile PCircBuffer circ);
+
 /// \brief Returns amount of data stored in circular buffer (not including status data memory block)
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer, in bytes.
@@ -158,17 +163,17 @@ void circbuf_reset(volatile PCircBuffer circ);
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_len(volatile PCircBuffer circ);
 
-/// \brief Returns amount of data stored in circular buffer (including status data memory block)
+/// \brief Returns amount of data stored in circular buffer including status data memory block.
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer and in status data memory block, in bytes.
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_total_len(volatile PCircBuffer circ);
 
-/// \brief Returns amount of data stored in circular buffer (including status data memory block)
+/// \brief Returns amount of data stored in circular buffer including status data memory block  (doesn't disable IRQ internally).
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer and in status data memory block, in bytes.
-/// \note This function must be used when interrupts are disabled explicitely by #DISABLE_IRQ macro.
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
 uint16_t circbuf_total_len_no_irq(volatile PCircBuffer circ);
 
 /// \brief Put a byte into circular buffer

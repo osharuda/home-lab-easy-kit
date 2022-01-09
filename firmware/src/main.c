@@ -110,7 +110,7 @@ int main(void)
     ENABLE_PERIPH_CLOCK
 
     // enable_debug_pins();
-
+    debug_checks_init();
     init_NVIC();
     systick_init();
     i2c_bus_init();

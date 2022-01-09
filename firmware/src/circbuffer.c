@@ -61,6 +61,18 @@ void circbuf_reset(volatile PCircBuffer circ) {
     ENABLE_IRQ
 }
 
+void circbuf_reset_no_irq(volatile PCircBuffer circ) {
+    assert_param(circ->current_block==0); // must not be called during any of operation
+    circ->put_pos = 0;
+    circ->start_pos = 0;
+    circ->data_len = 0;
+    circ->read_pos = 0;
+    circ->bytes_read = 0;
+    circ->free_size = circ->buffer_size - circ->block_size;
+    circ->current_block = 0;
+    circ->ovf = 0;
+}
+
 uint16_t circbuf_len(volatile PCircBuffer circ) {
 	uint16_t len = 0;
 	DISABLE_IRQ

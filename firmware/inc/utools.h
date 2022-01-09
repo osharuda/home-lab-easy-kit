@@ -36,7 +36,6 @@ extern int g_assert_param_count;
 #else
 
 #include <limits.h>
-#include <limits.h>
 #include "stm32f10x_conf.h"
 
 /// \defgroup group_utools uTools
@@ -54,6 +53,12 @@ extern int g_assert_param_count;
 /// - Timer functions.
 /// - Some debugging functions.
 ///
+
+#ifndef NDEBUG
+/// \brief This variable is used in order to check if #DISABLE_IRQ and #ENABLE_IRQ macro were used correctly.
+/// \note is used in debug builds only.
+extern volatile uint8_t g_irq_disabled;
+#endif
 
 /// \brief Macro for suppressing warnings for some unused parameters which actually are not being used.
 /// \param x - Unused parameter to be ignored.
@@ -133,6 +138,25 @@ extern int g_assert_param_count;
     										GPIO_Init( port , &gpio);
 
 
+#ifndef NDEBUG
+#define ASSERT_IRQ_ENABLED assert_param(g_irq_disabled==0);
+
+#define ASSERT_IRQ_DISABLED assert_param(g_irq_disabled==1);
+
+/// \brief Disables interrupt generation
+/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
+#define DISABLE_IRQ __disable_irq();    \
+                    ASSERT_IRQ_ENABLED  \
+                    g_irq_disabled = 1;
+
+/// \brief Enables interrupt generation
+/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
+#define ENABLE_IRQ  ASSERT_IRQ_DISABLED \
+                    g_irq_disabled = 0; \
+                    __enable_irq();
+
+#else
+
 /// \brief Disables interrupt generation
 /// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
 #define DISABLE_IRQ __disable_irq();
@@ -141,9 +165,14 @@ extern int g_assert_param_count;
 /// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
 #define ENABLE_IRQ  __enable_irq();
 
+#endif
+
 /// \brief Inittializes SysTick interrupt.
 /// \details Main purpose of SysTick interrupt is maintain 64 bit tick counter, which is intensively used by firmware.
 void systick_init(void);
+
+/// \brief Initializes miscellaneous checks made for debug builds.
+void debug_checks_init(void);
 
 /// \brief Returns number of microseconds passed from the last MCU Reset or Power on.
 /// \return number of microseconds passed  from the last MCU Reset or Power on.

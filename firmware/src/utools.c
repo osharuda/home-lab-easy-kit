@@ -42,6 +42,10 @@ volatile uint32_t g_usTicks = 0;
 ///       in SysTick interrupt only.
 volatile uint64_t g_usClock = 0;
 
+#ifndef NDEBUG
+volatile uint8_t g_irq_disabled = 0;
+#endif
+
 uint64_t get_us_clock(void) {
     uint64_t res_clock;
     DISABLE_IRQ
@@ -63,6 +67,12 @@ void systick_init(void)
 	SystemCoreClockUpdate();
 	SysTick_Config(SystemCoreClock / 1000000);
 	NVIC_SetPriority(SysTick_IRQn, IRQ_PRIORITY_SYSTICK);
+}
+
+void debug_checks_init(void) {
+#ifndef NDEBUG
+    g_irq_disabled = 0;
+#endif
 }
 
 void delay_us(uint32_t us)

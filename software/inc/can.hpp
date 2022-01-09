@@ -89,18 +89,45 @@ class CanDev final : public EKitVirtualDevice {
 	void can_stop();
 
 	/// \brief Sends a message to CAN.
+	/// \param id - message id.
+	/// \param data - std::vector of up to 8 bytes.
+	/// \param remote_frame - true to send remote frame, otherwise false.
+	/// \param extended - true to send extended frame, otherwise (standard frame) false.
 	void can_send(uint32_t id, std::vector<uint8_t>& data, bool remote_frame, bool extended);
 
     /// \brief Returns CAN device status
+    /// \param status - device status represented by #CanStatus structure.
 	void can_status(CanStatus& status);
 
+	/// \brief Converts #CanStatus to std::string
+	/// \param status - device status represented by #CanStatus
+	/// \return std::string
 	static std::string can_status_to_str(CanStatus& status);
+
+	/// \brief Converts #CanRecvMessage to std::string
+	/// \param msg - message represented by #CanRecvMessage
+	/// \return std::string
 	static std::string can_msg_to_str(CanRecvMessage& msg);
+
+	/// \brief Converts last error code to std::string
+	/// \param lec - last error code
+	/// \return std::string
 	static std::string can_last_err_to_str(uint8_t lec);
 
+	/// \brief Reads messages and status from CAN
+	/// \param status - status of devide represented by #CanStatus
+	/// \return messages - reference to output std::vector of messages.
 	void can_read(CanStatus& status, std::vector<CanRecvMessage>& messages);
 
 	/// \brief Put standard frame (4 half word ids) filter for CAN receiver.
+	/// \param enabled - true if filter should be enabled, otherwise false.
+	/// \param index - filter index [0 .. CAN_MAX_FILTER_COUNT-1 ].
+	/// \param msb_id - id 0.
+	/// \param lsb_id - id 1.
+	/// \param msb_id_mask - id 2 or mask 0 (for mask mode),
+	/// \param lsb_id_mask - id 3 or mask 1  (for mask mode),
+	/// \param fifo1 - true to use FIFO 1, otherwise FIFO 0 is used.
+	/// \param mask_mode - true to set mask mode, otherwise id list mode is used.
 	void can_filter_std(    bool enabled,
                             uint8_t index,
                             uint16_t msb_id,
@@ -111,6 +138,12 @@ class CanDev final : public EKitVirtualDevice {
                             bool mask_mode = false);
 
 	/// \brief Put standard frame (2 word ids) filter for CAN receiver.
+	/// \param enabled - true if filter should be enabled, otherwise false.
+	/// \param index - filter index [0 .. CAN_MAX_FILTER_COUNT-1 ].
+	/// \param id - id 0.
+	/// \param id_mask - id 1 or mask 0 (for mask mode),
+	/// \param fifo1 - true to use FIFO 1, otherwise FIFO 0 is used.
+	/// \param mask_mode - true to set mask mode, otherwise id list mode is used.
 	void can_filter_std_32(    bool enabled,
                                uint8_t index,
                                uint32_t id,
@@ -119,6 +152,12 @@ class CanDev final : public EKitVirtualDevice {
                                bool mask_mode = false);
 
 	/// \brief Put extended frame filter for CAN receiver.
+	/// \param enabled - true if filter should be enabled, otherwise false.
+	/// \param index - filter index [0 .. CAN_MAX_FILTER_COUNT-1 ].
+	/// \param id - id 0.
+	/// \param id_mask - id 1 or mask 0 (for mask mode),
+	/// \param fifo1 - true to use FIFO 1, otherwise FIFO 0 is used.
+	/// \param mask_mode - true to set mask mode, otherwise id list mode is used.
 	void can_filter_ext(    bool enabled,
                             uint8_t index,
                             uint32_t id,
@@ -129,10 +168,16 @@ class CanDev final : public EKitVirtualDevice {
 
 private:
     static std::map<uint16_t, std::pair<std::string, std::string>> state_flag_map;
+
+    /// \brief Sends filter structure to CAN device
+    /// \param filter - filter represented by #CanFilterCommand structure
+    /// \note Throws an exception if device is started.
     void can_filter_priv(CanFilterCommand filter);
 
+    /// \brief Returns CAN device status
+    /// \param status - device status represented by #CanStatus structure.
+    /// \note Doesn't lock a bus; It is callers responsibility to lock a bus.
     void can_status_priv(CanStatus& status);
-
 };
 
 /// @}

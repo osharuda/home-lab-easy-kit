@@ -42,11 +42,47 @@ volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
+/// \brief Starts CAN device (switches CAN to running mode).
+/// \param devctx - device context structure represented by #DeviceContext
+/// \param dev - device instance structure represented by #CanInstance
+/// \return non-zero in the case of success, otherwise 0
+/// \note state state is tracked by #can_execute()
 uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev);
+
+/// \brief Stops CAN device (switches CAN to stop mode).
+/// \param devctx - device context structure represented by #DeviceContext
+/// \param dev - device instance structure represented by #CanInstance
+/// \return non-zero in the case of success, otherwise 0
+/// \note state state is tracked by #can_execute()
 uint8_t can_stop(volatile PDeviceContext devctx, volatile CanInstance* dev);
+
+/// \brief Applies a filter for CAN device.
+/// \param devctx - device context structure represented by #DeviceContext
+/// \param dev - device instance structure represented by #CanInstance
+/// \param filter - filter represented by #CanFilterCommand
+/// \return non-zero in the case of success, otherwise 0
+/// \note state state is tracked by #can_execute(); Returns error (0) if device is in started state.
 uint8_t can_filter(volatile PDeviceContext devctx, volatile CanInstance* dev, volatile CanFilterCommand* filter);
+
+
+/// \brief Sends a message to CAN bus.
+/// \param devctx - device context structure represented by #DeviceContext
+/// \param dev - device instance structure represented by #CanInstance
+/// \param message - pointer to a message represented by variable length #CanSendCommand structure.
+/// \param length - length of the message structure passed by software.
+/// \return non-zero in the case of success, otherwise 0
+/// \note state state is tracked by #can_execute(); Returns error (0) if device is in stopped state.
 uint8_t can_send(volatile PDeviceContext devctx, volatile CanInstance* dev, volatile CanSendCommand* message, uint8_t length);
+
+/// \brief Clears data accumulated in circular buffer.
+/// \param devctx - device context structure represented by #DeviceContext
+/// \param dev - device instance structure represented by #CanInstance
 void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
+
+/// \brief Put received CAN message to the internal circular buffer
+/// \param circ_buffer - internal circular buffer represented by a pointer to #CircBuffer structure.
+/// \param message - message represented by a pointer to #CanRxMsg structure.
+/// \param status - status represented by a pointer to #CanStatus structure.
 void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
 
 //---------------------------- INTERRUPTS ----------------------------
@@ -484,8 +520,8 @@ void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* messa
 void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev) {
     DISABLE_IRQ
     volatile PCircBuffer circbuf = devctx->circ_buffer;
-    circbuf_reset(devctx->circ_buffer);
-    dev->privdata.status.data_len = circbuf_total_len(circbuf);
+    circbuf_reset_no_irq(devctx->circ_buffer);
+    dev->privdata.status.data_len = circbuf_total_len_no_irq(circbuf);
     ENABLE_IRQ
 }
 
