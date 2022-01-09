@@ -27,6 +27,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.fw_header = "fw.h"
         self.sw_header = "sw.h"
         self.proto_header = "i2c_proto.h"
+        self.cmake_script = "CMakeLists.txt"
         self.fw_dev_headers = []
         self.sw_dev_headers = []
         self.allocated_dev_ids = []
@@ -35,12 +36,17 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
         self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
         self.add_template(self.fw_inc_templ + self.proto_header, [self.fw_inc_dest + self.proto_header,
-                                                                     self.sw_inc_dest + self.proto_header])
+                                                                  self.sw_inc_dest + self.proto_header])
+        self.add_template(self.sw_templ + self.cmake_script, [self.sw_dest + self.cmake_script])
+        self.add_template(self.sw_example_templ + self.cmake_script, [self.sw_example_dest + self.cmake_script])
 
     def customize(self):
         buffer_size = self.dev_config["i2c_bus"]["buffer_size"]
         address_0 = self.dev_config["i2c_bus"]["address"]
         clock_speed = self.dev_config["i2c_bus"]["clock_speed"]
+        install_prefix = self.dev_config["install_prefix"]
+        install_path = self.dev_config["install_path"]
+        device_name = self.dev_config["device_name"]
 
         extender_requires = self.dev_config["i2c_bus"]["requires"]
         i2c_periph = self.get_i2c(extender_requires)
@@ -72,7 +78,10 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
                       "__MCU_FREQUENCY_MHZ__": self.mcu_hw.system_clock // 1000000,
                       "__MCU_FREQUENCY__": self.mcu_hw.system_clock,
-                      "__MCU_MAXIMUM_TIMER_US__":  (0xFFFF+1)*(0xFFFF+1)*1000000//self.mcu_hw.system_clock
+                      "__MCU_MAXIMUM_TIMER_US__":  (0xFFFF+1)*(0xFFFF+1)*1000000//self.mcu_hw.system_clock,
+                      "__INSTALL_PREFIX__": install_prefix,
+                      "__INSTALL_PATH__": install_path,
+                      "__DEVICE_NAME__": device_name
                       }
 
         self.patch_templates(vocabulary)

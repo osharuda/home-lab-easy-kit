@@ -33,6 +33,8 @@
 #include "spwm.hpp"
 #include "adcdev.hpp"
 #include "step_motor.hpp"
+#include "can.hpp"
+// INCLUDE_HEADER
 #include "i2c_proto.h"
 #include "handlers.hpp"
 #include "texttools.hpp"
@@ -62,18 +64,24 @@
 #define WND_CMD 1
 #define WND_ARG 2
 
-MonitorUI::MonitorUI() : super() {
+HLEKMON::HLEKMON() : super() {
+
+}
+
+void HLEKMON::init() {
+    super::init();
+
     log_window = std::make_shared<TUTextWindow>([]()->int{return CMD_WINDOW_WIDTH;},
-                                               []()->int{return 0;},
-                                               []()->int{return COLS-CMD_WINDOW_WIDTH;},
-                                               []()->int{return LINES - CMD_WINDOW_HEIGHT;});
-    
+                                                []()->int{return 0;},
+                                                []()->int{return COLS-CMD_WINDOW_WIDTH;},
+                                                []()->int{return LINES - CMD_WINDOW_HEIGHT;});
+
     cmd_window = std::make_shared<TUListWindow<std::shared_ptr<CommandHandler>>>([]()->int{return 0;},
                                                                                  []()->int{return 0;},
                                                                                  []()->int{return CMD_WINDOW_WIDTH;},
-                                                                                     []()->int{return LINES;});
+                                                                                 []()->int{return LINES;});
     cmd_window->set_item_search(false);
-                                                                             
+
     arg_window = std::make_shared<TUInputWindow>([]()->int{return CMD_WINDOW_WIDTH;},
                                                  []()->int{return LINES-CMD_WINDOW_HEIGHT;},
                                                  []()->int{return COLS-CMD_WINDOW_WIDTH;},
@@ -84,7 +92,7 @@ MonitorUI::MonitorUI() : super() {
     arg_window->set_box(true, "[ARGUMENTS]", TITLE_OFFSET_MIDDLE);
 
     add_window(WND_LOG, log_window);
-    add_window(WND_ARG, arg_window);    
+    add_window(WND_ARG, arg_window);
     add_window(WND_CMD, cmd_window);
 
     log_window->set_scroll_bar(SCROLLBAR_AUTO,SCROLLBAR_AUTO);
@@ -93,7 +101,7 @@ MonitorUI::MonitorUI() : super() {
     welcome();
 }
 
-void MonitorUI::welcome() {
+void HLEKMON::welcome() {
     TERMUI::TUTextLines welcome_text = {
             "---====   Welcome to Home Lab Easy Kit monitor utility    ====----",
             "",
@@ -118,7 +126,7 @@ void MonitorUI::welcome() {
     redraw(true);
 }
 
-void MonitorUI::on_command() {
+void HLEKMON::on_command() {
     if (cmd_window->empty()) {
         log("*** no commands available");
     } else {
@@ -140,7 +148,6 @@ void MonitorUI::on_command() {
             set_active_window(WND_CMD);
         } catch(CommandHandlerException& che) {
             log(tools::str_format("*** ERROR: %s", che.what()));
-            log(handler->help());
         }
         catch(EKitException& ee) {
             log(ee.what());
@@ -152,16 +159,16 @@ void MonitorUI::on_command() {
     redraw(true);
 }
 
-void MonitorUI::on_help() {
+void HLEKMON::on_help() {
     std::shared_ptr<CommandHandler> handler = cmd_window->sel_item();
     log(handler->help());
     redraw(true);
 }
 
-void MonitorUI::on_log_event(wint_t ch, int err) {
+void HLEKMON::on_log_event(wint_t ch, int err) {
 }
 
-void MonitorUI::on_arg_event(wint_t ch, int err) {
+void HLEKMON::on_arg_event(wint_t ch, int err) {
     if (err==KEY_CODE_YES && ch==KEY_F(1)) {
         on_help();
     } else
@@ -170,7 +177,7 @@ void MonitorUI::on_arg_event(wint_t ch, int err) {
     }
 }
 
-void MonitorUI::on_cmd_event(wint_t ch, int err) {
+void HLEKMON::on_cmd_event(wint_t ch, int err) {
     if (err==KEY_CODE_YES && ch==KEY_F(1)) {
         on_help();
     } else
@@ -183,23 +190,23 @@ void MonitorUI::on_cmd_event(wint_t ch, int err) {
     }
 }
 
-void MonitorUI::on_event(wint_t ch, int err) {
+void HLEKMON::on_event(wint_t ch, int err) {
 
 }
 
-void MonitorUI::log(const TERMUI::TUTextLines& t) {
+void HLEKMON::log(const TERMUI::TUTextLines& t) {
     log_window->append(t);
 }
 
-void MonitorUI::log(const std::string& t) {
+void HLEKMON::log(const std::string& t) {
     log_window->append(t);
 }
 
-void MonitorUI::add_command(int index, std::shared_ptr<CommandHandler>& handler) {
+void HLEKMON::add_command(int index, std::shared_ptr<CommandHandler>& handler) {
     cmd_window->push_back(TUListItem<std::shared_ptr<CommandHandler>>(index, handler->get_command_name(), handler));
 }
 
-void MonitorUI::message_handler(int index, wint_t ch, int err) {
+void HLEKMON::message_handler(int index, wint_t ch, int err) {
     switch (index) {
         case WND_LOG:
             on_log_event(ch, err);
@@ -221,7 +228,8 @@ int main(int argc, char* argv[])
 {
     // Main TUI
     size_t cmd_index = 0;
-    std::shared_ptr<MonitorUI> ui(new MonitorUI());
+    std::shared_ptr<HLEKMON> ui(new HLEKMON());
+    ui->init();
 
     // Open I2C bus
     std::string bus_name = I2C_BUS_NAME;
@@ -450,7 +458,53 @@ int main(int argc, char* argv[])
         ui->add_command(cmd_index++, h.step_motor_move_ind_handler);
 
     }
-#endif      
+#endif  
+
+#ifdef CAN_DEVICE_ENABLED
+    struct CanCommandHandlers {
+        std::shared_ptr<CanDev> dev;
+        std::shared_ptr<CommandHandler> can_info_handler;
+        std::shared_ptr<CommandHandler> can_start_handler;
+        std::shared_ptr<CommandHandler> can_stop_handler;
+        std::shared_ptr<CommandHandler> can_send_handler;
+        std::shared_ptr<CommandHandler> can_filter_handler;
+        std::shared_ptr<CommandHandler> can_status_handler;
+        std::shared_ptr<CommandHandler> can_read_handler;
+    };
+
+    std::vector<CanCommandHandlers> can_handlers(CAN_DEVICE_COUNT);
+
+    for (size_t index=0; index<CAN_DEVICE_COUNT; index++) {
+        const CanInstance* descr = CanDev::get_descriptor(index);
+        uint8_t dev_id = descr->dev_id;
+        CanCommandHandlers& h = can_handlers.at(index);
+
+
+        h.dev.reset(new CanDev(firmware, dev_id));
+
+        h.can_info_handler.reset(dynamic_cast<CommandHandler*>(new CanInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_info_handler);
+
+        h.can_status_handler.reset(dynamic_cast<CommandHandler*>(new CanStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_status_handler);
+
+        h.can_read_handler.reset(dynamic_cast<CommandHandler*>(new CanReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_read_handler);
+
+        h.can_start_handler.reset(dynamic_cast<CommandHandler*>(new CanStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_start_handler);
+
+        h.can_stop_handler.reset(dynamic_cast<CommandHandler*>(new CanStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_stop_handler);
+
+        h.can_send_handler.reset(dynamic_cast<CommandHandler*>(new CanSendHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_send_handler);
+
+        h.can_filter_handler.reset(dynamic_cast<CommandHandler*>(new CanFilterHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.can_filter_handler);
+    }
+#endif  
+// ADD_DEVICE
 
     ui->runloop();
 }

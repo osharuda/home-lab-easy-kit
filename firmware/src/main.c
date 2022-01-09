@@ -36,6 +36,8 @@
 #include "adcdev.h"
 #include "step_motor.h"
 #include "extihub.h"
+#include "can.h"
+// INCLUDE_HEADER
 
 void init_NVIC() {
     // Configure NVIC Priorities
@@ -159,6 +161,12 @@ int main(void)
 #ifdef STEP_MOTOR_DEVICE_ENABLED
     step_motor_init();
 #endif
+
+#ifdef CAN_DEVICE_ENABLED
+    can_init();
+#endif
+
+// ADD_DEVICE
 
 
     while(1) {

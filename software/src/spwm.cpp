@@ -27,8 +27,6 @@
 constexpr SPWM_SW_DESCRIPTOR SPWMDev::spwm_description[];
 
 SPWMDev::SPWMDev(std::shared_ptr<EKitBus>& ebus, int addr) : super(ebus, addr) {
-	clear_prev_data();
-	set_pwm_freq(SPWM_DEFAULT_FREQ);
 }
 
 SPWMDev::~SPWMDev() {

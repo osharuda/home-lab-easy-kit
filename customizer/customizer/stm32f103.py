@@ -416,8 +416,8 @@ mcu_available_resources += """
     "ADC_Channel_8" : {"type" : "adc_input", "requires" : {"gpio" : "PB_0"} },
     "ADC_Channel_9" : {"type" : "adc_input", "requires" : {"gpio" : "PB_1"} },
     "ADC_Channel_TempSensor" : {"type" : "adc_input", "requires" : {}, "use_adc" : "ADC1" },
-    "ADC_Channel_Vrefint" : {"type" : "adc_input", "requires" : {}, "use_adc" : "ADC1" }
-}"""
+    "ADC_Channel_Vrefint" : {"type" : "adc_input", "requires" : {}, "use_adc" : "ADC1" },
+"""
 # Blue Pill and some other stm32F103x controllers doesn't these channels, uncomment it if you need it and your MCU has it
 # mcu_available_resources += """
 # "ADC_Channel_10": {"type": "adc_input", "requires": {"gpio": "PC_0"}},
@@ -428,11 +428,68 @@ mcu_available_resources += """
 # "ADC_Channel_15": {"type": "adc_input", "requires": {"gpio": "PC_5"}},
 # """
 
+
+# Blue Pill has shared memory used by USB and CAN. This resource must be added in order to trigger resource collision when
+# CAN and USB is used.
+mcu_available_resources += """
+    "USB_CAN_Shared_SRAM" : { "type" : "usb_can_shared_sram", "requires" : {} },
+"""
+
+# CAN
+mcu_available_resources += """
+    "CAN1" : {"type" : "can", "bus" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "requires" : {
+        "sram"  : {"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"},
+        "CANRX" : {"gpio" : "PA_11"},
+        "CANTX" : {"gpio" : "PA_12"}},
+        "irq_tx_handler" : {"irq_handler": "USB_HP_CAN1_TX_IRQHandler"},
+        "irq_rx0_handler" : {"irq_handler": "USB_LP_CAN1_RX0_IRQHandler"},
+        "irq_rx1_handler" : {"irq_handler": "CAN1_RX1_IRQHandler"},
+        "irq_sce_handler" : {"irq_handler": "CAN1_SCE_IRQHandler"}
+    },
+    "CAN1_REMAP" : {"type" : "can", "bus" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "requires" : {
+        "sram"  : {"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"},
+        "CANRX" : {"gpio" : "PB_8"},
+        "CANTX" : {"gpio" : "PB_9"}} ,
+        "irq_tx_handler" : {"irq_handler": "USB_HP_CAN1_TX_IRQHandler"},
+        "irq_rx0_handler" : {"irq_handler": "USB_LP_CAN1_RX0_IRQHandler"},
+        "irq_rx1_handler" : {"irq_handler": "CAN1_RX1_IRQHandler"},
+        "irq_sce_handler" : {"irq_handler": "CAN1_SCE_IRQHandler"}
+    },
+"""
+
+#"ADC1": {"type": "adc", "requires": {}, "features": ["dma_support"], "dma_dr_address": "0x4001244C",         "bus": "RCC_APB2Periph_ADC1", "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
+#"ADC2": {"type": "adc", "requires": {}, "features": [], "bus": "RCC_APB2Periph_ADC2",         "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
+
+
+# USB
+mcu_available_resources += """
+    "USB1" : {"type" : "usb", "bus" : "RCC_APB1Periph_USB",  "requires" : {
+        "sram"      : {"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"},
+        "USB_MINUS" : {"gpio" : "PA_11"},
+        "USB_PLUS"  : {"gpio" : "PA_12"}} 
+    }
+"""
+
+# The last line
+mcu_available_resources += """
+}"""
+
+#test_lines = mcu_available_resources.splitlines()
+#print(test_lines[273])
+
+
 mcu_resources = json.loads(mcu_available_resources)
 
 system_clock = 72000000  # 72Mhz
 
 max_address = 15
+
+def is_remaped(obj: str):
+    remap_required = obj[-6:] == "_REMAP"
+    if remap_required:
+        return (obj[:-6], remap_required)
+    else:
+        return (obj, remap_required)
 
 def get_GPIO(port: str, pin_number: int) -> str:
     if pin_number >= GPIO_PORT_LEN:
@@ -580,6 +637,7 @@ def get_DMA_Channel(feature: str) -> str:
 
     return dma_request_map[feature]
 
+
 def get_DMA_IT_Flag(channel: str, flag : str) -> str:
     if channel not in mcu_resources:
         raise RuntimeError("Invalid resource is used")
@@ -598,15 +656,24 @@ def ENABLE_CLOCK_on_APB(res: list) -> str:
     for r in res:
         rr = mcu_resources[r]
         if "bus" in rr:
-            bus = rr["bus"]
-            if bus in AHB_BUS:
-                ahb_set.add(bus)
-            elif bus in APB1_BUS:
-                apb1_set.add(bus)
-            elif bus in APB2_BUS:
-                apb2_set.add(bus)
+            bus_list = list()
+            bus_value = rr["bus"]
+            if isinstance(bus_value, str):
+                bus_list.append(bus_value)
+            elif isinstance(bus_value, list):
+                bus_list = bus_value
             else:
-                raise RuntimeError("{0} resource describes incorrect bus value {1}".format(r, bus))
+                raise RuntimeError('Wrong type for bus: "{0}"'.format(str(bus_value)))
+
+            for b in bus_list:
+                if b in AHB_BUS:
+                    ahb_set.add(b)
+                elif b in APB1_BUS:
+                    apb1_set.add(b)
+                elif b in APB2_BUS:
+                    apb2_set.add(b)
+                else:
+                    raise RuntimeError("{0} resource describes incorrect bus value {1}".format(r, b))
 
     lines = ["#define ENABLE_PERIPH_CLOCK \\"]
     if bool(ahb_set):

@@ -50,11 +50,11 @@ add_executable( ${FW_NAME}.elf
                 ${STDPERIF_SRC}/stm32f10x_dma.c
                 ${STDPERIF_SRC}/stm32f10x_exti.c
                 ${STDPERIF_SRC}/stm32f10x_flash.c
+                ${STDPERIF_SRC}/stm32f10x_can.c
                 ${STDPERIF_SRC}/misc.c
                 ${STM32F10x_SRC}/system_stm32f10x.c
                 ${STM32F10x_SRC}/startup/gcc_ride7/startup_stm32f10x_md.s
-                ${CM3_CoreSupport_SRC}/core_cm3.c
-        inc/adcdev.h src/adcdev.c)
+                ${CM3_CoreSupport_SRC}/core_cm3.c)
 
 add_custom_command(TARGET ${FW_NAME}.elf POST_BUILD
     COMMAND ${tools}/bin/arm-none-eabi-objcopy -O ihex ./${FW_NAME}.elf ./${FW_NAME}.hex

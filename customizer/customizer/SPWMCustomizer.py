@@ -36,7 +36,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
         timer = self.get_timer(spwm_requires)
         pin_to_name = dict()
         spwm_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)
-        self.check_resource("irq_handler", spwm_irq_handler)
+        self.check_resource(spwm_irq_handler, "irq_handler")
         spwm_requires["irq_handler"] = spwm_irq_handler
         prescaler = int(self.dev_config["prescaler"])
 

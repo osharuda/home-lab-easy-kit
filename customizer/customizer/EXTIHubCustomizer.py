@@ -57,7 +57,7 @@ class EXTIHubCustomizer(BaseDeviceCustomizer):
         # #define EXTIHUB_LINE_TO_IRQN {__EXTIHUB_LINE_TO_IRQN__}
         # compose EXTIHUB_LINE_TO_IRQN irqn
         exti_line_to_irqn = []
-        exti_line_count = len(self.get_resources("exti_line"))
+        exti_line_count = len(self.get_resources_by_type("exti_line"))
         for i in range(0, exti_line_count):
             hndl = self.mcu_hw.EXTINum_to_EXTIHandler(i)
             exti_line_to_irqn.append(self.mcu_hw.ISRHandler_to_IRQn(hndl))

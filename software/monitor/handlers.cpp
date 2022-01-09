@@ -38,7 +38,7 @@ CommandHandlerException::~CommandHandlerException() {
 //----------------------------------------------------------------------------------------------//
 //                                    CommandHandler                                            //
 //----------------------------------------------------------------------------------------------//
-CommandHandler::CommandHandler(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<MonitorUI> _ui) : device(std::move(dev)), ui(std::move(_ui)) {
+CommandHandler::CommandHandler(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<HLEKMON> _ui) : device(std::move(dev)), ui(std::move(_ui)) {
     arg_reset();
 }
 
@@ -311,6 +311,37 @@ unsigned int CommandHandler::arg_unsigned_int(  const std::vector<std::string>& 
     return res;
 }
 
+unsigned int CommandHandler::arg_unsigned_int(  const std::vector<std::string>& args,
+                                                const char* name,
+                                                unsigned int min_val,
+                                                unsigned int max_val) {
+    std::string v = arg_get(args, name);
+    unsigned int res;
+    std::string err;
+
+    // convert to double
+    try {
+        res = std::stoul(v, nullptr, 0);
+    } catch (std::invalid_argument& e) {
+        err = tools::format_string("Invalid value is specified for %s (value must be between: %u <= v <= %u)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    }
+    catch (std::out_of_range& oore) {
+        err = tools::format_string("Invalid value is specified (out of range) for %s (value must be between: %u <= v <= %u)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    }
+
+    if (res < min_val) {
+        err = tools::format_string("Less than minimal value is specified for %s (value must be between: %u <= v <= %u)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    } else if (res > max_val) {
+        err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %u <= v <= %u)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    }
+
+    return res;
+}
+
 
 long long CommandHandler::arg_long_long(    const std::vector<std::string>& args, 
                                             const char* name, 
@@ -473,7 +504,8 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
             {INFO_DEV_TYPE_GPIO,      "GPIODev"},
             {INFO_DEV_TYPE_SPWM,      "SPWMDev"},
             {INFO_DEV_TYPE_ADC,       "ADCDev"},
-            {INFO_DEV_TYPE_STEP_MOTOR,"StepMotorDev"}};
+            {INFO_DEV_TYPE_STEP_MOTOR,"StepMotorDev"},
+            {INFO_DEV_TYPE_CAN,       "CAN"}};
 
     ui->log(tools::str_format("Project: %s", pname.c_str()));
 
@@ -1692,3 +1724,205 @@ void StepMotorSoftwareEndstopHandler::handle(const std::vector<std::string>& arg
 }
 
 #endif
+
+#ifdef CAN_DEVICE_ENABLED
+//----------------------------------------------------------------------------------------------//
+//                                    CanInfoHandler                                        //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanInfoHandler,"can::", "::info")
+std::string CanInfoHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s shows information for %s device. No parameters are required.\n",
+                                get_command_name(), 
+                                d->get_dev_name());
+}
+
+void CanInfoHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    ui->log(tools::str_format("Not implemented"));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanStartHandler                                           //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanStartHandler,"can::", "::start")
+std::string CanStartHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Starts CAN communication on %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanStartHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count(args, 0);
+    d->can_start();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanStopHandler                                            //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanStopHandler,"can::", "::stop")
+std::string CanStopHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Stops CAN communication on %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanStopHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count(args, 0);
+    d->can_stop();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanStatusHandler                                            //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanStatusHandler,"can::", "::status")
+std::string CanStatusHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Returns can device status. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanStatusHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count(args, 0);
+    CanStatus status = {0};
+    d->can_status(status);
+    ui->log(CanDev::can_status_to_str(status));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanSendHandler                                            //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanSendHandler,"can::", "::send")
+std::string CanSendHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Sends a message over CAN bus using %s device. The following format is used:\n"
+                                "ER <id> <eid> <D0> <D8>\n"
+                                "where:\n"
+                                "E - optional specifier to use extended message (if not specified eid is not used)\n"
+                                "R - optional specifier to use remote frame.\n"
+                                "<id> - mandatory message identifier (standard or extended id).\n"
+                                "<D0> ... <D8> - data bytes.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanSendHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count_min(args, 1);
+    std::string er = arg_get(args, "param0");
+
+    bool extended = ((er.find('e')!=std::string::npos) || (er.find('E')!=std::string::npos));
+    bool remote_frame = ((er.find('r')!=std::string::npos) || (er.find('R')!=std::string::npos));
+
+    if (false == (extended || remote_frame)) {
+        // first parameter must be a number
+        arg_index--;
+    }
+
+    // Get identifiers
+    uint32_t id = static_cast<uint32_t>(arg_unsigned_int(args, "id", 0, 0xFFFFFFFF));
+
+    // Get data
+    size_t params_left = args.size() - arg_index;
+    std::vector<uint8_t> data;
+    for (size_t i=0; i<params_left; i++) {
+        std::string var_name = std::string("D") + std::to_string(i);
+        unsigned int x = arg_unsigned_int(args, var_name.c_str(), 0, 0xFF);
+        data.push_back(static_cast<uint8_t>(x));
+    }
+
+    d->can_send(id, data, remote_frame, extended);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanFilterHandler                                          /
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanFilterHandler,"can::", "::filter")
+std::string CanFilterHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Installs receiver CAN filter for %s device.  The following format is used:\n"
+                                "<options> <index> <id> <mask>\n"
+                                "where:\n"
+                                "<options> - optional options for the filter. May be set of these letters:\n"
+                                "    D - specifies to disable filter. All filters by default are disabled.\n"
+                                "    M - specifies mask mode, if not set list mode is used.\n"
+                                "    F - if specified instructs to use FIFO 1, otherwise FIFO 0 is used.\n"
+                                "    W - specifies 32 bit word scaling, if not set 16 bit scaling is used.\n"
+                                "        16 bit scaling specifies to split id and mask on two parts so we have two filters.\n"
+                                "    E - Instructs to use extended frame.\n"
+                                "<id> - mandatory message identifier.\n"
+                                "<mask> - mandatory mask field.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanFilterHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count_min(args, 3);
+    std::string opts = arg_get(args, "options");
+
+    bool disabled  = (opts.find('d')!=std::string::npos) || (opts.find('D')!=std::string::npos);
+    bool fifo1     = (opts.find('f')!=std::string::npos) || (opts.find('F')!=std::string::npos);
+    bool word_scaling = (opts.find('w')!=std::string::npos) || (opts.find('W')!=std::string::npos);
+    bool mask_mode = (opts.find('m')!=std::string::npos) || (opts.find('M')!=std::string::npos);
+    bool extended  = (opts.find('e')!=std::string::npos) || (opts.find('E')!=std::string::npos);
+
+    if (!(disabled || fifo1 || word_scaling || mask_mode || extended)) {
+        arg_index--; // first parameter must be skipped.
+    }
+
+    // Get identifiers
+    uint32_t id_0, id_1, id_2, id_3;
+    uint8_t index = static_cast<uint8_t>(arg_unsigned_int(args, "index", 0, CAN_FLT_MAX_INDEX));
+    id_0 = static_cast<uint32_t>(arg_unsigned_int(args, "id", 0, 0xFFFFFFFF));
+    id_1 = static_cast<uint32_t>(arg_unsigned_int(args, "id/mask", 0, 0xFFFFFFFF));
+
+    if (extended) {
+        d->can_filter_ext(!disabled, index, id_0, id_1, fifo1, mask_mode);
+    } else if (word_scaling) {
+        d->can_filter_std_32(!disabled, index, id_0, id_1, fifo1, mask_mode);
+    } else {
+        id_2 = static_cast<uint32_t>(arg_unsigned_int(args, "id", 0, 0xFFFFFFFF));
+        id_3 = static_cast<uint32_t>(arg_unsigned_int(args, "id/mask", 0, 0xFFFFFFFF));
+        d->can_filter_std(!disabled,
+                             index,
+                             static_cast<uint16_t>(id_0),
+                             static_cast<uint16_t>(id_1),
+                             static_cast<uint16_t>(id_2),
+                             static_cast<uint16_t>(id_3),
+                             fifo1,
+                             mask_mode);
+    }
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    CanReadHandler                                            //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(CanReadHandler,"can::", "::read")
+std::string CanReadHandler::help() const {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    return tools::format_string("# %s Reads messages received by CAN and status. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void CanReadHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<CanDev*>(device.get());
+    check_arg_count(args, 0);
+    CanStatus status = {0};
+    std::vector<CanRecvMessage> messages;
+    d->can_read(status, messages);
+
+    ui->log(CanDev::can_status_to_str(status));
+    for (auto m : messages) {
+        ui->log(CanDev::can_msg_to_str(m));
+    }
+}
+#endif
+// ADD_DEVICE

@@ -84,12 +84,16 @@ extern int g_assert_param_count;
 /// \param mask - bitmask where 1 indicates bit of interest that will be modified as specified by value, bits with 0 are
 ///        ignored.
 /// \param value - value that specifies new bit values.
-#define SET_BIT_FIELD(x, mask, value) (x) = (((x) & (~(mask))) | (value))
+#define SET_BIT_FIELD(x, mask, value) (x) = (((x) & (~(mask))) | ((value)&(mask)))
 
 /// Converts bit in flag into 0 or 1 using bit offset.
 /// \param flag - value with bit of interest.
 /// \param bit_offset - offset of the bit of interest.
 #define TO_ZERO_OR_ONE(flag, bit_offset) (((flag) >> (bit_offset)) & 1)
+
+/// \brief This macro check if single bit is set in unsiged value
+/// \param x - Parameter to check
+#define IS_SINGLE_BIT(x) ( ((x)!=0) && (((x) & ((x) - 1))==0) )
 
 /// \brief This macro produce function without parameters with name specified by func_name.
 /// \param empty - do not specify it, just leave blank like: MAKE_VOID_FUNCTION_VOID_NAME(, foo)
@@ -127,6 +131,7 @@ extern int g_assert_param_count;
     										gpio.GPIO_Mode = mode;						\
     										gpio.GPIO_Speed = GPIO_DEFAULT_SPEED;		\
     										GPIO_Init( port , &gpio);
+
 
 /// \brief Disables interrupt generation
 /// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.

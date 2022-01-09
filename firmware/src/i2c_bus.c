@@ -297,7 +297,7 @@ void i2c_addr_init(uint8_t transmit, uint8_t first_byte_sent) {
  				} else if (g_cur_device->circ_buffer!=0) {
  					// For circular buffer use circbuf_len()
  					circbuf_start_read(g_cur_device->circ_buffer);
- 					g_resp_header.length = circbuf_len(g_cur_device->circ_buffer);
+ 					g_resp_header.length = circbuf_total_len(g_cur_device->circ_buffer);
 
  					if (circbuf_get_ovf(g_cur_device->circ_buffer)) {
  	 					g_resp_header.comm_status |= COMM_STATUS_OVF;

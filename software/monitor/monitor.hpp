@@ -39,7 +39,7 @@ using namespace TERMUI;
 
 class CommandHandler;
 
-class MonitorUI : public TUI {
+class HLEKMON : public TUI {
     TUInputWndPtr arg_window;
     TUListWndPtr<std::shared_ptr<CommandHandler>> cmd_window;
     TUTextWndPtr log_window;
@@ -47,7 +47,8 @@ class MonitorUI : public TUI {
     typedef TUI super;
 
     public:
-    MonitorUI();
+    HLEKMON();
+    void init() override;
 
     void on_log_event(wint_t ch, int err);
     void on_arg_event(wint_t ch, int err);

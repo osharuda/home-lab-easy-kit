@@ -258,6 +258,10 @@ protected:
     /// \brief Updates internal canvas (virtual)
     virtual void update_canvas();
 
+    /// \brief Returns constant reference to window area (includes box and all the other window parts)
+    /// \return constant reference to window area
+    const TURect& winarea() const;
+
 public:
     TUWindow() = delete;                            ///< No default constructor
     TUWindow(const TUWindow&) = delete;             ///< This class doesn't allow copying
@@ -976,6 +980,7 @@ class TUI {
 public:
 
     TUI(const TUI &) = delete;             ///< This class doesn't allow copying
+    virtual void init();                   ///< This method is used to complete initialization
     TUI &operator()(const TUI &) = delete; ///< This class doesn't allow assignment
 
     /// \brief TUI constructor.
@@ -990,7 +995,7 @@ public:
     void add_window(size_t index, TUWndPtr wnd);
 
     /// \brief Initialize colors.
-    void init_colors();
+    virtual void init_colors();
 
     /// \brief Set active window
     /// \param index - index of the window
@@ -1016,6 +1021,12 @@ public:
     /// \param err - error code
     /// \details Parameters passed into this function are obtained from wget_wch(). For more details see ncurses documentation.
     virtual void message_handler(int index, wint_t ch, int err);
+
+    /// \brief TermUI mouse handler. May not be overloaded.
+    /// \param mevent - reference to corresponding MEVENT structure
+    /// \details Parameters passed into this function are obtained from wget_wch(). For more details see ncurses documentation.
+    /// \return true if all components should be updated, otherwise false (just active window).
+    bool mouse_handler(const MEVENT& mevent);
 
     /// \brief Message loop of the UI
     void runloop();

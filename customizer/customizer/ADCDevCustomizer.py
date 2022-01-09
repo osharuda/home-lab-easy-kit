@@ -13,11 +13,11 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from NonExclusiveDevice import *
+from DeviceCustomizer import *
 from tools import *
 
 
-class ADCDevCustomizer(NonExclusiveDeviceCustomizer):
+class ADCDevCustomizer(DeviceCustomizer):
     def __init__(self, mcu_hw, dev_config):
         super().__init__(mcu_hw, dev_config, "ADCDEV")
         self.fw_header = "fw_adcdev.h"

@@ -36,6 +36,8 @@
 #include "adcdev.hpp"
 #include "step_motor.hpp"
 #include "uartdev.hpp"
+#include "can.hpp"
+// INCLUDE_HEADER
 
 /// \addtogroup group_monitor
 /// @{
@@ -47,17 +49,17 @@ public:
 	~CommandHandlerException() override;
 };
 
-class MonitorUI;
+class HLEKMON;
 
 class CommandHandler {
 	protected:
 	size_t arg_index;    
     std::shared_ptr<EKitDeviceBase> device;
-    std::shared_ptr<MonitorUI> ui;
+    std::shared_ptr<HLEKMON> ui;
 
     public:
     CommandHandler() = delete;
-    CommandHandler(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<MonitorUI> _ui);
+    CommandHandler(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<HLEKMON> _ui);
     virtual ~CommandHandler();
     virtual void handle(const std::vector<std::string>& args) = 0;
     virtual std::string get_command_name() const = 0;
@@ -107,6 +109,11 @@ class CommandHandler {
 		    							std::string& unit, 
 		    							const char* default_unit);
 
+    unsigned int arg_unsigned_int(  const std::vector<std::string>& args,
+                                    const char* name,
+                                    unsigned int min_val,
+                                    unsigned int max_val);
+
     long long   arg_long_long(	const std::vector<std::string>& args, 
     							const char* name, 
     							long long min_val, 
@@ -129,7 +136,7 @@ class CommandHandler {
 		typedef CommandHandler super;                                             \
 	public:                                                                       \
 		classname() = delete;                                                     \
-		classname(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<MonitorUI> _ui);    \
+		classname(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<HLEKMON> _ui);    \
 		virtual ~classname();                                                     \
 		virtual void handle(const std::vector<std::string>& args);                \
 		virtual std::string help() const;                                         \
@@ -137,7 +144,7 @@ class CommandHandler {
 	}
 
 #define DEFINE_HANDLER_DEFAULT_IMPL(classname, cmd_prefix, cmd_suffix)                                         \
-    classname::classname(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<MonitorUI> _ui) : super (std::move(dev), std::move(_ui)) {}     \
+    classname::classname(std::shared_ptr<EKitDeviceBase> dev, std::shared_ptr<HLEKMON> _ui) : super (std::move(dev), std::move(_ui)) {}     \
     classname::~classname(){}                                                                                  \
     std::string classname::get_command_name() const {                                                          \
         return cmd_prefix + device->get_dev_name() + cmd_suffix;                                               \
@@ -222,5 +229,16 @@ class CommandHandler {
     DEFINE_HANDLER_CLASS(StepMotorFeedHandler);
     DEFINE_HANDLER_CLASS(StepMotorSoftwareEndstopHandler);
 #endif
+
+#ifdef CAN_DEVICE_ENABLED
+	DEFINE_HANDLER_CLASS(CanInfoHandler);
+	DEFINE_HANDLER_CLASS(CanStartHandler);
+	DEFINE_HANDLER_CLASS(CanStopHandler);
+	DEFINE_HANDLER_CLASS(CanSendHandler);
+	DEFINE_HANDLER_CLASS(CanFilterHandler);
+	DEFINE_HANDLER_CLASS(CanStatusHandler);
+	DEFINE_HANDLER_CLASS(CanReadHandler);
+#endif
+// ADD_DEVICE
 
 /// @}

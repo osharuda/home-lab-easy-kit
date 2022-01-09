@@ -1,0 +1,3 @@
+#ifdef {DEVNAME}_DEVICE_ENABLED
+	DEFINE_HANDLER_CLASS({DevName}InfoHandler);
+#endif

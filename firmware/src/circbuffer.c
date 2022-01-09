@@ -38,6 +38,27 @@ void circbuf_init(volatile PCircBuffer circ, uint8_t* buffer, uint16_t length) {
 	circ->buffer_size = length;
     circ->free_size = length - 1; // Byte mode by default
     circ->block_size = 1;
+    circ->status = 0;
+    circ->status_size = 0;
+}
+
+void circbuf_init_status(volatile PCircBuffer circ, volatile uint8_t* status, uint16_t length) {
+    circ->status = status;
+    circ->status_size = length;
+}
+
+void circbuf_reset(volatile PCircBuffer circ) {
+    assert_param(circ->current_block==0); // must not be called during any of operation
+    DISABLE_IRQ
+    circ->put_pos = 0;
+    circ->start_pos = 0;
+    circ->data_len = 0;
+    circ->read_pos = 0;
+    circ->bytes_read = 0;
+    circ->free_size = circ->buffer_size - circ->block_size;
+    circ->current_block = 0;
+    circ->ovf = 0;
+    ENABLE_IRQ
 }
 
 uint16_t circbuf_len(volatile PCircBuffer circ) {
@@ -46,6 +67,20 @@ uint16_t circbuf_len(volatile PCircBuffer circ) {
 	len = circ->data_len;
 	ENABLE_IRQ
 	return len;
+}
+
+uint16_t circbuf_total_len(volatile PCircBuffer circ) {
+    uint16_t len = circ->status_size;
+    DISABLE_IRQ
+    len += circ->data_len;
+    ENABLE_IRQ
+    return len;
+}
+
+uint16_t circbuf_total_len_no_irq(volatile PCircBuffer circ) {
+    uint16_t len = circ->status_size;
+    len += circ->data_len;
+    return len;
 }
 
 // returns 1 if overflow
@@ -76,16 +111,18 @@ uint8_t circbuf_get_byte(volatile PCircBuffer circ, volatile uint8_t* b) {
 	uint8_t res = 1;
 	DISABLE_IRQ
 
-	if (circ->bytes_read >= circ->data_len) {
+	if (circ->bytes_read >= (circ->data_len + circ->status_size) ) {
 		circ->ovf = 1;
 		*b = COMM_BAD_BYTE;
 		res = 0;
+	} else if (circ->bytes_read >= circ->status_size) {
+	    *b = circ->buffer[circ->read_pos++];
+	    if (circ->read_pos>=circ->buffer_size) {
+	        circ->read_pos = 0;
+	    }
+	    circ->bytes_read++;
 	} else {
-		*b = circ->buffer[circ->read_pos++];
-		if (circ->read_pos>=circ->buffer_size) {
-			circ->read_pos = 0;
-		}
-		circ->bytes_read++;
+	    *b = circ->status[circ->bytes_read++];
 	}
 	ENABLE_IRQ
 
@@ -106,6 +143,14 @@ uint16_t circbuf_stop_read(volatile PCircBuffer circ, uint16_t num_bytes) {
 	uint16_t bytes_remain;
 	DISABLE_IRQ
 
+	if (num_bytes>circ->status_size) {
+	    num_bytes-=circ->status_size; // decrement status size
+	} else {
+	    goto done; // status only was read - circular buffer state should not change
+	}
+
+	assert_param((num_bytes % circ->block_size)==0); // Do not allow reading from buffer by unaligned blocks.
+
 	if (num_bytes>circ->data_len) {
 		num_bytes = circ->data_len;
 	}
@@ -115,6 +160,8 @@ uint16_t circbuf_stop_read(volatile PCircBuffer circ, uint16_t num_bytes) {
 	if (circ->start_pos>=circ->buffer_size) {
 		circ->start_pos -= circ->buffer_size;
 	}
+
+done:
 	bytes_remain = circ->data_len;
 	ENABLE_IRQ
 	return bytes_remain;
@@ -155,7 +202,7 @@ void* circbuf_reserve_block(volatile PCircBuffer circ) {
         res = 0;
     } else {
         // figure out which block should be allocated
-        res = circ->buffer + circ->put_pos;
+        res = (void*)(circ->buffer + circ->put_pos);
 
         // reserve it
         circ->current_block = res;

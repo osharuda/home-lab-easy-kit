@@ -3,7 +3,7 @@ set(CMAKE_SYSTEM_PROCESSOR arm)
 
 # Path to the GNU ARM Toolchain. CMAKE_C_COMPILER variable and others should
 # point to the correct files.
-set(tools "< GNU ARM Toolchain >") 
+set(tools "< GNU ARM Toolchain >")
 
 # Should point to the CMSIS library. For the latest version of the library
 # this path should end with "/STM32F10x_StdPeriph_Lib_V3.5.0"

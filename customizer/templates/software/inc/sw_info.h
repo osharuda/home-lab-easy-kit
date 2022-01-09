@@ -50,51 +50,20 @@
 /// \defgroup group_info_dev_dev_type Virtual device types
 /// \brief Contains constants that define virtual device types
 /// @{{
-
-/// \def INFO_DEV_TYPE_NONE
-/// \brief Specifies non-existing virtual device
+// ADD_DEV_TYPE
 #define INFO_DEV_TYPE_NONE       (uint8_t)0
-
-/// \def INFO_DEV_TYPE_INFO
-/// \brief #INFODev virtual device
 #define INFO_DEV_TYPE_INFO       (uint8_t)1
-
-/// \def INFO_DEV_TYPE_DESKDEV
-/// \brief #DESKDev virtual device
 #define INFO_DEV_TYPE_DESKDEV    (uint8_t)2
-
-/// \def INFO_DEV_TYPE_IRRC
-/// \brief #IRRCDev virtual device
 #define INFO_DEV_TYPE_IRRC       (uint8_t)3
-
-/// \def INFO_DEV_TYPE_LCD1602a
-/// \brief #LCD1602ADev virtual device
 #define INFO_DEV_TYPE_LCD1602a   (uint8_t)4
-
-/// \def INFO_DEV_TYPE_RTC
-/// \brief #RTCDev virtual device
 #define INFO_DEV_TYPE_RTC        (uint8_t)5
-
-/// \def INFO_DEV_TYPE_UART_PROXY
-/// \brief #UARTDev virtual device
 #define INFO_DEV_TYPE_UART_PROXY (uint8_t)6
-
-/// \def INFO_DEV_TYPE_GPIO
-/// \brief #GPIODev virtual device
 #define INFO_DEV_TYPE_GPIO       (uint8_t)7
-
-/// \def INFO_DEV_TYPE_SPWM
-/// \brief #SPWMDev virtual device
 #define INFO_DEV_TYPE_SPWM       (uint8_t)8
-
-/// \def INFO_DEV_TYPE_ADC
-/// \brief #ADCDev virtual device
 #define INFO_DEV_TYPE_ADC        (uint8_t)9
-
-/// \def INFO_DEV_TYPE_STEP_MOTOR
-/// \brief #StepMotorDev virtual device
 #define INFO_DEV_TYPE_STEP_MOTOR (uint8_t)10
-
+#define INFO_DEV_TYPE_CAN        (uint8_t)11
+// ADD_DEV_TYPE
 /// @}}
 
 /// \defgroup group_info_dev_dev_hint Virtual device hints

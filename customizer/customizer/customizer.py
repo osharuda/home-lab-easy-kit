@@ -31,6 +31,8 @@ from SPWMCustomizer import *
 from ADCDevCustomizer import *
 from EXTIHubCustomizer import *
 from StepMotorDevCustomizer import *
+from CanCustomizer import *
+# IMPORT_CUSTOMIZER
 
 # Load configuration file specified as parameter
 with open(os.path.abspath(sys.argv[1])) as f:
@@ -82,6 +84,10 @@ for customizer_name in configuration["devices"].keys():
     elif customizer_name == "StepMotorDevCustomizer":
         dt = "INFO_DEV_TYPE_STEP_MOTOR"
         customizer = StepMotorDevCustomizer(mcu, config_dict)
+    elif customizer_name == "CanCustomizer":
+        dt = "INFO_DEV_TYPE_CAN"
+        customizer = CanCustomizer(mcu, config_dict)
+# REGISTER_CUSTOMIZER
     elif customizer_name == "InfoCustomizer":
         continue
     else:
@@ -117,3 +123,4 @@ fw_customizer.check_dev_ids()
 fw_customizer.detect_conflicting_dev_ids()
 
 print(json.dumps(configuration, indent=4))
+print(required_resources)

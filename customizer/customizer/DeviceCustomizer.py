@@ -16,11 +16,13 @@
 from BaseDeviceCustomizer import *
 
 
-class NonExclusiveDeviceCustomizer(BaseDeviceCustomizer):
+class DeviceCustomizer(BaseDeviceCustomizer):
     def __init__(self, mcu_hw, dev_configs, device_name):
         super().__init__(mcu_hw, dev_configs)
         self.device_count = len(dev_configs)
         self.device_list = list(self.dev_configs.items())
         self.device_name = device_name
+        return
+
 
 

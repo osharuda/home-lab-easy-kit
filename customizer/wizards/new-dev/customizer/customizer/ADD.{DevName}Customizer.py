@@ -1,0 +1,127 @@
+#   Copyright 2021 Oleh Sharuda <oleh.sharuda@gmail.com>
+#
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
+from DeviceCustomizer import *
+from tools import *
+
+
+class {DevName}Customizer(DeviceCustomizer):
+    def __init__(self, mcu_hw, dev_config):
+        super().__init__(mcu_hw, dev_config, "{DEVNAME}")
+        self.fw_header = "fw_{devname}.h"
+        self.sw_header = "sw_{devname}.h"
+        self.shared_header = "{devname}_proto.h"
+
+        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
+        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
+        self.add_shared_code(self.shared_templ + self.shared_header, "__{DEVNAME}_SHARED_HEADER__")
+
+    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
+        return
+
+
+    def customize(self):
+        fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
+        sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
+        fw_device_buffers = []          # these buffers are used to be internal buffers for all configured devices on firmware side
+
+        index = 0
+        for dev_name, dev_config in self.device_list:
+
+            dev_requires = dev_config["requires"]
+            dev_id       = dev_config["dev_id"]
+            buffer_size  = dev_config["buffer_size"]
+
+            self.sanity_checks(dev_config, dev_requires, dev_name)
+
+            for rdecl, ritem in dev_requires.items():
+                rtype, rname = self.get_resource(ritem)
+
+                # Custom resource handling
+                if rtype == "gpio":
+                    # process gpio resources here
+                    pass
+                elif rtype == "irq_handler":
+                    # process IRQ handlers here
+                    pass
+                elif rtype == "exti_line":
+                    # process EXTI lines
+                    pass
+                elif rtype == "bkp":
+                    # process backup registers
+                    pass
+                elif rtype == "timer":
+                    # process timers
+                    pass
+                elif rtype == "usart":
+                    # process usart
+                    pass
+                elif rtype == "i2c":
+                    # process i2c
+                    pass
+                elif rtype == "dma":
+                    # process dma
+                    pass
+                elif rtype == "dma_channel":
+                    # process dma_channel
+                    pass
+                elif rtype == "adc":
+                    # process ADC
+                    pass
+                elif rtype == "adc_input":
+                    # process ADC input
+                    pass
+                else:
+                    raise RuntimeError('Wrong resource specified in {0} requirements: "{1}"'.format(dev_name, rdecl))
+
+            # Do not forget to add IRQs, DMA and other related resources
+            if "__DEVICE_BUFFER_TYPE__" == "DEV_NO_BUFFER":
+                # No buffers
+                fw_device_descriptors.append("{{ {0}, {{0}}, {{0}} }}".format(
+                    dev_id))
+
+                sw_device_desсriptors.append('{{ {0}, "{1}"}}'.format(
+                    dev_id, dev_name))
+
+                fw_device_buffers = []
+            elif "__DEVICE_BUFFER_TYPE__" == "DEV_LINIAR_BUFFER":
+                # Buffer is present
+                fw_buffer_name = "g_{0}_buffer".format(dev_name)
+                fw_device_descriptors.append("{{ {0}, {1}, {2}, {{0}}, {{0}} }}".format(
+                    dev_id, buffer_size, fw_buffer_name))
+
+                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
+                    dev_id, dev_name, buffer_size))
+
+                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+            elif "__DEVICE_BUFFER_TYPE__" == "DEV_CIRCULAR_BUFFER":
+                # Buffer is present
+                fw_buffer_name = "g_{0}_buffer".format(dev_name)
+                fw_device_descriptors.append("{{ {0}, {1}, {2}, {{0}}, {{0}}, {{0}} }}".format(
+                    dev_id, buffer_size, fw_buffer_name))
+
+                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
+                    dev_id, dev_name, buffer_size))
+
+                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+
+            index += 1
+
+        vocabulary = {"__{DEVNAME}_DEVICE_COUNT__": len(fw_device_descriptors),
+                      "__{DEVNAME}_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
+                      "__{DEVNAME}_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),
+                      "__{DEVNAME}_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1]}
+
+        self.patch_templates(vocabulary)

@@ -302,6 +302,10 @@ const TURect& TUWindow::canvas() const {
     return canvrect;
 }
 
+const TURect& TUWindow::winarea() const {
+    return winrect;
+}
+
 int TUWindow::to_wnd_x(int cx) const {
     return cx+canvrect.x();
 }
@@ -819,6 +823,10 @@ TUI::TUI() {
     curs_set(0);
     start_color();
     use_default_colors();
+    mousemask(ALL_MOUSE_EVENTS, nullptr);
+}
+
+void TUI::init() {
     init_colors();
     update_screen();
 }
@@ -906,6 +914,7 @@ void TUI::message_handler(int index, wint_t ch, int err) {
 void TUI::runloop() {
     wint_t ch;
     int err;
+    MEVENT mevent;
     redraw(true);
     while(true) {
         TUWndPtr wnd;
@@ -931,7 +940,15 @@ void TUI::runloop() {
                     all = true;
                     handled = true;
                     set_active_window(get_prev_window(active_window));
-                break;                
+                break;
+
+                case KEY_MOUSE:
+                    if(getmouse(&mevent) == OK)
+                    {
+                        handled = true;
+                        all = mouse_handler(mevent);
+                    }
+                break;
             }
         } else 
         if (err==OK) {
@@ -957,6 +974,23 @@ void TUI::runloop() {
 
         redraw(all);
     }
+}
+
+bool TUI::mouse_handler(const MEVENT& mevent) {
+    bool res = false;
+    // find related window
+    for (auto wp : windows) {
+        auto rect = wp.second->winarea();
+        if (rect.belong(mevent.x, mevent.y)) {
+            if (active_window!=wp.first) {
+                set_active_window(wp.first);
+                res = true;
+            }
+            break;
+        }
+    }
+
+    return res;
 }
 
 /// \brief Update screen size

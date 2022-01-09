@@ -95,9 +95,13 @@ extern "C" {
 /// \brief Structure that represents circular buffer.
 typedef struct tag_CircBuffer {
 
-    uint8_t *buffer;                ///< Buffer to be used as data storage for circular buffer.
+    volatile uint8_t *buffer;       ///< Buffer to be used as data storage for circular buffer.
 
     volatile uint16_t buffer_size;  ///< size of the #buffer, in bytes.
+
+    volatile uint8_t *status;       ///< Optional status buffer to be prepended to the data to be sent to the software.
+
+    volatile uint16_t status_size;  ///< Size of the #status_buffer;
 
     volatile uint16_t put_pos;      ///< Position, where next byte or block will be placed
 
@@ -131,12 +135,41 @@ typedef struct tag_CircBuffer {
 /// \note This function initializes circular buffer in byte mode.
 void circbuf_init(volatile PCircBuffer circ, uint8_t *buffer, uint16_t length);
 
-/// \brief Returns amount of data stored in circular buffer
+/// \brief Initializes status data for circular buffer.
+/// \param circ - pointer to the circular buffer structure
+/// \param status - pointer to the status data memory block.
+/// \param length - length of the status data memory block.
+/// \note Status data is sent first before any data from actual circular buffer. Status data allows to report some
+///       data like extended device data or error codes to the software. It is somewhat allows to use usual buffer and
+///       circular buffer as one object.
+void circbuf_init_status(volatile PCircBuffer circ, volatile uint8_t* status, uint16_t length);
+
+
+/// \brief Resets content of the buffer
+/// \param circ - pointer to the circular buffer structure
+/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
+///          use this function when interrupts are disabled.
+void circbuf_reset(volatile PCircBuffer circ);
+
+/// \brief Returns amount of data stored in circular buffer (not including status data memory block)
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer, in bytes.
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_len(volatile PCircBuffer circ);
+
+/// \brief Returns amount of data stored in circular buffer (including status data memory block)
+/// \param circ - pointer to the circular buffer structure
+/// \return amount of data stored in circular buffer and in status data memory block, in bytes.
+/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
+///          use this function when interrupts are disabled.
+uint16_t circbuf_total_len(volatile PCircBuffer circ);
+
+/// \brief Returns amount of data stored in circular buffer (including status data memory block)
+/// \param circ - pointer to the circular buffer structure
+/// \return amount of data stored in circular buffer and in status data memory block, in bytes.
+/// \note This function must be used when interrupts are disabled explicitely by #DISABLE_IRQ macro.
+uint16_t circbuf_total_len_no_irq(volatile PCircBuffer circ);
 
 /// \brief Put a byte into circular buffer
 /// \param circ - pointer to the circular buffer structure

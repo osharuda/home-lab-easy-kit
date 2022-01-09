@@ -46,6 +46,7 @@
 #define IRQ_PRIORITY_ADC                   4
 #define IRQ_PRIORITY_ADC_TIMER             5
 #define IRQ_PRIORITY_USART                 6
+#define IRQ_PRIORITY_CAN                   6
 #define IRQ_PRIORITY_EXTI                  7
 #define IRQ_PRIORITY_STEP_MOTOR_TIMER      8
 

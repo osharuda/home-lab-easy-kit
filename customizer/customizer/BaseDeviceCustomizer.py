@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 import os
+from tools import *
 
 class BaseDeviceCustomizer:
     def __init__(self, mcu_hw, dev_configs):
@@ -27,6 +28,10 @@ class BaseDeviceCustomizer:
         self.fw_src_dest = "../../firmware/src/"
         self.shared_templ = "../templates/shared/"
 
+        self.sw_templ = "../templates/software/"
+        self.sw_dest = "../../software/"
+        self.sw_example_templ = "../templates/software/example/"
+        self.sw_example_dest = "../../software/example/"
         self.sw_inc_templ = "../templates/software/inc/"
         self.sw_src_templ = "../templates/software/src/"
         self.sw_inc_dest = "../../software/inc/"
@@ -91,7 +96,7 @@ class BaseDeviceCustomizer:
         if (d is None) or ("gpio" not in d):
             raise RuntimeError("gpio resource is not specified")
         gpio = d["gpio"]
-        self.check_resource("gpio", gpio)
+        self.check_resource(gpio, "gpio")
         return gpio
 
     def get_gpio_with_default(self, d: dict, default=None) -> str:
@@ -101,22 +106,22 @@ class BaseDeviceCustomizer:
 
     def get_i2c(self, d: dict) -> str:
         i2c = d["i2c"]
-        self.check_resource("i2c", i2c)
+        self.check_resource(i2c, "i2c")
         return i2c
 
     def get_isr(self, d: dict) -> str:
         isr = d["irq_handler"]
-        self.check_resource("irq_handler", isr)
+        self.check_resource(isr, "irq_handler")
         return isr
 
     def get_rtc(self, d: dict) -> str:
         rtc = d["rtc"]
-        self.check_resource("rtc", rtc)
+        self.check_resource(rtc, "rtc")
         return rtc
 
     def get_backup_reg(self, d: dict) -> str:
         br = d["bkp"]
-        self.check_resource("bkp", br)
+        self.check_resource(br, "bkp")
         return br
 
     def get_gpio_pin_type(self, t: str):
@@ -127,12 +132,12 @@ class BaseDeviceCustomizer:
 
     def get_usart(self, d: dict) -> str:
         usart = d["usart"]
-        self.check_resource("usart", usart)
+        self.check_resource(usart, "usart")
         return usart
 
     def get_timer(self, d: dict, subtype=None) -> str:
         timer = d["timer"]
-        self.check_resource("timer", timer)
+        self.check_resource(timer, "timer")
         t = self.mcu_hw.mcu_resources[timer]
         if subtype and t["subtype"]!=subtype:
             raise RuntimeError("Device {0} uses invalid timer with wrong subtype ({1}). subtype={2} is expected".format(
@@ -147,7 +152,7 @@ class BaseDeviceCustomizer:
 
         rtype, res = next(iter(d.items()))
 
-        self.check_resource(rtype, res)
+        self.check_resource(res, rtype)
 
         return rtype, res
 
@@ -157,7 +162,24 @@ class BaseDeviceCustomizer:
 
         return (self.mcu_hw.mcu_resources[name]["type"], name)
 
-    def get_resources(self, rtype: str) -> dict:
+    def get_required_resource(self, res: str, dep_res: str, dep_res_type: str) -> tuple:
+        if res not in self.mcu_hw.mcu_resources:
+            raise RuntimeError("Unknown resource {0}".format(res))
+
+        req = self.mcu_hw.mcu_resources[res]['requires']
+        if dep_res not in req:
+            raise RuntimeError("Not a dependent resource {0}".format(dep_res))
+
+        dr = req[dep_res]
+        if len(dr)!=1:
+            raise RuntimeError("Invalid dependent resource specification {0}. Must be single resource in dict.".format(dr))
+
+        if dep_res_type not in dr.keys():
+            raise RuntimeError("Wrong dependent resource type {0}".format(dep_res_type))
+
+        return dr[dep_res_type]
+
+    def get_resources_by_type(self, rtype: str) -> dict:
         result = dict()
         for rname, rval in self.mcu_hw.mcu_resources.items():
             if rval["type"]==rtype:
@@ -165,17 +187,17 @@ class BaseDeviceCustomizer:
         return result
 
 
-    def check_resource(self, res_type: str, res_name: str):
-        if res_name not in self.mcu_hw.mcu_resources:
+    def check_resource(self, res_name: str, res_type: str = ""):
+        if res_name not in self.mcu_hw.mcu_resources.keys():
             raise RuntimeError("Device {0} uses invalid resource ({1}) for {2}".format(self.device_name, res_name,
                                                                                        self.mcu_hw.mcu_name))
 
-        if self.mcu_hw.mcu_resources[res_name]["type"] != res_type:
+        if res_type and self.mcu_hw.mcu_resources[res_name]["type"] != res_type:
             raise RuntimeError("Device {0} uses resource with wrong type({1} : {2}) for {3}".format(self.device_name,
                                                                                                     res_name,
                                                                                                     res_type,
                                                                                                     self.mcu_hw.mcu_name))
-        return
+        return self.mcu_hw.mcu_resources[res_name]
 
     def check_res_feature(self, dev : str, feature : str):
         f = self.mcu_hw.mcu_resources[dev]["features"]
@@ -190,6 +212,28 @@ class BaseDeviceCustomizer:
 
     def check_mcu_support(self):
         # check MCU support in self.mcu_hw.mcu_name
+        return
+
+    def check_requirements(self, obj: str, dev_requires: dict, dev_suffix: str):
+        required = self.check_resource(obj)['requires']
+
+        if not dev_suffix:
+            raise RuntimeError("dev_suffix may not be empty")
+
+        self.check_requirements_dict(required, dev_requires, dev_suffix)
+        return
+
+    def check_requirements_dict(self, required: dict, dev_requires: dict, dev_suffix: str):
+        for k, v in required.items():
+            if isinstance(k, str) and isinstance(v, str):
+                # both k is type, v is resource
+                dev_requires[k+dev_suffix] = v
+                self.check_resource(v)
+                self.check_requirements(v, dev_requires, dev_suffix)
+            elif isinstance(k, str) and isinstance(v, dict):
+                self.check_requirements_dict(v, dev_requires, "{0}_{1}".format(k, dev_suffix))
+            else:
+                raise RuntimeError("Bad requirement")
         return
 
     def get_dev_ids(self):
