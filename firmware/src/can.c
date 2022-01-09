@@ -434,26 +434,6 @@ uint8_t can_send(   volatile PDeviceContext devctx,
     memcpy(message.Data, (const uint8_t*)msg->data, len);
     memset(message.Data+len, 0, CAN_MSG_MAX_DATA_LEN - len);
 
-    // Specifies the standard identifier. This parameter can be a value between 0 to 0x7FF.
-    //message.StdId = 0x4b4;
-    // Specifies the extended identifier. This parameter can be a value between 0 to 0x1FFFFFFF.
-    // message.ExtId = 0;
-    // Specifies the type of identifier for the message that will be transmitted. See: CAN_identifier_type.
-    // message.IDE = CAN_Id_Standard;
-    // Specifies the type of frame for the message that will be transmitted. See CAN_remote_transmission_request.
-    // message.RTR = CAN_RTR_DATA;
-    // Specifies the length of the frame that will be transmitted. This parameter can be a value between 0 to 8.
-    // message.DLC = 8;
-    // Contains the data to be transmitted. It ranges from 0 to 0xFF.
-    // message.Data[0] = (1 << 2);
-    // message.Data[1] = 0;
-    // message.Data[2] = 0;
-    // message.Data[3] = 0;
-    // message.Data[4] = 0;
-    // message.Data[5] = 0;
-    // message.Data[6] = 0;
-    // message.Data[7] = 0;
-
     // Check result
     uint8_t mb = CAN_Transmit(dev->can, &message);
     if (mb!=CAN_TxStatus_NoMailBox) {

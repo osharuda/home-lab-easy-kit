@@ -1,7 +1,9 @@
 {
   "firmware" : {
     "mcu_model" : "stm32f103",
-    "device_name" : "spwm_test_stand",
+    "device_name" : "spwm_test",
+    "install_prefix" : "spwm_test",
+    "install_path" : "/opt",
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,

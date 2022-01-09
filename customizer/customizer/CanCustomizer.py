@@ -46,7 +46,7 @@ class CanCustomizer(DeviceCustomizer):
             buffer_size = "sizeof(CanRecvMessage)*{0}".format(dev_config["buffered_msg_count"])
 
             self.sanity_checks(dev_config, dev_requires, dev_name)
-            can = dev_requires["canbus"]
+            can = dev_requires["can"]
             can_name, remap = self.mcu_hw.is_remaped(can)
             self.check_requirements(can, dev_requires, "dev_{0}".format(dev_name))
 

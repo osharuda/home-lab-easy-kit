@@ -1,7 +1,9 @@
 {
   "firmware" : {
     "mcu_model" : "stm32f103",
-    "device_name" : "can_tester",
+    "device_name" : "can_test",
+    "install_prefix" : "can_test",
+    "install_path" : "/opt",
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 100,
@@ -14,7 +16,7 @@
       "can_0" : {
         "dev_id" : 1,
         "buffered_msg_count" : 256,
-        "requires" :  {"canbus" : "CAN1_REMAP"}
+        "requires" :  {"can" : "CAN1_REMAP"}
       }
     }
   }
