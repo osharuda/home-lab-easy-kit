@@ -188,7 +188,7 @@ def doxygen_handle_list_of_defines(s: str, define: str, add: bool, newline='\n')
     if len(wl) > 2:
         padding = ' ' * len(s)
         for i in range(2, len(wl)):
-            s += wl[i] + '\\' + newline + padding
+            s += wl[i] + ' \\' + newline + padding
 
         s = s[:-(len(padding) + 1 + len(newline))] + newline
     else:
