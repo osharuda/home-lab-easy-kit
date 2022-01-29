@@ -64,7 +64,7 @@ extern volatile uint8_t g_irq_disabled;
 /// \param x - Unused parameter to be ignored.
 #define UNUSED(x) (void)(x)
 
-/// \brief Check if bits specified by f are actually set in x.
+/// \brief Check if all bits specified by f are set in x.
 /// \param x - value to be tested.
 /// \param f - bitmask where 1 indicates bit that should be tested for 1, bits with 0 are ignored.
 #define IS_SET(x,f)     (((x) & (f))==(f))
