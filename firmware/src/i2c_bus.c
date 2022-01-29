@@ -251,7 +251,7 @@ void i2c_pool_devices(void) {
 		}
 	}
 
-	for (uint32_t i=0; i <= COMM_MAX_DEV_ADDR; i++) {
+	for (uint8_t i=0; i <= COMM_MAX_DEV_ADDR; i++) {
 		PDeviceContext pdev = g_devices[i];
 		if (pdev!=0 &&
 			pdev->on_polling!=0 &&
@@ -259,7 +259,7 @@ void i2c_pool_devices(void) {
 			pdev->next_pooling_ovrrun==0 &&
 			pdev->next_pooling_ev<=now)
 		{
-			pdev->on_polling();
+			pdev->on_polling(i);
 			pdev->next_pooling_ev = now + pdev->polling_period;
 			pdev->next_pooling_ovrrun = (now >= pdev->next_pooling_ev) ? 1 : 0;
 		}

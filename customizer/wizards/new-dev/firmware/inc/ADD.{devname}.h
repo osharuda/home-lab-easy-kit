@@ -44,9 +44,11 @@ typedef struct tag_{DevName}PrivData {
 } {DevName}PrivData;
 
 
+#pragma pack(pop)
+
 /// \struct tag_{DevName}Instance
 /// \brief Structure that describes {DevName} virtual device
-typedef struct tag_{DevName}Instance {
+typedef __attribute__ ((aligned (8))) struct tag_{DevName}Instance {
         uint8_t                     dev_id;             ///< Device ID for {DevName} virtual device
 
         uint16_t                    buffer_size;        ///< Circular buffer size
@@ -59,12 +61,10 @@ typedef struct tag_{DevName}Instance {
         volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
 #endif
 
-        volatile DeviceContext      dev_ctx;            ///< Virtual device context
+        __attribute__ ((aligned (8))) volatile DeviceContext      dev_ctx;            ///< Virtual device context
 
         volatile {DevName}PrivData   privdata;          ///< Private data used by this {DevName} device
 } {DevName}Instance;
-
-#pragma pack(pop)
 
 /// \brief Initializes all {DevName} virtual devices
 void {devname}_init();

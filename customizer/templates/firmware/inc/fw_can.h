@@ -47,6 +47,10 @@
 /// \brief Defines Can irq handlers
 #define CAN_FW_IRQ_HANDLERS {__CAN_FW_IRQ_HANDLERS__}
 
+/// \def CAN_POLLING_EVERY_US
+/// \brief Polling period for recovery from BUS-OFF state.
+#define CAN_POLLING_EVERY_US   250000
+
 /// @}}
 
 

@@ -95,7 +95,8 @@ void lcd_half_byte(uint8_t byte, uint32_t mode);
 void lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_POLLING callback for LCDDev
-void lcd_polling(void);
+/// \param device_id - Device ID of the virtual device which data was read
+void lcd_polling(uint8_t device_id);
 
 /// @}
 

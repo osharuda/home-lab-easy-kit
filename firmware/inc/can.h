@@ -48,9 +48,11 @@ typedef struct tag_CanPrivData {
     volatile CAN_FilterInitTypeDef can_filters[CAN_MAX_FILTER_COUNT];   ///< CAN filters to be applied
 } CanPrivData;
 
+#pragma pack(pop)
+
 /// \struct tag_CanInstance
 /// \brief Structure that describes Can virtual device
-typedef struct tag_CanInstance {
+typedef __attribute__ ((aligned (8))) struct tag_CanInstance {
         uint8_t                     dev_id;             ///< Device ID for Can virtual device
 
         uint16_t                    buffer_size;        ///< Circular buffer size
@@ -79,12 +81,10 @@ typedef struct tag_CanInstance {
 
         IRQn_Type                   irqn_sce;            ///< CAN SCE interrupt IRQn value
 
-        volatile DeviceContext      dev_ctx;            ///< Virtual device context
+        __attribute__ ((aligned (8))) volatile DeviceContext      dev_ctx;            ///< Virtual device context
 
         volatile CanPrivData        privdata;          ///< Private data used by this Can device
 } CanInstance;
-
-#pragma pack(pop)
 
 /// \brief Initializes all Can virtual devices
 void can_init();
@@ -99,6 +99,11 @@ void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
 void can_read_done(uint8_t device_id, uint16_t length);
+
+
+/// \brief #ON_POLLING callback for all Can devices
+/// \param device_id - Device ID of the virtual device which data was read
+void can_polling(uint8_t device_id);
 
 /// @}
 #endif

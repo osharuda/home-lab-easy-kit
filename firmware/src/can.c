@@ -43,9 +43,10 @@ volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 /// \brief Starts CAN device (switches CAN to running mode).
 /// \param devctx - device context structure represented by #DeviceContext
 /// \param dev - device instance structure represented by #CanInstance
-/// \return non-zero in the case of success, otherwise 0
+/// \param reset - non-zero to reset accumulated data.
+/// \return non-zero if recovering after bus-off state
 /// \note state state is tracked by #can_execute()
-uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev);
+uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uint8_t recovery);
 
 /// \brief Stops CAN device (switches CAN to stop mode).
 /// \param devctx - device context structure represented by #DeviceContext
@@ -82,6 +83,10 @@ void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
 /// \param message - message represented by a pointer to #CanRxMsg structure.
 /// \param status - status represented by a pointer to #CanStatus structure.
 void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
+
+/// \brief Reset state of the CAN virtual device
+/// \param dev - device instance structure represented by #CanInstance
+void can_reset_status(volatile CanInstance* dev);
 /// @}
 
 //---------------------------- INTERRUPTS ----------------------------
@@ -92,9 +97,9 @@ void CAN_COMMON_TX_IRQ_HANDLER(uint16_t index) {
 
     // Transmit mailbox empty Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_TME)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_TME);
         uint16_t mb_empty = ((uint16_t)((dev->can->TSR >> (26 - CAN_STATE_MB_0_BUSY_BIT_OFFSET)))) & mask;
         SET_BIT_FIELD(dev->privdata.status.state, mask, ~mb_empty);
+        CAN_ClearITPendingBit(dev->can, CAN_IT_TME);
     }
 }
 
@@ -114,16 +119,16 @@ void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
 
     // FIFO 0 full Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_FF0)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_FF0);
         CAN_ClearFlag(dev->can, CAN_FLAG_FF0);
         SET_BIT(dev->privdata.status.state, CAN_ERROR_FIFO_0_FULL);
+        CAN_ClearITPendingBit(dev->can, CAN_IT_FF0);
     }
 
     // FIFO 0 overrun Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_FOV0)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_FOV0);
         CAN_ClearFlag(dev->can, CAN_FLAG_FOV0);
         SET_BIT(dev->privdata.status.state, CAN_ERROR_FIFO_0_OVERFLOW);
+        CAN_ClearITPendingBit(dev->can, CAN_IT_FOV0);
     }
 }
 
@@ -143,16 +148,16 @@ void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
 
     // FIFO 1 full Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_FF1)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_FF1);
         CAN_ClearFlag(dev->can, CAN_FLAG_FF1);
         SET_BIT(dev->privdata.status.state, CAN_ERROR_FIFO_1_FULL);
+        CAN_ClearITPendingBit(dev->can, CAN_IT_FF1);
     }
 
     // FIFO 1 overrun Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_FOV1)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_FOV1);
         CAN_ClearFlag(dev->can, CAN_FLAG_FF1);
         SET_BIT(dev->privdata.status.state, CAN_ERROR_FIFO_1_OVERFLOW);
+        CAN_ClearITPendingBit(dev->can, CAN_IT_FOV1);
     }
 }
 
@@ -165,45 +170,51 @@ void CAN_COMMON_SCE_IRQ_HANDLER(uint16_t index) {
 
     // Error Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_ERR)==SET) {
-        CAN_ClearITPendingBit(dev->can, CAN_IT_ERR);
-
         // Error warning Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_EWG)==SET) {
-            CAN_ClearITPendingBit(dev->can, CAN_IT_EWG);
             SET_BIT(pstatus->state, CAN_ERROR_WARNING);
+            CAN_ITConfig(dev->can, CAN_IT_EWG, DISABLE);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_EWG);
         }
 
         // Error passive Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_EPV)==SET) {
-            CAN_ClearITPendingBit(dev->can, CAN_IT_EPV);
             SET_BIT(pstatus->state, CAN_ERROR_PASSIVE);
+            CAN_ITConfig(dev->can, CAN_IT_EPV, DISABLE);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_EPV);
         }
 
         // Bus-off Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_BOF)==SET) {
-            CAN_ClearITPendingBit(dev->can, CAN_IT_BOF);
             SET_BIT(pstatus->state, CAN_ERROR_BUS_OFF);
+            CAN_ITConfig(dev->can, CAN_IT_BOF, DISABLE);
+            CAN_ITConfig(dev->can, CAN_IT_LEC, DISABLE);
+            CAN_ITConfig(dev->can, CAN_IT_ERR, DISABLE);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_BOF);
         }
 
         // Last error code Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_LEC)==SET) {
-            CAN_ClearITPendingBit(dev->can, CAN_IT_LEC);
             pstatus->last_error = CAN_GetLastErrorCode(dev->can);
             CAN_ClearFlag(dev->can, CAN_FLAG_LEC);
+            CAN_ITConfig(dev->can, CAN_IT_LEC, DISABLE);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_LEC);
         }
+
+        CAN_ClearITPendingBit(dev->can, CAN_IT_ERR);
     } else {
         // Wake-up Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_WKU)==SET) {
-            CAN_ClearITPendingBit(dev->can, CAN_IT_WKU);
             CAN_ClearFlag(dev->can, CAN_FLAG_WKU);
             CLEAR_BIT(pstatus->state, CAN_STATE_SLEEP);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_WKU);
         }
 
         // Sleep acknowledge Interrupt
         if (CAN_GetITStatus(dev->can, CAN_IT_SLK)==SET)	{
-            CAN_ClearITPendingBit(dev->can, CAN_IT_SLK);
             CAN_ClearFlag(dev->can, CAN_FLAG_SLAK);
             SET_BIT(pstatus->state, CAN_STATE_SLEEP);
+            CAN_ClearITPendingBit(dev->can, CAN_IT_SLK);
         }
     }
 }
@@ -213,10 +224,12 @@ CAN_FW_IRQ_HANDLERS
 void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
     volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
     memset(devctx, 0, sizeof(DeviceContext));
-    devctx->device_id    = dev->dev_id;
-    devctx->dev_index    = index;
-    devctx->on_command   = can_execute;
-    devctx->on_read_done = can_read_done;
+    devctx->device_id      = dev->dev_id;
+    devctx->dev_index      = index;
+    devctx->on_command     = can_execute;
+    devctx->on_read_done   = can_read_done;
+    devctx->on_polling     = can_polling;
+    devctx->polling_period = CAN_POLLING_EVERY_US;
 
 #if CAN_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
@@ -229,19 +242,15 @@ void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
 
     // Initialize GPIO and remap if required
     START_PIN_DECLARATION
-    DECLARE_PIN(dev->canrx_port, dev->canrx_pin, GPIO_Mode_IPU);
-    DECLARE_PIN(dev->cantx_port, dev->cantx_pin, GPIO_Mode_AF_PP);
+    DECLARE_PIN(dev->canrx_port, 1 << dev->canrx_pin, GPIO_Mode_IPU);
+    DECLARE_PIN(dev->cantx_port, 1 << dev->cantx_pin, GPIO_Mode_AF_PP);
 
     if (dev->can_remap) {
         GPIO_PinRemapConfig(GPIO_Remap1_CAN1, ENABLE);
     }
 
     // Initialize state
-    dev->privdata.status.data_len = circbuf_total_len(circbuf);
-    dev->privdata.status.state = 0;
-    dev->privdata.status.lsb_trans_count = 0;
-    dev->privdata.status.recv_error_count = 0;
-    dev->privdata.status.last_error = 0;
+    can_reset_status(dev);
 
     // Set can filter to default state.
     for (uint8_t i=0; i<CAN_MAX_FILTER_COUNT; i++) {
@@ -267,6 +276,15 @@ void can_init() {
         volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+i;
         can_init_vdev(dev, i);
     }
+}
+
+void can_reset_status(volatile CanInstance* dev) {
+    volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
+    dev->privdata.status.data_len = circbuf_total_len(circbuf);
+    dev->privdata.status.state = 0;
+    dev->privdata.status.lsb_trans_count = 0;
+    dev->privdata.status.recv_error_count = 0;
+    dev->privdata.status.last_error = 0;
 }
 
 void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
@@ -302,7 +320,7 @@ void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     // Allowed processing actual command
     switch (cmd) {
         case CAN_START:
-            no_error = can_start(devctx, dev);
+            no_error = can_start(devctx, dev, 0);
         break;
 
         case CAN_STOP:
@@ -323,6 +341,15 @@ done:
     comm_done(no_error!=0 ? 0 : COMM_STATUS_FAIL);
 }
 
+void can_polling(uint8_t device_id) {
+    volatile PDeviceContext devctx = comm_dev_context(device_id);
+    volatile CanInstance* dev = g_can_devs + devctx->dev_index;
+
+    if (IS_SET(dev->privdata.status.state, CAN_STATE_STARTED | CAN_ERROR_BUS_OFF)) {
+        can_start(devctx, dev, 1);
+    }
+}
+
 void can_read_done(uint8_t device_id, uint16_t length) {
     volatile PDeviceContext devctx = comm_dev_context(device_id);
     volatile CanInstance* dev = g_can_devs + devctx->dev_index;
@@ -341,29 +368,45 @@ void can_read_done(uint8_t device_id, uint16_t length) {
     comm_done(0);
 }
 
-uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev) {
-    assert_param(IS_CLEARED(dev->privdata.status.state, CAN_STATE_STARTED));
+uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uint8_t recovery) {
+    assert_param(recovery || IS_CLEARED(dev->privdata.status.state, CAN_STATE_STARTED));
 
     UNUSED(devctx);
 
     // Initialize CAN
     CAN_DeInit(dev->can);
     CAN_InitTypeDef can_init;
-    can_init.CAN_Prescaler = 1;
-    can_init.CAN_Mode = CAN_Mode_Normal;// CAN_Mode_Silent_LoopBack;
+
+    // Timing settings: http://www.bittiming.can-wiki.info/
+    // MCU: STM bxCan
+    // Pclk = 36MHz (8MHz HSE, AHB prescaller = 1, APB1 prescaller = div2)
+    // Bit rate = 500
+    // Number of time quanta: 9
+    // Prescaler: 8
+    // Seg1: 7
+    // Seg2: 1
+    // Sample point: 88.9
+    // CAN_BTR = 0x00060007
+    can_init.CAN_Prescaler = 8;
     can_init.CAN_SJW = CAN_SJW_1tq;
-    can_init.CAN_BS1 = CAN_BS1_13tq;
-    can_init.CAN_BS2 = CAN_BS2_2tq;
+    can_init.CAN_BS1 = CAN_BS1_7tq;
+    can_init.CAN_BS2 = CAN_BS2_1tq;
+
+    can_init.CAN_Mode = CAN_Mode_Normal;// CAN_Mode_Silent_LoopBack;
     can_init.CAN_TTCM = DISABLE;
-    can_init.CAN_ABOM = ENABLE;
+    can_init.CAN_ABOM = DISABLE;
     can_init.CAN_AWUM = ENABLE;
     can_init.CAN_NART = DISABLE;
     can_init.CAN_RFLM = DISABLE;
     can_init.CAN_TXFP = ENABLE;
     CAN_Init(dev->can, &can_init);
 
-    // Reset data
-    can_reset_data(devctx, dev);
+    // Reset data if required
+    if (recovery==0) {
+        can_reset_data(devctx, dev);
+    }
+
+    can_reset_status(dev);
 
     // CAN Initialize filters. By default, filters are disabled, message reception is not possible.
     for (uint8_t i=0; i<CAN_MAX_FILTER_COUNT; i++) {

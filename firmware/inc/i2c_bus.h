@@ -96,11 +96,12 @@ typedef void (*ON_READDONE)(uint8_t device_id, uint16_t length);
 
 /// \typedef ON_POLLING
 /// \brief Defines command callback function that virtual device uses to get periodically notified.
-typedef void (*ON_POLLING)(void);
+/// \param device_id - device id
+typedef void (*ON_POLLING)(uint8_t device_id);
 
 /// \struct tag_DeviceContext
 /// \brief DeviceContext is used by communication in order to work with virtual device.
-typedef struct tag_DeviceContext {
+typedef __attribute__ ((aligned (8))) struct tag_DeviceContext {
     uint8_t device_id;                  ///< Device identifier, used by software to specify destination virtual device
 
     // device callbacks
@@ -118,11 +119,13 @@ typedef struct tag_DeviceContext {
     volatile PCircBuffer circ_buffer;   ///< Specify circular buffer. If set to non-zero #buffer must be zero
 
     // pooling callback
-    uint64_t polling_period;            ///< Specify polling period for on_polling callback (in micro seconds)
-    uint64_t next_pooling_ev;		    ///< Used by communication part to calculate when on_polling() should be called for the next time
-    uint8_t next_pooling_ovrrun; 	    ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
-    uint16_t dev_index;				    ///< This field is used for non-exclusive devices to store device index.
-} DeviceContext, *PDeviceContext;
+    uint64_t polling_period;      ///< Specify polling period for on_polling callback (in micro seconds)
+    uint64_t next_pooling_ev;		///< Used by communication part to calculate when on_polling() should be called for the next time
+    uint16_t dev_index;			///< This field is used for non-exclusive devices to store device index.
+    uint8_t next_pooling_ovrrun; 	                            ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
+} DeviceContext;
+
+typedef DeviceContext *PDeviceContext;
 
 /// \brief Virtual device calls this function in order to register device for communication with software
 /// \param dev_ctx #tag_DeviceContext structure that describes the virtual device
