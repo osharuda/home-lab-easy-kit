@@ -84,10 +84,14 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset);
 /// \param linenum - line index (see @ref group_step_motor_dev_motor_lines)
 void step_motor_init_motor_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum);
 
-/// \brief Initializes motor GPIO lines (including hardware end-stops)
+/// \brief Initialize step motor GPIO lines and external interruppts to default state.
+/// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
+void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev);
+
+/// \brief Set motor GPIO lines to default state (including hardware end-stops)
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - index of the motor to initialize
-void step_motor_init_motor_gpio(volatile PStepMotorDevice dev, uint8_t mindex);
+void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex);
 
 /// \brief Helper function that sets stepper motor line to specified value
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration

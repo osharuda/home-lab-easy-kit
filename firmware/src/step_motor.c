@@ -225,6 +225,14 @@ uint8_t step_motor_init_exti(volatile PStepMotorDescriptor mdescr, uint8_t linen
                                   1);
 }
 
+uint8_t step_motor_mask_exti(volatile PStepMotorDescriptor mdescr, uint8_t linenum) {
+    assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
+    assert_param((linenum == STEP_MOTOR_LINE_FAULT) || (linenum == STEP_MOTOR_LINE_CWENDSTOP) || (linenum == STEP_MOTOR_LINE_CCWENDSTOP));
+    assert_param(mdescr->lines[linenum].port!=0);
+
+    return exti_mask_callback(mdescr->lines[linenum].port, mdescr->lines[linenum].pin);
+}
+
 static inline uint8_t step_motor_get_ustep_bitshift(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift) {
     uint8_t mval = STEP_MOTOR_MICROSTEP_STATUS_TO_VALUE(mstatus->motor_state);
     *bitshift = g_step_motor_microstep_tables[mdescr->motor_driver][mval];
@@ -358,13 +366,11 @@ void step_motor_suspend_motor(volatile PStepMotorDevice dev,
 
     // initialize GPIO : ENABLE (optional), default state: LOW
     if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_ENABLE);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_DISABLE_DEFAULT_OFFSET));
     }
 
     // initialize GPIO : SLEEP (optional), default state: HIGH
     if (mcfg & STEP_MOTOR_SLEEP_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_SLEEP);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_WAKEUP_DEFAULT_OFFSET));
     }
 }
@@ -373,61 +379,147 @@ void step_motor_resume_motor(volatile PStepMotorDescriptor mdescr, volatile PSte
     uint32_t mcfg = mdescr->config_flags;
     // initialize GPIO : ENABLE (optional) with preserved power state
     if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_ENABLE);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, TO_ZERO_OR_ONE(mstatus->motor_state, STEP_MOTOR_DISABLE_DEFAULT_OFFSET));
     }
 
     // initialize GPIO : SLEEP (optional) with preserved power state
     if (mcfg & STEP_MOTOR_SLEEP_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_SLEEP);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, TO_ZERO_OR_ONE(mstatus->motor_state, STEP_MOTOR_WAKEUP_DEFAULT_OFFSET));
     }
 }
 
-void step_motor_init_motor_gpio(volatile PStepMotorDevice dev, uint8_t mindex) {
+void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev) {
+    for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
+        volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+        volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+
+        // Reset motor state to default
+        mstatus->motor_state = mdescr->config_flags;
+        uint32_t mcfg = mstatus->motor_state;
+        uint8_t pin_val;
+
+        if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_ENABLE);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_DISABLE_DEFAULT_OFFSET));
+        }
+
+        // initialize GPIO : SLEEP (optional) with preserved power state
+        if (mcfg & STEP_MOTOR_SLEEP_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_SLEEP);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_WAKEUP_DEFAULT_OFFSET));
+        }
+
+        // initialize GPIO : STEP, default state: LOW
+        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_STEP);
+        step_motor_set_line(mdescr, STEP_MOTOR_LINE_STEP, Bit_RESET);
+
+        // initialize GPIO : DIR (optional)
+        if (mcfg & STEP_MOTOR_DIR_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_DIR);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, STEP_MOTOR_DIRECTION(mcfg));
+        }
+
+        // initialize GPIO : M1 (optional)
+        if (mcfg & STEP_MOTOR_M1_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M1);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_M1, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M1_DEFAULT_OFFSET));
+        }
+
+        // initialize GPIO : M2 (optional)
+        if (mcfg & STEP_MOTOR_M2_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M2);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_M2, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M2_DEFAULT_OFFSET));
+        }
+
+        // initialize GPIO : M3 (optional)
+        if (mcfg & STEP_MOTOR_M3_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M3);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_M3, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M3_DEFAULT_OFFSET));
+        }
+
+        // initialize GPIO : RESET (optional), default state: HIGH
+        if (mcfg & STEP_MOTOR_RESET_IN_USE) {
+            step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_RESET);
+            step_motor_set_line(mdescr, STEP_MOTOR_LINE_RESET, Bit_SET);
+        }
+
+        // initialize FAULT
+        if (mcfg & STEP_MOTOR_FAULT_IN_USE) {
+            pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_FAULT, mdescr->fault_exticr, mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH,
+                                           step_motor_fault_handler, dev->dev_ctx.dev_index, mindex);
+
+            if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH)!=0) ) {
+                DISABLE_IRQ
+                SET_FLAGS(mstatus->motor_state, STEP_MOTOR_FAILURE);
+                ENABLE_IRQ
+            }
+        }
+
+        // initialize CW ENDSTOP
+        if (mcfg & STEP_MOTOR_CWENDSTOP_IN_USE) {
+            pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_CWENDSTOP, mdescr->cw_endstop_exticr, mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH,
+                                           step_motor_cw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
+
+            if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH)!=0) ) {
+                DISABLE_IRQ
+                SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED);
+                ENABLE_IRQ
+            }
+        }
+
+        // initialize CCW ENDSTOP
+        if (mcfg & STEP_MOTOR_CCWENDSTOP_IN_USE) {
+            pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_CCWENDSTOP, mdescr->ccw_endstop_exticr, mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH,
+                                           step_motor_ccw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
+
+            if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH)!=0) ) {
+                DISABLE_IRQ
+                SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
+                ENABLE_IRQ
+            }
+        }
+    } // end of for
+}
+
+
+void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex) {
     volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t mcfg = mstatus->motor_state;
     uint8_t pin_val;
 
     // initialize GPIO : STEP, default state: LOW
-    step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_STEP);
     step_motor_set_line(mdescr, STEP_MOTOR_LINE_STEP, Bit_RESET);
 
     // initialize GPIO : DIR (optional)
     if (mcfg & STEP_MOTOR_DIR_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_DIR);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, STEP_MOTOR_DIRECTION(mcfg));
     }
 
     // initialize GPIO : M1 (optional)
     if (mcfg & STEP_MOTOR_M1_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M1);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_M1, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M1_DEFAULT_OFFSET));
     }
 
     // initialize GPIO : M2 (optional)
     if (mcfg & STEP_MOTOR_M2_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M2);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_M2, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M2_DEFAULT_OFFSET));
     }
 
     // initialize GPIO : M3 (optional)
     if (mcfg & STEP_MOTOR_M3_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_M3);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_M3, TO_ZERO_OR_ONE(mcfg, STEP_MOTOR_M3_DEFAULT_OFFSET));
     }
 
     // initialize GPIO : RESET (optional), default state: HIGH
     if (mcfg & STEP_MOTOR_RESET_IN_USE) {
-        step_motor_init_motor_line(mdescr, STEP_MOTOR_LINE_RESET);
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_RESET, Bit_SET);
     }
 
     // initialize FAULT
     if (mcfg & STEP_MOTOR_FAULT_IN_USE) {
-        pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_FAULT, mdescr->fault_exticr, mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH,
-                                       step_motor_fault_handler, dev->dev_ctx.dev_index, mindex);
+        // Mute interrupt
+        pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_FAULT);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH)!=0) ) {
             DISABLE_IRQ
@@ -438,8 +530,7 @@ void step_motor_init_motor_gpio(volatile PStepMotorDevice dev, uint8_t mindex) {
 
     // initialize CW ENDSTOP
     if (mcfg & STEP_MOTOR_CWENDSTOP_IN_USE) {
-        pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_CWENDSTOP, mdescr->cw_endstop_exticr, mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH,
-                                       step_motor_cw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
+        pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_CWENDSTOP);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH)!=0) ) {
             DISABLE_IRQ
@@ -450,8 +541,7 @@ void step_motor_init_motor_gpio(volatile PStepMotorDevice dev, uint8_t mindex) {
 
     // initialize CCW ENDSTOP
     if (mcfg & STEP_MOTOR_CCWENDSTOP_IN_USE) {
-        pin_val = step_motor_init_exti(mdescr, STEP_MOTOR_LINE_CCWENDSTOP, mdescr->ccw_endstop_exticr, mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH,
-                                       step_motor_ccw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
+        pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_CCWENDSTOP);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH)!=0) ) {
             DISABLE_IRQ
@@ -476,6 +566,9 @@ void step_motor_init(void) {
     for (uint8_t dev_index=0; dev_index<STEP_MOTOR_DEVICE_COUNT; dev_index++) {
         volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
         volatile PDeviceContext dev_ctx = (volatile PDeviceContext)&(dev->dev_ctx);
+
+        // initialize GPIO and EXTI
+        step_motor_init_gpio_and_exti(dev);
 
         step_motor_dev_reset(dev, 1);
 
@@ -651,10 +744,6 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
         DISABLE_IRQ
         memset(dev_status, 0, dev->status_size);
         ENABLE_IRQ
-    } else {
-        DISABLE_IRQ
-        dev_status->status = STEP_MOTOR_DEV_STATUS_IDLE;
-        ENABLE_IRQ
     }
     step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, STEP_MOTOR_DEV_STATUS_IDLE);
 
@@ -691,7 +780,7 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
         step_motor_resume_motor(mdescr, mstatus);
 
         // Put motor GPIO into default state (this will also may affect motor status flags
-        step_motor_init_motor_gpio(dev, mindex);
+        step_motor_set_default(dev, mindex);
     }
 }
 
