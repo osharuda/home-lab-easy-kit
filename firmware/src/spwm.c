@@ -38,19 +38,19 @@ volatile SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
 DeviceContext spwm_ctx;
 
 void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
-	UNUSED(cmd_byte);
-	if (length<=sizeof(g_pwm_data)) {
-		SET_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION
+    UNUSED(cmd_byte);
+    if (length<=sizeof(g_pwm_data)) {
+        SET_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION
 
-		memcpy((void*)g_pwm_data, data, length);
-		g_pwm_entries_count = length / sizeof(PWM_ENTRY);
+        memcpy((void*)g_pwm_data, data, length);
+        g_pwm_entries_count = length / sizeof(PWM_ENTRY);
 
-		if (g_current_pwm_index>=g_pwm_entries_count) {
-			g_current_pwm_index = 0;
-		}
+        if (g_current_pwm_index>=g_pwm_entries_count) {
+            g_current_pwm_index = 0;
+        }
 
-		CLEAR_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
-	}
+        CLEAR_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
+    }
 
     comm_done(0);
 }
@@ -62,21 +62,21 @@ void spwm_set_port(GPIO_TypeDef* port, uint16_t mask, uint16_t value) {
 }
 
 void spwm_init_pins(void) {
-	START_PIN_DECLARATION;
-	for (int i=0; i<SPWM_PORT_COUNT; i++) {
-		for (int p=0; p<16; p++) {
-			uint16_t t = 1 << p;
-			if (t & g_spwm_descriptor[i].mask) {
-				GPIOMode_TypeDef mode = GPIO_Mode_Out_PP;
-				if (t & g_spwm_descriptor[i].open_drain_bits) {
-					mode = GPIO_Mode_Out_OD;
-				}
-				DECLARE_PIN(g_spwm_descriptor[i].port, t, mode);				
-			}
-		}
+    START_PIN_DECLARATION;
+    for (int i=0; i<SPWM_PORT_COUNT; i++) {
+        for (int p=0; p<16; p++) {
+            uint16_t t = 1 << p;
+            if (t & g_spwm_descriptor[i].mask) {
+                GPIOMode_TypeDef mode = GPIO_Mode_Out_PP;
+                if (t & g_spwm_descriptor[i].open_drain_bits) {
+                    mode = GPIO_Mode_Out_OD;
+                }
+                DECLARE_PIN(g_spwm_descriptor[i].port, t, mode);
+            }
+        }
 
-		spwm_set_port(g_spwm_descriptor[i].port, g_spwm_descriptor[i].mask, g_spwm_descriptor[i].def_vals);
-	}
+        spwm_set_port(g_spwm_descriptor[i].port, g_spwm_descriptor[i].mask, g_spwm_descriptor[i].def_vals);
+    }
 }
 
 void spwm_init(void) {
@@ -104,15 +104,15 @@ void spwm_init(void) {
 
     // Setup interrupt and enable timer
     NVIC_SetPriority(SPWM_TIM_IRQn, IRQ_PRIORITY_SPWM);
-	NVIC_EnableIRQ(SPWM_TIM_IRQn);    
+    NVIC_EnableIRQ(SPWM_TIM_IRQn);
     TIM_TimeBaseInit(SPWM_TIMER, &timer);
-	TIM_ITConfig(SPWM_TIMER, TIM_IT_Update, ENABLE);
+    TIM_ITConfig(SPWM_TIMER, TIM_IT_Update, ENABLE);
     TIM_Cmd(SPWM_TIMER, ENABLE);
 
     // Register device
-	memset(&spwm_ctx, 0, sizeof(spwm_ctx));
-	spwm_ctx.device_id = SPWM_ADDR;
-	spwm_ctx.on_command = spwm_dev_execute;
+    memset(&spwm_ctx, 0, sizeof(spwm_ctx));
+    spwm_ctx.device_id = SPWM_ADDR;
+    spwm_ctx.on_command = spwm_dev_execute;
     comm_register_device(&spwm_ctx);
 }
 
