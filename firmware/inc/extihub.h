@@ -123,5 +123,21 @@ uint8_t exti_register_callback(GPIO_TypeDef * port,
                             volatile void* ctx,
                             uint8_t masked);
 
+/// \brief Masks EXTI callback (disables interrupts from this EXTI line).
+/// \param port - port that corresponds to required EXTI line
+/// \param pin_num - EXTI line. It corresponds to pin number used for this EXTI line (see GPIO_TypeDef in CMSIS)
+/// \return EXTI pin logical lever read at the moment of this call. 0 (Bit_RESET) correspond low logical level, 1
+///         (Bit_SET) correspond high logical level.
+uint8_t exti_mask_callback(GPIO_TypeDef * port,
+                           uint8_t pin_num);
+
+/// \brief Clears mask for EXTI callback (enables interrupts from this EXTI line).
+/// \param port - port that corresponds to required EXTI line
+/// \param pin_num - EXTI line. It corresponds to pin number used for this EXTI line (see GPIO_TypeDef in CMSIS)
+/// \return EXTI pin logical lever read at the moment of this call. 0 (Bit_RESET) correspond low logical level, 1
+///         (Bit_SET) correspond high logical level.
+uint8_t exti_unmask_callback(GPIO_TypeDef * port,
+                           uint8_t pin_num);
+
 /// @}
 #endif

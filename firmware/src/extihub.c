@@ -86,6 +86,18 @@ uint8_t exti_register_callback(GPIO_TypeDef * port,
     return pin_val;
 }
 
+uint8_t exti_mask_callback(GPIO_TypeDef * port,
+                           uint8_t pin_num){
+    MASK_EXTI_PIN(pin_num);
+    return GPIO_ReadInputDataBit(port, 1<<pin_num);
+}
+
+uint8_t exti_unmask_callback(GPIO_TypeDef * port,
+                             uint8_t pin_num){
+    UNMASK_EXTI_PIN(pin_num);
+    return GPIO_ReadInputDataBit(port, 1<<pin_num);
+}
+
 /// @}
 
 #endif
