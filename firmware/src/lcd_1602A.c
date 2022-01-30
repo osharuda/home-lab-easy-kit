@@ -84,6 +84,7 @@ void lcd_init()
 }
 
 void lcd_polling(uint8_t device_id) {
+    UNUSED(device_id);
 	if (g_lcd_blink) {
 		lcd_set_backlight(g_lcd_light_on == 0 ? 1 : 0);
 	}
