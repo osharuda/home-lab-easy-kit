@@ -26,8 +26,6 @@
 #define DEV_CIRCULAR_BUFFER     2
 #define CAN_DEVICE_BUFFER_TYPE DEV_CIRCULAR_BUFFER
 
-#pragma pack(push, 1)
-
 /// \addtogroup group_can
 /// @{{
 
@@ -67,6 +65,7 @@
 /// \brief Specifies bit mask in order to get data length.
 #define CAN_MSG_MAX_DATA_LEN_MASK   (0x0F)
 
+#pragma pack(push, 1)
 /// \struct tag_CanSendCommand
 /// \brief This structure describes Send command. This structure is passed with CAN_SEND.
 typedef struct tag_CanSendCommand {{
@@ -77,7 +76,11 @@ typedef struct tag_CanSendCommand {{
     uint8_t extra;      ///< Extra information for the message. For details take a look on set of CAN_MSG_XXX macro.
 
     uint8_t data[];     ///< Data to be transmitted. Variable size array - must not exceed CAN_MSG_MAX_DATA_LEN.
-}} CanSendCommand, *PCanSendCommand;
+}} CanSendCommand;
+#pragma pack(pop)
+
+typedef volatile CanSendCommand* PCanSendCommand;
+
 
 /// \def CAN_STATE_STARTED
 /// \brief If set device is started, otherwise device is stopped
@@ -187,6 +190,7 @@ typedef struct tag_CanSendCommand {{
 /// \brief Bus-off flag.
 #define CAN_ESR_FLAG_BUSOFF       (4)
 
+#pragma pack(push, 1)
 /// \struct tag_CanStatus
 /// \brief This structure describes can device status.
 typedef struct tag_CanStatus {{
@@ -195,8 +199,12 @@ typedef struct tag_CanStatus {{
     uint8_t  last_error; ///< Last error code.
     uint8_t  recv_error_count; ///< Receive error counter.
     uint8_t  lsb_trans_count; ///< LSB of the 9-bit CAN Transmit Error Counter.
-}} CanStatus, *PCanStatus;
+}} CanStatus;
+#pragma pack(pop)
 
+typedef volatile CanStatus* PCanStatus;
+
+#pragma pack(push, 1)
 /// \struct tag_CanRecvMessage
 /// \brief This structure describes received message. This structure is wrote into output circular buffer to be read by
 ///        software.
@@ -209,7 +217,10 @@ typedef struct tag_CanRecvMessage {{
     uint8_t fmi;        ///< Index of the message filter.
 
     uint8_t data[CAN_MSG_MAX_DATA_LEN];     ///< Data to be transmitted.
-}} CanRecvMessage, *PCanRecvMessage;
+}} CanRecvMessage;
+#pragma pack(pop)
+
+typedef volatile CanRecvMessage* PCanRecvMessage;
 
 /// \def CAN_FLT_MAX_INDEX
 /// \brief Specifies maximum index of the filter
@@ -236,6 +247,7 @@ typedef struct tag_CanRecvMessage {{
 #define CAN_FLT_ENABLE          (1 << 7)
 
 
+#pragma pack(push, 1)
 /// \struct tag_FilterCommand
 /// \brief This structure describes Filter command. This structure is passed with CAN_FILTER.
 typedef struct tag_CanFilterCommand {{
@@ -252,8 +264,9 @@ typedef struct tag_CanFilterCommand {{
                              ///  LSBs for a 32-bit configuration, second one for a 16-bit configuration.
 
     uint8_t flags;           ///< Flags that specify filter behaviour.
-}} CanFilterCommand, *PCanFilterCommand;
+}} CanFilterCommand;
+#pragma pack(pop)
 
+typedef volatile CanFilterCommand* PCanFilterCommand;
 /// @}}
 
-#pragma pack(pop)

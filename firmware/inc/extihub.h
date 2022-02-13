@@ -56,8 +56,6 @@
 /// \param ctx - context value that was passed to #exti_register_callback()
 typedef void(*PFN_EXTIHUB_CALLBACK)(uint64_t clock, volatile void* ctx);
 
-#pragma pack(push, 1)
-
 /// \struct tag_ExtiHandlerDescr
 /// \brief Internal structure that represents EXTI HUB handler.
 typedef struct tag_ExtiHandlerDescr {
@@ -65,8 +63,6 @@ typedef struct tag_ExtiHandlerDescr {
 
     volatile void* context;             ///< Context value to be passed to the EXTI handler function.
 } ExtiHandlerDescr, *PExtiHandlerDescr;
-
-#pragma pack(pop)
 
 /// \brief Masks EXTI line. This will prevent specified exti line to generate interrupts
 /// \param pin - EXTI line. It corresponds to pin number used for this EXTI line (see GPIO_TypeDef in CMSIS)

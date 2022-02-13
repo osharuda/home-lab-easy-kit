@@ -29,7 +29,7 @@
 
 #ifdef INFO_DEVICE_ENABLED
 
-DeviceContext g_info_devctx;
+volatile DeviceContext g_info_devctx __attribute__ ((aligned));
 volatile uint8_t g_info_uuid[] = INFO_UUID;
 
 void info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
@@ -37,7 +37,7 @@ void info_read_done(uint8_t device_id, uint16_t length);
 
 void info_dev_init() {
     assert(INFO_UUID_LEN==sizeof(g_info_uuid));
-	memset(&g_info_devctx, 0, sizeof(g_info_devctx));
+    memset((void*)&g_info_devctx, 0, sizeof(g_info_devctx));
 
     g_info_devctx.device_id = INFO_ADDR;
     g_info_devctx.buffer = g_info_uuid;

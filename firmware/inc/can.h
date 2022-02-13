@@ -38,8 +38,6 @@
 /// \image latex under_construction.eps
 ///
 
-#pragma pack(push, 1)
-
 /// \struct tag_CanPrivData
 /// \brief Structure that describes private Can data
 typedef struct tag_CanPrivData {
@@ -48,42 +46,48 @@ typedef struct tag_CanPrivData {
     volatile CAN_FilterInitTypeDef can_filters[CAN_MAX_FILTER_COUNT];   ///< CAN filters to be applied
 } CanPrivData;
 
-#pragma pack(pop)
-
 /// \struct tag_CanInstance
 /// \brief Structure that describes Can virtual device
-typedef __attribute__ ((aligned (8))) struct tag_CanInstance {
-        uint8_t                     dev_id;             ///< Device ID for Can virtual device
+typedef struct __attribute__ ((aligned)) tag_CanInstance {
+        volatile DeviceContext dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        uint16_t                    buffer_size;        ///< Circular buffer size
+        volatile CircBuffer         circ_buffer;    ///< Circular buffer control structure
 
-        volatile uint8_t*           buffer;             ///< Internal buffer
+        volatile CanPrivData        privdata;       ///< Private data used by this Can device
 
-        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
+        volatile uint8_t*           buffer;         ///< Internal buffer
 
-        CAN_TypeDef*                can;                ///< Can module to be used
+        CAN_TypeDef*                can;            ///< Can module to be used
 
-        uint8_t                     can_remap;          ///< Non-zero if remap is required
+        GPIO_TypeDef*               canrx_port;     ///< CAN RX pin port
 
-        GPIO_TypeDef*               canrx_port;         ///< CAN RX pin port
+        GPIO_TypeDef*               cantx_port;     ///< CAN TX pin port
 
-        uint8_t                     canrx_pin;          ///< CAN RX pin number
+        uint16_t                    buffer_size;    ///< Circular buffer size
 
-        GPIO_TypeDef*               cantx_port;         ///< CAN TX pin port
+        uint16_t                    can_prescaller; ///< CAN prescaller
 
-        uint8_t                     cantx_pin;          ///< CAN TX pin number
+        IRQn_Type                   irqn_tx;        ///< CAN TX interrupt IRQn value
 
-        IRQn_Type                   irqn_tx;            ///< CAN TX interrupt IRQn value
+        IRQn_Type                   irqn_rx0;       ///< CAN RX0 interrupt IRQn value
 
-        IRQn_Type                   irqn_rx0;            ///< CAN RX0 interrupt IRQn value
+        IRQn_Type                   irqn_rx1;       ///< CAN RX1 interrupt IRQn value
 
-        IRQn_Type                   irqn_rx1;            ///< CAN RX1 interrupt IRQn value
+        IRQn_Type                   irqn_sce;       ///< CAN SCE interrupt IRQn value
 
-        IRQn_Type                   irqn_sce;            ///< CAN SCE interrupt IRQn value
+        uint8_t                     can_bs1;        ///< CAN segment 1 length
 
-        __attribute__ ((aligned (8))) volatile DeviceContext      dev_ctx;            ///< Virtual device context
+        uint8_t                     can_sample_point;   ///< CAN sample point length
 
-        volatile CanPrivData        privdata;          ///< Private data used by this Can device
+        uint8_t                     can_bs2;        ///< CAN segment 2 length
+
+        uint8_t                     can_remap;      ///< Non-zero if remap is required
+
+        uint8_t                     canrx_pin;      ///< CAN RX pin number
+
+        uint8_t                     cantx_pin;      ///< CAN TX pin number
+
+        uint8_t                     dev_id;         ///< Device ID for Can virtual device
 } CanInstance;
 
 /// \brief Initializes all Can virtual devices

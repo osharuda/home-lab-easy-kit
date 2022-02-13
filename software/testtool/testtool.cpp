@@ -246,6 +246,8 @@ void test_circbuffer_single_byte() {
         g_assert_param_count = 0;
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 1;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -412,6 +414,8 @@ void test_circbuffer_single_block() {
         g_assert_param_count = 0;
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 2;
         const uint16_t block_size = 2;
         uint8_t* block;
@@ -659,6 +663,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 4;
         uint8_t* block;
@@ -692,6 +698,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 4;
         uint8_t* block;
@@ -723,6 +731,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 4;
         uint8_t* block;
@@ -754,6 +764,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 9;
         const uint16_t block_size = 4;
         uint8_t* block;
@@ -785,6 +797,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 9;
         const uint16_t block_size = 1;
         uint8_t* block;
@@ -816,6 +830,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 16;
         uint8_t* block;
@@ -847,6 +863,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 16;
         const uint16_t block_size = 16;
         uint8_t* block;
@@ -880,6 +898,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 16;
         const uint16_t block_size = 16;
         uint8_t* block;
@@ -914,6 +934,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 16;
         const uint16_t block_size = 16;
         uint8_t* block;
@@ -947,6 +969,8 @@ void test_circbuffer_asserts() {
         g_assert_param_count = 0;        
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 16;
         const uint16_t block_size = 16;
         uint8_t* block;
@@ -983,6 +1007,8 @@ void test_circbuffer_block_mode_work() {
     {
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 4;
         uint8_t* block;
@@ -1260,6 +1286,8 @@ void test_circbuffer_block_mode_initialization() {
         // test initialization
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 16;
         const uint16_t block_size = 4;
         uint8_t buffer[buffer_size] = {0};
@@ -1291,6 +1319,8 @@ void test_circbuffer_block_mode_initialization() {
         // test initialization with non multiple buffer 
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 17;
         const uint16_t block_size = 4;
         uint8_t buffer[buffer_size] = {0};
@@ -1328,6 +1358,8 @@ void test_circbuffer_byte_mode() {
         // test initialization
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 10;
         uint8_t buffer[10] = {0};
         circbuf_init(&circ, buffer, sizeof(buffer));        
@@ -1352,6 +1384,8 @@ void test_circbuffer_byte_mode() {
         // test byte writing
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 10;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -1425,6 +1459,8 @@ void test_circbuffer_byte_mode() {
         // attempt to read empty buffer
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 10;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -1495,6 +1531,8 @@ void test_circbuffer_byte_mode() {
         // test buffer overflow
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 2;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -1640,6 +1678,8 @@ void test_circbuffer_byte_mode() {
         // test buffer with readin in the middle
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 3;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -1996,6 +2036,8 @@ void test_circbuffer_block_mode_work_with_status() {
     {
         CircBuffer circ;
         CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 8;
         const uint16_t block_size = 4;
         uint8_t status = 0xDA;

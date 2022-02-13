@@ -40,11 +40,11 @@ typedef struct tag_DeskDevButtonState
 	volatile uint8_t	state;				// Current button state, true - pushed, false - released
 } DeskDevButtonState;
 
-typedef struct tag_DeskDevEncoderState
+typedef struct __attribute__ ((aligned)) tag_DeskDevEncoderState
 {
+    volatile uint64_t  last_ts;
 	volatile uint8_t   last_ev;
 	volatile uint8_t   ev_count;
-	volatile uint64_t   last_ts;
 } DeskDevEncoderState;
 
 #define ENCODER_A				0

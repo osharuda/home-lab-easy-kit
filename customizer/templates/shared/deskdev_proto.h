@@ -47,5 +47,7 @@
 typedef struct tag_DeskDevData{{
 	uint8_t buttons[BUTTON_COUNT];  ///< Array with button press counters for each button.
 	int8_t  encoder;                ///< Encoder rotation value.
-}} DeskDevData, *PDeskDevData;
+}} DeskDevData;
 #pragma pack(pop)
+
+typedef volatile DeskDevData* PDeskDevData;

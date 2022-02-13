@@ -107,7 +107,7 @@ void uart_proxy_init(void)
 		USART_Init(g_uart_proxies[i].uart_port, &USART_InitStructure);
 
 		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len);
-		PDeviceContext dev_ctx = &(g_uart_proxies[i].dev_ctx);
+		PDeviceContext dev_ctx = (PDeviceContext)&(g_uart_proxies[i].dev_ctx);
 		dev_ctx->device_id = g_uart_proxies[i].dev_id;
 		dev_ctx->buffer = 0;
 		dev_ctx->circ_buffer = &(g_uart_proxies[i].circ_buffer);

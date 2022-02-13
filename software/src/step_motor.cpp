@@ -36,7 +36,7 @@ StepMotorDev::StepMotorDev(std::shared_ptr<EKitBus>& ebus, int addr) : super(ebu
 	static const char* const func_name = "StepMotorDev::StepMotorDev";
 	for (int i=0; i<SW_STEP_MOTOR_DEVICE_COUNT; i++) {
 		if (addr==g_step_motor_devices[i].dev_id) {
-			descr = const_cast<PStepMotorDevice>(g_step_motor_devices + i);
+			descr = const_cast<const StepMotorDevice*>(g_step_motor_devices + i);
 			break;
 		}
 	}

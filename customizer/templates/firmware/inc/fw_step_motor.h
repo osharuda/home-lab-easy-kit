@@ -91,14 +91,12 @@
 /// \brief Defines number of lines to be described for stepper motor drive
 #define STEP_MOTOR_LINE_COUNT         (STEP_MOTOR_LINE_CCWENDSTOP+1)
 
-#pragma pack(push, 1)
 /// \struct tag_StepMotorLine
 /// \brief Describes GPIO line required to communicate with step motor driver
 typedef struct tag_StepMotorLine {{
     GPIO_TypeDef* port;     ///< port used for this gpio line (see GPIO_TypeDef in CMSIS). 0 indicates unused line.
     uint8_t      pin;       ///< pin number used for this gpio line (see GPIO_TypeDef in CMSIS).
 }} StepMotorLine, *PStepMotorLine;
-#pragma pack(pop)
 /// @}}
 /// @}}
 
@@ -109,13 +107,14 @@ typedef struct tag_StepMotorLine {{
 /// \brief Defines default correction factor to be used with #step_motor_correct_timing()
 #define STEP_MOTOR_CORRECTION_FACTOR 1
 
-#pragma pack(push, 1)
 /// \struct tag_StepMotorDevPrivData
 /// \brief This structure is being used by firmware to store stepper motor device specific data (for all motors, but
 ///        for single device).
-typedef struct tag_StepMotorDevPrivData {{
-    volatile uint64_t last_event_timestamp; ///< Last stepper motor device timer timestamp
-}} StepMotorDevPrivData, *PStepMotorDevPrivData;
+typedef struct __attribute__ ((aligned)) tag_StepMotorDevPrivData {{
+    volatile uint64_t last_event_timestamp __attribute__ ((aligned)); ///< Last stepper motor device timer timestamp
+}} StepMotorDevPrivData;
+
+typedef volatile StepMotorDevPrivData* PStepMotorDevPrivData;
 
 #define STEP_MOTOR_CMDSTATUS_INIT       (uint8_t)(0)
 #define STEP_MOTOR_CMDSTATUS_WAIT       (uint8_t)(1)
@@ -125,21 +124,34 @@ typedef struct tag_StepMotorDevPrivData {{
 
 /// \struct tag_StepMotorCmd
 /// \brief This structure is being used by firmware to store a command sent by software to specific stepper motor
-typedef struct tag_StepMotorCmd {{
-    uint8_t cmd;    ///< Stepper motor command (command byte)
-
-    uint8_t state;  ///< Value indicating state of the command execution. This value is specific to each stepper motor
-                    ///  command handler.
-
+typedef __attribute__ ((aligned (8))) struct tag_StepMotorCmd {{
     uint64_t param; ///< Parameter passed with the command
 
     uint64_t wait;  ///< Period of time to wait. Once wait is elapsed command (or other command) execution may be
                     ///  continued.
+
+    uint8_t cmd;    ///< Stepper motor command (command byte)
+
+    uint8_t state;  ///< Value indicating state of the command execution. This value is specific to each stepper motor
+                    ///  command handler.
 }} StepMotorCmd, *PStepMotorCmd;
 
 /// \struct tag_StepMotorContext
 /// \brief This structure is being used by firmware to store a motor specific data
-typedef struct tag_StepMotorContext {{
+typedef __attribute__ ((aligned (8))) struct tag_StepMotorContext {{
+    volatile uint64_t                late_us;                   ///< 64-bit value that specifies number of microseconds
+                                                                ///  command execution is late. This value is used to
+                                                                ///  correct further timer events.
+
+    volatile uint64_t                steps_beyond_endstop;      ///< Precalculated value for move command that equals a
+                                                                ///  number of steps to be made before corresponding
+                                                                ///  software limit is triggered. Used for both non-stop
+                                                                ///  moves and moves with parameters.
+
+    volatile uint64_t                step_wait;                 ///< Number of microseconds that separate two subsequent
+                                                                ///  step pulses. This value is set by #STEP_MOTOR_SET
+                                                                ///  command (#STEP_MOTOR_SET_STEP_WAIT)
+
     volatile int8_t                  pos_change_by_step;        ///< Increment value to be added to motor position with
                                                                 ///  each step pulse (may be negative)
 
@@ -152,29 +164,14 @@ typedef struct tag_StepMotorContext {{
                                                                 ///  #STEP_MOTOR_CW_ENDSTOP_TRIGGERED or
                                                                 ///  #STEP_MOTOR_CCW_ENDSTOP_TRIGGERED.
 
-    volatile uint64_t                steps_beyond_endstop;      ///< Precalculated value for move command that equals a
-                                                                ///  number of steps to be made before corresponding
-                                                                ///  software limit is triggered. Used for both non-stop
-                                                                ///  moves and moves with parameters.
-
-    volatile uint64_t                step_wait;                 ///< Number of microseconds that separate two subsequent
-                                                                ///  step pulses. This value is set by #STEP_MOTOR_SET
-                                                                ///  command (#STEP_MOTOR_SET_STEP_WAIT)
-
-    volatile StepMotorCmd            current_cmd;               ///< #tag_StepMotorCmd structure that describes currently
-                                                                ///  executed command
-
-    volatile uint64_t                late_us;                   ///< 64-bit value that specifies number of microseconds
-                                                                ///  command execution is late. This value is used to
-                                                                ///  correct further timer events.
+    __attribute__ ((aligned (8))) volatile StepMotorCmd current_cmd; ///< #tag_StepMotorCmd structure that describes currently
+                                                                     ///  executed command
 
     volatile CircBuffer              circ_buffer;               ///< Circular buffer to store commands. Note actual
                                                                 ///  buffer memory pointer is stored in
                                                                 ///  tag_StepMotorDescriptor#buffer. This is just
                                                                 ///  circular buffer control structure.
 }} StepMotorContext, *PStepMotorContext;
-
-#pragma pack(pop)
 
 /// @}}
 /// @}}

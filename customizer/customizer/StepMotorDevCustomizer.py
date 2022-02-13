@@ -126,19 +126,19 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             # Device descriptors
             dev_motor_descr_list.append(dev_descriptor_name)
             fw_device_descriptors.append(
-                "volatile StepMotorDevice {0} = {{ {1}, {2}, (volatile PStepMotorDescriptor*){3}, {{0}}, {4}, {5}, (volatile PStepMotorContext){6}, (volatile PStepMotorDevStatus){7}, {8}, {{0}} }}; \\".format(
-                    dev_descriptor_name,
-                    dev_id,
-                    motors_count,
-                    motor_descriptors_array_name,
-                    timer,
-                    timer_irqn,
-                    motor_context_arrays_name,
-                    dev_status_name,
-                    dev_mstatus_size))
+                "volatile StepMotorDevice {0} = {{ {{0}}, {{0}}, {4}, (volatile PStepMotorContext){6}, (volatile PStepMotorDevStatus){7}, {8}, {5}, (volatile PStepMotorDescriptor*){3}, {2}, {1} }}; \\".format(
+                    dev_descriptor_name,                #0
+                    dev_id,                             #1
+                    motors_count,                       #2
+                    motor_descriptors_array_name,       #3
+                    timer,                              #4
+                    timer_irqn,                         #5
+                    motor_context_arrays_name,          #6
+                    dev_status_name,                    #7
+                    dev_mstatus_size))                  #8
 
             sw_devices_descriptors.append(
-                '{{ {0}, {1}, {2}, "{3}" }}'.format(dev_id, motors_count, motor_descriptors_array_name, dev_name))
+                '{{ "{3}", {2}, {1}, {0} }}'.format(dev_id, motors_count, motor_descriptors_array_name, dev_name))
 
             fw_devices_array.append("(volatile PStepMotorDevice)&" + dev_descriptor_name)
 

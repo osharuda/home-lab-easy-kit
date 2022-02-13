@@ -31,7 +31,6 @@
 
 {__SPWM_SHARED_HEADER__}
 
-#pragma pack(push, 1)
 typedef struct tag_SPWM_GPIO_DESCRIPTOR {{
     GPIO_TypeDef*    port;
 	uint16_t         mask;
@@ -41,7 +40,6 @@ typedef struct tag_SPWM_GPIO_DESCRIPTOR {{
 	uint16_t         open_drain_bits;
 	uint16_t		 def_vals;
 }} SPWM_GPIO_DESCRIPTOR;
-#pragma pack(pop)
 
 #define SPWM_GPIO_DESCRIPTION   {{ {__SPWM_GPIO_DESCRIPTION__} }}
 #define SPWM_TIMER              {__SPWM_TIMER__}

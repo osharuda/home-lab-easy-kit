@@ -36,19 +36,19 @@
 /// \image latex under_construction.eps
 ///
 
-typedef struct tag_UartProxyDevInstance {
-	uint8_t         dev_id;
+typedef struct __attribute__ ((aligned)) tag_UartProxyDevInstance {
+    volatile DeviceContext dev_ctx __attribute__ ((aligned));
+    CircBuffer      circ_buffer;
+    USART_TypeDef*  uart_port;
+    GPIO_TypeDef *  rx_port;
+    GPIO_TypeDef *  tx_port;
+    uint8_t*        dev_buffer;
+    uint32_t		baud_rate;
 	uint16_t        dev_buffer_len;
-	uint8_t*        dev_buffer;
-	USART_TypeDef*  uart_port;
-	GPIO_TypeDef *  rx_port;
 	uint16_t        rx_pin_mask;
-	GPIO_TypeDef *  tx_port;
 	uint16_t        tx_pin_mask;
 	IRQn_Type		irq_vector;
-	uint32_t		baud_rate;
-	DeviceContext   dev_ctx;
-	CircBuffer      circ_buffer;
+	uint8_t         dev_id;
 } UartProxyDevInstance;
 
 void uart_proxy_init(void);

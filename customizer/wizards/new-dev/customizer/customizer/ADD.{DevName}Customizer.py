@@ -89,7 +89,7 @@ class {DevName}Customizer(DeviceCustomizer):
             # Do not forget to add IRQs, DMA and other related resources
             if "__DEVICE_BUFFER_TYPE__" == "DEV_NO_BUFFER":
                 # No buffers
-                fw_device_descriptors.append("{{ {0}, {{0}}, {{0}} }}".format(
+                fw_device_descriptors.append("{{ {{0}}, {{0}}, {0} }}".format(
                     dev_id))
 
                 sw_device_desсriptors.append('{{ {0}, "{1}"}}'.format(
@@ -99,8 +99,10 @@ class {DevName}Customizer(DeviceCustomizer):
             elif "__DEVICE_BUFFER_TYPE__" == "DEV_LINIAR_BUFFER":
                 # Buffer is present
                 fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {0}, {1}, {2}, {{0}}, {{0}} }}".format(
-                    dev_id, buffer_size, fw_buffer_name))
+                fw_device_descriptors.append("{{ {{0}}, {{0}}, {2}, {1}, {0} }}".format(
+                    dev_id,
+                    buffer_size,
+                    fw_buffer_name))
 
                 sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
                     dev_id, dev_name, buffer_size))
@@ -109,8 +111,10 @@ class {DevName}Customizer(DeviceCustomizer):
             elif "__DEVICE_BUFFER_TYPE__" == "DEV_CIRCULAR_BUFFER":
                 # Buffer is present
                 fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {0}, {1}, {2}, {{0}}, {{0}}, {{0}} }}".format(
-                    dev_id, buffer_size, fw_buffer_name))
+                fw_device_descriptors.append("{{ {{0}}, {{0}}, {{0}}, {2}, {1}, {0} }}".format(
+                    dev_id,
+                    buffer_size,
+                    fw_buffer_name))
 
                 sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
                     dev_id, dev_name, buffer_size))

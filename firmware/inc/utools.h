@@ -166,6 +166,11 @@ extern volatile uint8_t g_irq_disabled;
 #define ENABLE_IRQ  __enable_irq();
 
 #endif
+/// \brief Checks if pointer is aligned as required
+/// \param _ptr - pointer
+/// \param _size - size to be aligned
+#define IS_ALIGNED(_ptr, _size) \
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (_size)) == 0);
 
 /// \brief Inittializes SysTick interrupt.
 /// \details Main purpose of SysTick interrupt is maintain 64 bit tick counter, which is intensively used by firmware.

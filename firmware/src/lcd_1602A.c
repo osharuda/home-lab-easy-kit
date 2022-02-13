@@ -32,7 +32,7 @@
 /// \brief Simple LCD1602a screen support
 /// @{
 /// \brief LCDDev #tag_DeviceContext structure
-DeviceContext   g_lcd_ctx;
+volatile DeviceContext g_lcd_ctx __attribute__ ((aligned));
 
 /// \brief Specifies if backlight is currently on
 volatile uint8_t         g_lcd_light_on = 0;
@@ -40,8 +40,6 @@ volatile uint8_t         g_lcd_light_on = 0;
 /// \brief Specifies if blinking mode is currently used
 volatile uint8_t         g_lcd_blink = 0;
 /// @}
-
-
 
 void lcd_init()
 {

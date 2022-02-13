@@ -42,7 +42,7 @@ GPIO_descr gpio_descriptor[] = GPIO_DESCRIPTOR;
 
 uint8_t gpio_out_pins[GPIO_COUNT];
 uint8_t gpio_buffer[GPIO_BUFFER_SIZE];
-DeviceContext gpio_ctx;
+volatile DeviceContext gpio_ctx __attribute__ ((aligned));
 
 void gpio_update_values(uint8_t* buffer) {
 	for (uint16_t i=0; i<GPIO_COUNT; i++) {
@@ -113,7 +113,7 @@ void gpio_init() {
 	}
 
 	// initialize device context
-	memset(&gpio_ctx, 0, sizeof(gpio_ctx));
+	memset((void*)&gpio_ctx, 0, sizeof(gpio_ctx));
 	gpio_ctx.device_id = GPIODEV_ADDR;
 	gpio_ctx.buffer = gpio_buffer;
 	gpio_ctx.bytes_available = GPIO_BUFFER_SIZE;

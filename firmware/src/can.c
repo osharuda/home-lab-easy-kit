@@ -79,10 +79,11 @@ uint8_t can_send(volatile PDeviceContext devctx, volatile CanInstance* dev, vola
 void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
 
 /// \brief Put received CAN message to the internal circular buffer
+/// \param dev - device instance structure represented by #CanInstance
 /// \param circ_buffer - internal circular buffer represented by a pointer to #CircBuffer structure.
 /// \param message - message represented by a pointer to #CanRxMsg structure.
 /// \param status - status represented by a pointer to #CanStatus structure.
-void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
+void can_put_message_on_buffer(volatile CanInstance* dev, volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
 
 /// \brief Reset state of the CAN virtual device
 /// \param dev - device instance structure represented by #CanInstance
@@ -112,7 +113,8 @@ void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
     if (CAN_GetITStatus(dev->can, CAN_IT_FMP0) == SET) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO0, &message);
-        can_put_message_on_buffer((volatile PCircBuffer)&(dev->circ_buffer),
+        can_put_message_on_buffer(dev,
+                                  (volatile PCircBuffer)&(dev->circ_buffer),
                                   &message,
                                   (volatile PCanStatus) &(dev->privdata.status));
     }
@@ -141,7 +143,8 @@ void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
     if (CAN_GetITStatus(dev->can, CAN_IT_FMP1) == SET) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO1, &message);
-        can_put_message_on_buffer((volatile PCircBuffer)&(dev->circ_buffer),
+        can_put_message_on_buffer(dev,
+                                  (volatile PCircBuffer)&(dev->circ_buffer),
                                   &message,
                                   (volatile PCanStatus) &(dev->privdata.status));
     }
@@ -223,7 +226,7 @@ CAN_FW_IRQ_HANDLERS
 
 void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
     volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    memset(devctx, 0, sizeof(DeviceContext));
+    memset((void*)devctx, 0, sizeof(DeviceContext));
     devctx->device_id      = dev->dev_id;
     devctx->dev_index      = index;
     devctx->on_command     = can_execute;
@@ -377,22 +380,12 @@ uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uin
     CAN_DeInit(dev->can);
     CAN_InitTypeDef can_init;
 
-    // Timing settings: http://www.bittiming.can-wiki.info/
-    // MCU: STM bxCan
-    // Pclk = 36MHz (8MHz HSE, AHB prescaller = 1, APB1 prescaller = div2)
-    // Bit rate = 500
-    // Number of time quanta: 9
-    // Prescaler: 8
-    // Seg1: 7
-    // Seg2: 1
-    // Sample point: 88.9
-    // CAN_BTR = 0x00060007
-    can_init.CAN_Prescaler = 8;
-    can_init.CAN_SJW = CAN_SJW_1tq;
-    can_init.CAN_BS1 = CAN_BS1_7tq;
-    can_init.CAN_BS2 = CAN_BS2_1tq;
+    can_init.CAN_Prescaler = dev->can_prescaller;
+    can_init.CAN_BS1       = dev->can_bs1;
+    can_init.CAN_SJW       = dev->can_sample_point;
+    can_init.CAN_BS2       = dev->can_bs2;
 
-    can_init.CAN_Mode = CAN_Mode_Normal;// CAN_Mode_Silent_LoopBack;
+    can_init.CAN_Mode = CAN_Mode_Normal; // CAN_Mode_Silent_LoopBack;
     can_init.CAN_TTCM = DISABLE;
     can_init.CAN_ABOM = DISABLE;
     can_init.CAN_AWUM = ENABLE;
@@ -529,11 +522,12 @@ done:
     return result;
 }
 
-void can_put_message_on_buffer(volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status) {
+void can_put_message_on_buffer(volatile CanInstance* dev, volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status) {
     CanRecvMessage* recv_msg = (CanRecvMessage*)circbuf_reserve_block(circ_buffer);
     if (recv_msg==0) {
         // Failed to reserve
         SET_BIT(status->state, CAN_ERROR_OVERFLOW);
+        can_stop((PDeviceContext)&(dev->dev_ctx), dev);
         return;
     }
 

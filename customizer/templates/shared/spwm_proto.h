@@ -51,3 +51,5 @@ typedef struct tag_PWM_ENTRY {{
 }} PWM_ENTRY;
 
 #pragma pack(pop)
+
+typedef volatile PWM_ENTRY* PPWM_ENTRY;

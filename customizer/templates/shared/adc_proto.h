@@ -18,8 +18,6 @@
  /* --------------------> END OF THE TEMPLATE HEADER <-------------------- */
 
 
-#pragma pack(push, 1)
-
 // Device command options
 
 /// \addtogroup group_adc_dev
@@ -38,6 +36,7 @@
 /// \brief Reserved, currently is not used
 #define ADCDEV_RESERVED                32
 
+#pragma pack(push, 1)
 /// \struct tag_ADCDevCommand
 /// \brief This structure describes command payload that is used to start sampling by ADCDev
 typedef struct tag_ADCDevCommand {{
@@ -49,7 +48,6 @@ typedef struct tag_ADCDevCommand {{
     uint16_t timer_period;      ///< Timer period value. If this value and tag_ADCDevCommand#timer_prescaller are zero
                                 ///  conversions will follow each other without delay.
 }} ADCDevCommand;
-
+#pragma pack(pop)
 /// @}}
 
-#pragma pack(pop)

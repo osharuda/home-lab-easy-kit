@@ -32,7 +32,7 @@
 DeskDevButtonState g_ddev_buttons[BUTTON_COUNT];
 DeskDevEncoderState g_ddev_encoder;
 DeskDevData g_ddev_data;
-DeviceContext g_ddev_context;
+DeviceContext g_ddev_context __attribute__ ((aligned));
 
 void CONTROLS_EXTI_HANDLER(uint64_t timestamp, volatile void* ctx);
 

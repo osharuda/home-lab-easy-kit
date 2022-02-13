@@ -131,7 +131,7 @@ class ADCDevCustomizer(DeviceCustomizer):
                         channel_pin = "0"
                         sample_time = "0"
 
-                    fw_analog_inputs.append("{{ {0}, {1}, {2}, {3} }}".format(res, sample_time, channel_port, channel_pin))
+                    fw_analog_inputs.append("{{ {0}, {1}, {2}, {3} }}".format(channel_port, channel_pin, res, sample_time))
                     sw_analog_inputs.append('{{ "{0}", "{1}" }}'.format(rname, res))
 
                 elif rtype == "adc":
@@ -188,20 +188,21 @@ class ADCDevCustomizer(DeviceCustomizer):
                                          adc_input_count))
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             fw_inputs_name = "g_{0}_inputs".format(dev_name)
-            fw_device_descrs.append("{{ {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {{0}}, {{0}}, {{0}} }}".format(dev_id,
-                                                                                adc_input_count,
-                                                                                adc,
-                                                                                dr_address,
-                                                                                dma_channel,
-                                                                                dma,
-                                                                                dma_it,
-                                                                                self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler),
-                                                                                scan_complete_irqn,
-                                                                                buffer_size,
-                                                                                fw_buffer_name,
-                                                                                sample_block_size,
-                                                                                timer,
-                                                                                fw_inputs_name))
+            fw_device_descrs.append("{{ {{0}}, {{0}}, {{0}}, {13}, {10}, {2}, {12}, {3}, {4}, {5}, {6}, {9}, {11}, {7}, {8}, {0}, {1} }}".format(
+                                                                                dev_id,             #0
+                                                                                adc_input_count,    #1
+                                                                                adc,                #2
+                                                                                dr_address,         #3
+                                                                                dma_channel,        #4
+                                                                                dma,                #5
+                                                                                dma_it,             #6
+                                                                                self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler),   #7
+                                                                                scan_complete_irqn, #8
+                                                                                buffer_size,        #9
+                                                                                fw_buffer_name,     #10
+                                                                                sample_block_size,  #11
+                                                                                timer,              #12
+                                                                                fw_inputs_name))    #13
 
             sw_device_descrs.append('{{ {0}, "{1}", {2}, {3}, {4}, {5}, {6}, {7} }}'.format(dev_id, dev_name, buffer_size, adc_input_count, self.mcu_hw.get_TIMER_freq(timer), vref, adc_maxval, fw_inputs_name))
             fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))

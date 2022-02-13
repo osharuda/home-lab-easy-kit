@@ -30,7 +30,7 @@
 #ifdef IRRC_DEVICE_ENABLED
 
 IRRCPrivData irrc_data;
-DeviceContext irrc_ctx;
+volatile DeviceContext irrc_ctx __attribute__ ((aligned));
 
 void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx);
 

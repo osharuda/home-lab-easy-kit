@@ -40,7 +40,7 @@ volatile uint32_t g_usTicks = 0;
 /// \note This is 64-bit variable and STM32 is 32-bit MCU. It means this variable can't be modified atomically.
 ///       Atomicity is achieved by disabling interrupts in functions that read it (#get_us_clock()) and by modifying it
 ///       in SysTick interrupt only.
-volatile uint64_t g_usClock = 0;
+volatile uint64_t g_usClock __attribute__ ((aligned)) = 0;
 
 #ifndef NDEBUG
 volatile uint8_t g_irq_disabled = 0;
@@ -64,6 +64,7 @@ void SysTick_Handler(void)
 
 void systick_init(void)
 {
+    IS_ALIGNED(&g_usClock, sizeof(uint64_t));
 	SystemCoreClockUpdate();
 	SysTick_Config(SystemCoreClock / 1000000);
 	NVIC_SetPriority(SysTick_IRQn, IRQ_PRIORITY_SYSTICK);

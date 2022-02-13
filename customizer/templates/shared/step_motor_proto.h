@@ -24,8 +24,6 @@
 #define MDESCR_SPECIFIER const
 #endif
 
-#pragma pack(push, 1)
-
 /// \addtogroup group_step_motor_dev
 /// @{{
 
@@ -460,7 +458,7 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 
 /// \struct tag_StepMotorDescriptor
 /// \brief Describes stepper motor default configuration
-typedef struct tag_StepMotorDescriptor {{
+typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {{
         uint32_t      config_flags;                 ///< flags used to describe default step motor behaviour. Corresponds to tag_StepMotorStatus#motor_state. See @ref group_step_motor_dev_configuration
         uint16_t      buffer_size;                  ///< stepper motor command buffer size in bytes.
         uint64_t      default_speed;                ///< stepper motor default speed. tag_StepMotorDescriptor#default_speed is a number of microseconds between step pulses. It doesn't take into account microstepping.
@@ -481,7 +479,6 @@ typedef struct tag_StepMotorDescriptor {{
     uint16_t      steps_per_revolution;             ///< Number of steps per revolution for this stepper motor. (available in software part only)
 #endif
 }} StepMotorDescriptor, *PStepMotorDescriptor;
-
 /// @}}
 
 
@@ -757,20 +754,20 @@ typedef struct tag_StepMotorDescriptor {{
 /// \struct tag_StepMotorStatus
 /// \brief Describes current motor status
 /// \warning Firmware code should make changes to this structure with interrupts disabled.
-typedef struct tag_StepMotorStatus {{
-    uint32_t motor_state;       ///< flags used to describe current motor status. Corresponds to tag_StepMotorDescriptor#config_flags. See @ref group_step_motor_dev_configuration
-    uint16_t bytes_remain;      ///< Number of unread bytes in motor command buffer.
+typedef struct __attribute__ ((aligned)) tag_StepMotorStatus {{
     int64_t  pos;               ///< Stepper motor position. CW moves increase (and CCW moves decrease) position (by 32 / microstep divider) value. See @ref group_step_motor_dev_microstep_tables
     int64_t  cw_sft_limit;      ///< Current software limit for stepper motor position during CW moves. Ignored if hardware end-stop is used
     int64_t  ccw_sft_limit;     ///< Current software limit for stepper motor position during CCW moves. Ignored if hardware end-stop is used
+    uint32_t motor_state;       ///< flags used to describe current motor status. Corresponds to tag_StepMotorDescriptor#config_flags. See @ref group_step_motor_dev_configuration
+    uint16_t bytes_remain;      ///< Number of unread bytes in motor command buffer.
 }} StepMotorStatus, *PStepMotorStatus;
 
 /// \struct tag_StepMotorDevStatus
 /// \brief This structure describes current stepper motor device state. It also includes statuses of all stepper motors belonging to the device.
 /// \warning Firmware code should make changes to this structure with interrupts disabled.
-typedef struct tag_StepMotorDevStatus {{
+typedef struct __attribute__ ((aligned)) tag_StepMotorDevStatus {{
     uint8_t status; ///< Stepper motor device status. One of the following values: #STEP_MOTOR_DEV_STATUS_IDLE, #STEP_MOTOR_DEV_STATUS_RUN, #STEP_MOTOR_DEV_STATUS_ERROR
-    StepMotorStatus mstatus[]; ///< Array of #tag_StepMotorStatus structures containing each motor status. Indexed as motor index.
+    StepMotorStatus mstatus[] __attribute__ ((aligned)); ///< Array of #tag_StepMotorStatus structures containing each motor status. Indexed as motor index.
 }} StepMotorDevStatus, *PStepMotorDevStatus;
 
 /// @}}
@@ -789,27 +786,29 @@ typedef struct tag_StepMotorDevStatus {{
 /// \struct tag_StepMotorDevice
 /// \brief This structure is being used by firmware and software as storage of all information needed.
 /// \note This structure describes different field set for firmware and software. Some fields are common, some unique to firmware or software.
-typedef struct tag_StepMotorDevice {{
-        uint8_t                        dev_id;        ///< Device ID for the stepper motor device. Do not change this field.
-        uint8_t                        motor_count;   ///< Number of stepper motors controled by this device. Do not change this field.
-        MDESCR_SPECIFIER PStepMotorDescriptor* motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
-
+typedef struct __attribute__ ((aligned)) tag_StepMotorDevice {{
 #ifdef STEP_MOTOR_FIRMWARE
 	// Firmware unique fields
-        volatile DeviceContext         dev_ctx;       ///< Device context structure (available in firmware part only)
-        TIM_TypeDef*                   timer;         ///< Timer being used by device (available in firmware part only). Do not change this field.
-        IRQn_Type                      timer_irqn;    ///< Timer interrupt number being used by device (available in firmware part only). Do not change this field.
-        volatile PStepMotorContext     motor_context; ///< Array of the #tag_StepMotorContext structures, one per each stepper motor controlled by the device.  (available in firmware part only).
-        volatile PStepMotorDevStatus   status;        ///< Pointer to the #tag_StepMotorDevStatus. It is used as bufer to read information by software. Firmware code should make changes to this structure with interrupts disabled.  (available in firmware part only)
-        uint16_t                       status_size;   ///< Size of the tag_StepMotorDevice#status structure in bytes. (available in firmware part only). Do not change this field.
-        volatile StepMotorDevPrivData  priv_data;     ///< Private data unique for each stepper motor device.  (available in firmware part only).
+    volatile DeviceContext         dev_ctx   __attribute__ ((aligned)); ///< Device context structure (available in firmware part only)
+    volatile StepMotorDevPrivData  priv_data __attribute__ ((aligned)); ///< Private data unique for each stepper motor device.  (available in firmware part only).
+    TIM_TypeDef*                   timer;         ///< Timer being used by device (available in firmware part only). Do not change this field.
+    volatile PStepMotorContext     motor_context; ///< Array of the #tag_StepMotorContext structures, one per each stepper motor controlled by the device.  (available in firmware part only).
+    volatile PStepMotorDevStatus   status;        ///< Pointer to the #tag_StepMotorDevStatus. It is used as bufer to read information by software. Firmware code should make changes to this structure with interrupts disabled.  (available in firmware part only)
+    uint16_t                       status_size;   ///< Size of the tag_StepMotorDevice#status structure in bytes. (available in firmware part only). Do not change this field.
+    IRQn_Type                      timer_irqn;    ///< Timer interrupt number being used by device (available in firmware part only). Do not change this field.
 #elif !defined(STEP_MOTOR_FIRMWARE)
 	// Software unique fields
 	const char*	                       dev_name;      ///< Stepper motor device name. (available in firmware part only). Do not change this field.
 #endif
-}} StepMotorDevice, *PStepMotorDevice;
+    MDESCR_SPECIFIER PStepMotorDescriptor* motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
+
+    uint8_t                        motor_count;   ///< Number of stepper motors controled by this device. Do not change this field.
+    uint8_t                        dev_id;        ///< Device ID for the stepper motor device. Do not change this field.
+}} StepMotorDevice;
+
+typedef volatile StepMotorDevice* PStepMotorDevice;
 /// @}}
 /// @}}
-#pragma pack(pop)
+
 
 #undef USE_VOLATILE

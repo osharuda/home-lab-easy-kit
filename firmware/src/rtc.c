@@ -28,7 +28,7 @@
 
 #ifdef RTC_DEVICE_ENABLED
 
-DeviceContext rtc_context;
+volatile DeviceContext rtc_context __attribute__ ((aligned));
 uint32_t rtc_data = 0;
 
 void set_rtc_val(uint32_t ts) {

@@ -315,7 +315,7 @@ void init_adc_device(volatile ADCDevFwInstance* dev, uint16_t index) {
     circbuf_init_block_mode(circbuf, dev->sample_block_size);
 
     volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    memset(devctx, 0, sizeof(DeviceContext));
+    memset((void*)devctx, 0, sizeof(DeviceContext));
 
     devctx->device_id = dev->dev_id;
     devctx->dev_index = index;

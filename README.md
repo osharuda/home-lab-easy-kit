@@ -23,10 +23,11 @@
     6.11. [CanCustomizer](#CanCustomizer)
 7. [Building and flashing firmware](#Building-and-flashing-firmware)
 8. [Linking with generated library](#Linking-with-generated-library)
-9. [Contributing](#Contributing)
-10. [License](#License)
-11. [References and literature](#References-and-literature)
-12. [Remarks](#Remarks)
+9. [Example](#Example)
+10. [Contributing](#Contributing)
+11. [License](#License)
+12. [References and literature](#References-and-literature)
+13. [Remarks](#Remarks)
 
 ## Description
 
@@ -574,6 +575,7 @@ Be very careful with stepper motors. These devices consume significant current a
 #### Stepper motor direction
 Stepper motor direction may be clock-wise or counter-clock-wise. Optionally it may specify `DIR` pin for supported stepper motor drivers.
 
+
 Table below describe key/values to customize stepper motor direction:
 | Key      | Value description | Possible values | Required |
 |:---------|:------------------|:----------------|:---------|
@@ -652,6 +654,7 @@ Use the
       "can_0" : {
         "dev_id" : 1,
         "buffered_msg_count" : 256,
+        "bitrate": 1000,
         "requires" :  {"can" : "CAN1_REMAP"}
       }
     }
@@ -662,6 +665,7 @@ Use the
 | `"can_0"` | Name of the CanDev virtual device. | String | Yes |
 | `"dev_id"` | Device id. | Number, [1, 15] | Yes |
 | `"buffered_msg_count"` | Size of the receive circular buffer in messages. | Number | Yes |
+| `"bitrate"` | Bitrate for the CAN bus (in kbit/s). | `10`,`20`,`50`,`83`,`100`,`125`,`250`,`500`,`800`,`1000`  | Yes |
 | `"requires"` | Describes peripherals required by the virtual device. Just `can` should be specified. | `CAN1` or `CAN1_REMAP` | Yes |
 
 Note: STM32F103x has CAN and USB sharing a dedicated SRAM memory for data transmission and reception, so it is not possible to use CAN and USB at the same time.
@@ -697,6 +701,11 @@ There are many ways to link generated library with main program. It worth to loo
 
 An example project is generated in `software/example`. This is project has no functionality; it's purpose is to provide understanding how to link with installed library.
 
+## Example
+
+Example experiment<sup>[5](#ft05)</sup> was built to demonstrate idea for this project. The goal is to get radiation pattern of some source of light. All sources and description is maintained in `misc/radiation_pattern`.
+
+
 ## Contributing
 
 Everyone is welcome to participate this project. Discuss changes you want to make with author first before doing pull request. I do not promise the answer will be quick, however I'll try to respond to everyone.
@@ -712,11 +721,10 @@ Contribution may be made in several forms:
 
 There are a lot of ideas how to extend this project and move it forward. Among of others are:
 
-1. Adding some new STM32 MCU support. This task will require a lot of development, therefor this new MCU must worth it. Priorities are: cheap, performance, features, microchips and demo boards availability on the market. I understand this is unrealistic, however STM32F103x shows, dreams sometimes get true.
-
-2. Changing software interfaces. Interfaces to virtual devices are simple, however some of them may be changed to better. It is not a big deal to change them, more complex thing is how to provide them to be as much simple and convenient as possible.
-
-3. Adding support to other peripherals. It could be both STM32F10x peripherals and other devices. STM32F103x provides a lot of features. For example, hardware PWM may be implemented - it will be less flexible than software PWM but won't load MCU. A good example of external device support is AD9851 DDS signal generator module.
+1. Python3 module source code generation.
+2. Adding support to other peripherals like SPI, PWM (hardware), USB (as new protocol).
+3. Estimating RAM requirements for firmware.
+4. Possibility to use other MCU models.
 
 ## Contact
 
@@ -748,6 +756,7 @@ limitations under the License.
     - [RM0008](https://www.st.com/content/ccc/resource/technical/document/reference_manual/59/b9/ba/7f/11/af/43/d5/CD00171190.pdf/files/CD00171190.pdf/jcr:content/translations/en.CD00171190.pdf) - Datasheet for STM3210x family of MCU.
 3. [SIM800 Series AT Command Manual](https://usermanual.wiki/Pdf/SIM80020SeriesAT20Command20ManualV109.183482162.pdf) - required if you plan to use SIM800 based GSM modem.
 4. Software part is written with C++11. [This is](https://en.cppreference.com/w/cpp/11) one of the major resources for C++11.
+5. Short video demonstration of flash light radiation diagram scanning: [video](https://www.youtube.com/watch?v=8mFc6aBiLas)
 
 ## Remarks
 

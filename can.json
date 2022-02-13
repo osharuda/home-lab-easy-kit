@@ -16,6 +16,7 @@
       "can_0" : {
         "dev_id" : 1,
         "buffered_msg_count" : 256,
+	"bitrate": 1000,
         "requires" :  {"can" : "CAN1_REMAP"}
       }
     }

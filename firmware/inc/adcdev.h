@@ -35,8 +35,6 @@
 /// \image latex under_construction.eps
 ///
 
-#pragma pack(push, 1)
-
 /// \typedef ADCStartSamplingFunc
 /// \brief Defines function to be used in order to start sampling
 typedef void (*ADCStartSamplingFunc)(volatile void*);
@@ -44,50 +42,58 @@ typedef void (*ADCStartSamplingFunc)(volatile void*);
 /// \struct tag_ADCDevFwPrivData
 /// \brief Structure that describes private ADCDev values
 typedef struct tag_ADCDevFwPrivData {
-    uint8_t started;                               ///< Indicates if sampling is started; non-zero sampling is started,
-                                                   ///  0 - sampling is not started.
+    ADCStartSamplingFunc start_sampling_func;     ///< Function pointer that starts ADC sampling. Possible values are:
+                                                  ///  - #adc_start_int_mode() to start conversion now in interrupt mode.
+                                                  ///  - #adc_start_timer() if conversion must be started by timer.
+                                                  ///  - #adc_start_dma_mode() to start conversion now in DMA mode.
 
-    uint8_t stop;                                  ///< Non-zero value indicates stop is requested by software.
+    volatile uint16_t* dest_buffer;               ///< Buffer to store values sampled in interrupt mode
 
-    uint8_t unstoppable;                           ///< Non-zero indicates that tag_ADCDevCommand#sample_count should be
-                                                   ///  ignored sampling must go on indefinitely.
+    uint16_t samples_left;                        ///< Amount of samples left to sample
 
-    uint8_t current_channel;                       ///< Currently sampled channel in interrupt mode
+    uint16_t prescaller;                          ///< Timer prescaller value. If this value and tag_ADCDevFwPrivData#period are zero
+                                                  ///  conversions will follow each other without delay.
 
-    volatile uint16_t* dest_buffer;                ///< Buffer to store values sampled in interrupt mode
+    uint16_t period;                              ///< Timer period value. If this value and tag_ADCDevFwPrivData#prescaller are zero
+                                                  ///  conversions will follow each other without delay.
 
-    uint16_t samples_left;                         ///< Amount of samples left to sample
+    uint8_t started;                              ///< Indicates if sampling is started; non-zero sampling is started,
+                                                  ///  0 - sampling is not started.
 
-    ADCStartSamplingFunc start_sampling_func;      ///< Function pointer that starts ADC sampling. Possible values are:
-                                                   ///  - #adc_start_int_mode() to start conversion now in interrupt mode.
-                                                   ///  - #adc_start_timer() if conversion must be started by timer.
-                                                   ///  - #adc_start_dma_mode() to start conversion now in DMA mode.
+    uint8_t stop;                                 ///< Non-zero value indicates stop is requested by software.
 
-    uint16_t prescaller;                           ///< Timer prescaller value. If this value and tag_ADCDevFwPrivData#period are zero
-                                                   ///  conversions will follow each other without delay.
+    uint8_t unstoppable;                          ///< Non-zero indicates that tag_ADCDevCommand#sample_count should be
+                                                  ///  ignored sampling must go on indefinitely.
 
-    uint16_t period;                               ///< Timer period value. If this value and tag_ADCDevFwPrivData#prescaller are zero
-                                                   ///  conversions will follow each other without delay.
+    uint8_t current_channel;                      ///< Currently sampled channel in interrupt mode
 } ADCDevFwPrivData;
 
 
 /// \struct tag_ADCDevFwChannel
 /// \brief Structure that describes ADC channel
 typedef struct tag_ADCDevFwChannel {
-        uint8_t channel;        ///< Channel number (ADC_Channel_XXX values from CMSIS library)
-        uint8_t sample_time;    ///< Sampling time (ADC_SampleTime_XXX values from CMSIS library)
-        GPIO_TypeDef* port;     ///< Port being used by corresponding GPIO pin
-        uint16_t      pin;      ///< GPIO pin (bitmask)
+        GPIO_TypeDef* port;           ///< Port being used by corresponding GPIO pin
+        uint16_t      pin;            ///< GPIO pin (bitmask)
+        uint8_t       channel;        ///< Channel number (ADC_Channel_XXX values from CMSIS library)
+        uint8_t       sample_time;    ///< Sampling time (ADC_SampleTime_XXX values from CMSIS library)
 } ADCDevFwChannel;
 
 /// \struct tag_ADCDevFwInstance
 /// \brief Structure that describes ADCDev virtual device
-typedef struct tag_ADCDevFwInstance {
-        uint8_t                     dev_id;             ///< Device ID for ADCDev virtual device
+typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
+        volatile DeviceContext      dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        uint8_t                     input_count;        ///< Number of ADC channels used
+        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
+
+        volatile ADCDevFwPrivData   privdata;           ///< Private data used by this ADCDev device
+
+        volatile ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
+
+        volatile uint8_t*           buffer;             ///< Memory block used for circular buffer as storage
 
         ADC_TypeDef*                adc;                ///< ADC being used
+
+        TIM_TypeDef*                timer;              ///< Timer being used
 
         uint32_t                    adc_dr_address;     ///< ADC data register address
 
@@ -97,28 +103,18 @@ typedef struct tag_ADCDevFwInstance {
 
         uint32_t                    dma_it;             ///< DMA transfer complete interrupt being used (DMA1_IT_XXX from CMSIS library)
 
+        uint16_t                    buffer_size;        ///< Circular buffer size
+
+        uint16_t                    sample_block_size;  ///< Amount of bytes used for sample buffer
+
         IRQn_Type                   timer_irqn;         ///< Timer interrupt number
 
         IRQn_Type                   scan_complete_irqn; ///< Either DMA transfer complete or ADC complete interrupt number
 
-        uint16_t                    buffer_size;        ///< Circular buffer size
+        uint8_t                     dev_id;             ///< Device ID for ADCDev virtual device
 
-        volatile uint8_t*           buffer;             ///< Memory block used for circular buffer as storage
-
-        uint16_t                    sample_block_size;  ///< Amount of bytes used for sample buffer
-
-        TIM_TypeDef*                timer;              ///< Timer being used
-
-        volatile ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
-
-        volatile DeviceContext      dev_ctx;            ///< Virtual device context
-
-        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
-
-        volatile ADCDevFwPrivData   privdata;           ///< Private data used by this ADCDev device
+        uint8_t                     input_count;        ///< Number of ADC channels used
 } ADCDevFwInstance;
-
-#pragma pack(pop)
 
 /// \def ADC_DMA_MODE
 /// \brief This macro is used to check if running in DMA mode

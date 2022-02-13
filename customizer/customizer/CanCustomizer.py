@@ -31,6 +31,70 @@ class CanCustomizer(DeviceCustomizer):
     def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
         return
 
+    def get_can_timings(self, bitrate: int):
+        timings = {
+            #baud rate       (prescaller, seg1, sample p., seg2)
+            10:              (200, 15, 1, 2),
+            #10:              (225, 13, 1, 2),
+            20:              (100, 15, 1, 2),
+            50:              (40, 15, 1, 2),
+            #50:              (45, 13, 1, 2),
+            83:              (24, 15, 1, 2),
+            #83:              (27, 13, 1, 2),
+            100:              (20, 15, 1, 2),
+            125:              (16, 15, 1, 2),
+            #125:              (18, 13, 1, 2),
+            250:              (8, 15, 1, 2),
+            #250:              (9, 13, 1 ,2),
+            500:              (4, 15, 1, 2),
+            800:              (3, 12, 1, 2),
+            1000:             (2, 15, 1, 2)
+        }
+
+        if bitrate not in timings:
+            raise RuntimeError(f'Bit rate for CAN is set incorrectly: ({timings}). Supported values are: {timings.keys()}')
+
+        seg1_to_text = {
+            1: 'CAN_BS1_1tq',
+            2: 'CAN_BS1_2tq',
+            3: 'CAN_BS1_3tq',
+            4: 'CAN_BS1_4tq',
+            5: 'CAN_BS1_5tq',
+            6: 'CAN_BS1_6tq',
+            7: 'CAN_BS1_7tq',
+            8: 'CAN_BS1_8tq',
+            9: 'CAN_BS1_9tq',
+            10: 'CAN_BS1_10tq',
+            11: 'CAN_BS1_11tq',
+            12: 'CAN_BS1_12tq',
+            13: 'CAN_BS1_13tq',
+            14: 'CAN_BS1_14tq',
+            15: 'CAN_BS1_15tq',
+            16: 'CAN_BS1_16tq'
+        }
+
+        seg2_to_text = {
+            1: 'CAN_BS2_1tq',
+            2: 'CAN_BS2_2tq',
+            3: 'CAN_BS2_3tq',
+            4: 'CAN_BS2_4tq',
+            5: 'CAN_BS2_5tq',
+            6: 'CAN_BS2_6tq',
+            7: 'CAN_BS2_7tq',
+            8: 'CAN_BS2_8tq'
+        }
+
+        smpl_to_text = {
+            1: 'CAN_SJW_1tq',
+            2: 'CAN_SJW_2tq',
+            3: 'CAN_SJW_3tq',
+            4: 'CAN_SJW_4tq'
+        }
+
+        (pr, seg1, smpl, seg2) = timings[bitrate]
+        return (pr, seg1_to_text[seg1], smpl_to_text[smpl], seg2_to_text[seg2])
+
+
 
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
@@ -43,7 +107,10 @@ class CanCustomizer(DeviceCustomizer):
 
             dev_requires = dev_config["requires"]
             dev_id       = dev_config["dev_id"]
+            bitrate     = dev_config["bitrate"]
             buffer_size = "sizeof(CanRecvMessage)*{0}".format(dev_config["buffered_msg_count"])
+
+            (can_prescaller, can_seg1, can_sample_point, can_seg2) = self.get_can_timings(bitrate)
 
             self.sanity_checks(dev_config, dev_requires, dev_name)
             can = dev_requires["can"]
@@ -66,16 +133,24 @@ class CanCustomizer(DeviceCustomizer):
             sce_handler = self.mcu_hw.mcu_resources[can]["irq_sce_handler"]["irq_handler"]
 
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
-            fw_device_descriptors.append("{{ {0}, {1}, {2}, {{0}}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {{0}}, {{ {{0}}, {{{{0}}}} }} }}".format(
-                dev_id, buffer_size, fw_buffer_name,
-                can_name,
-                int(remap),
-                canrx_port, canrx_pin,
-                cantx_port, cantx_pin,
-                self.mcu_hw.ISRHandler_to_IRQn(tx_handler),
-                self.mcu_hw.ISRHandler_to_IRQn(rx0_handler),
-                self.mcu_hw.ISRHandler_to_IRQn(rx1_handler),
-                self.mcu_hw.ISRHandler_to_IRQn(sce_handler)))
+            fw_device_descriptors.append("{{ {{0}}, {{0}}, {{ {{0}}, {{{{0}}}} }}, {2}, {3}, {5}, {7}, {1}, {13}, {9}, {10}, {11}, {12}, {14}, {15}, {16}, {4}, {6}, {8}, {0} }}".format(
+                dev_id,                                         #0
+                buffer_size,                                    #1
+                fw_buffer_name,                                 #2
+                can_name,                                       #3
+                int(remap),                                     #4
+                canrx_port,                                     #5
+                canrx_pin,                                      #6
+                cantx_port,                                     #7
+                cantx_pin,                                      #8
+                self.mcu_hw.ISRHandler_to_IRQn(tx_handler),     #9
+                self.mcu_hw.ISRHandler_to_IRQn(rx0_handler),    #10
+                self.mcu_hw.ISRHandler_to_IRQn(rx1_handler),    #11
+                self.mcu_hw.ISRHandler_to_IRQn(sce_handler),    #12
+                can_prescaller,                                 #13
+                can_seg1,                                       #14
+                can_sample_point,                               #15
+                can_seg2))                                      #16
 
             can_isr_list.append("MAKE_ISR_WITH_INDEX({0}, CAN_COMMON_TX_IRQ_HANDLER, {1}) \\".format(tx_handler, index))
             can_isr_list.append("MAKE_ISR_WITH_INDEX({0}, CAN_COMMON_RX0_IRQ_HANDLER, {1}) \\".format(rx0_handler, index))

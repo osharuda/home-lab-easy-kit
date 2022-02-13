@@ -88,18 +88,17 @@ extern "C" {
 /// analyzed after reading loop, thus whole loop will take less cycles because there will be just one comparison.
 ///
 
-
-#pragma pack(push, 1)
-
 /// \struct tag_CircBuffer
 /// \brief Structure that represents circular buffer.
 typedef struct tag_CircBuffer {
 
     volatile uint8_t *buffer;       ///< Buffer to be used as data storage for circular buffer.
 
-    volatile uint16_t buffer_size;  ///< size of the #buffer, in bytes.
-
     volatile uint8_t *status;       ///< Optional status buffer to be prepended to the data to be sent to the software.
+
+    volatile uint8_t *current_block; ///< Pointer to the currently reserved block (for block mode only).
+
+    volatile uint16_t buffer_size;  ///< size of the #buffer, in bytes.
 
     volatile uint16_t status_size;  ///< Size of the #status_buffer;
 
@@ -122,11 +121,8 @@ typedef struct tag_CircBuffer {
                                     ///< mode is disabled (byte mode) circbuf_put_byte() must be used; block mode functions
                                     ///< must not be used in byte mode.
 
-    volatile uint8_t *current_block; ///< Pointer to the currently reserved block (for block mode only).
-
-    volatile uint8_t ovf;            ///< indicates overflow, cleared by circbuf_clear_ovf()
+    volatile uint8_t ovf;           ///< indicates overflow, cleared by circbuf_clear_ovf()
 } CircBuffer, *PCircBuffer;
-#pragma pack(pop)
 
 /// \brief Initializes circular buffer.
 /// \param circ - pointer to the circular buffer structure

@@ -46,7 +46,7 @@ volatile {DevName}Instance g_{devname}_devs[] = {DEVNAME}_FW_DEV_DESCRIPTOR;
 
 void {devname}_init_vdev(volatile {DevName}Instance* dev, uint16_t index) {
     volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    memset(devctx, 0, sizeof(DeviceContext));
+    memset((void*)devctx, 0, sizeof(DeviceContext));
     devctx->device_id    = dev->dev_id;
     devctx->dev_index    = index;
     devctx->on_command   = {devname}_execute;

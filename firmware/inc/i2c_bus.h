@@ -101,31 +101,36 @@ typedef void (*ON_POLLING)(uint8_t device_id);
 
 /// \struct tag_DeviceContext
 /// \brief DeviceContext is used by communication in order to work with virtual device.
-typedef __attribute__ ((aligned (8))) struct tag_DeviceContext {
-    uint8_t device_id;                  ///< Device identifier, used by software to specify destination virtual device
+typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
+    uint64_t polling_period;    ///< Specify polling period for on_polling callback (in micro seconds)
+
+    uint64_t next_pooling_ev;	///< Used by communication part to calculate when on_polling() should be called for the next time
 
     // device callbacks
     ON_COMMAND on_command;              ///< This callback is specified by virtual device.
                                         ///< It is called by communication when command is received. May be zero if not required.
+
     ON_READDONE on_read_done;           ///< This callback is specified by virtual device.
                                         ///< It is called by communication when software has read device buffer. May be zero if not required.
+
     ON_POLLING on_polling;              ///< This callback is specified by virtual device.
                                         ///< It is called by communication periodically when no communication happens.
                                         ///< Virtual device may use it to do some simple tasks. May be zero if not required.
 
-    // buffer description
-    uint16_t bytes_available;           ///< Specify amount of bytes available in virtual device buffer for read. May be zero.
     volatile uint8_t* buffer;           ///< Device linear buffer. May be zero if linear buffer is not used. If set to non-zero #circ_buffer must be zero
+
     volatile PCircBuffer circ_buffer;   ///< Specify circular buffer. If set to non-zero #buffer must be zero
 
-    // pooling callback
-    uint64_t polling_period;      ///< Specify polling period for on_polling callback (in micro seconds)
-    uint64_t next_pooling_ev;		///< Used by communication part to calculate when on_polling() should be called for the next time
-    uint16_t dev_index;			///< This field is used for non-exclusive devices to store device index.
-    uint8_t next_pooling_ovrrun; 	                            ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
+    uint16_t dev_index;			        ///< This field is used for non-exclusive devices to store device index.
+
+    uint16_t bytes_available;           ///< Specify amount of bytes available in virtual device buffer for read. May be zero.
+
+    uint8_t device_id;                  ///< Device identifier, used by software to specify destination virtual device
+
+    uint8_t next_pooling_ovrrun; 	    ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
 } DeviceContext;
 
-typedef DeviceContext *PDeviceContext;
+typedef volatile DeviceContext *PDeviceContext;
 
 /// \brief Virtual device calls this function in order to register device for communication with software
 /// \param dev_ctx #tag_DeviceContext structure that describes the virtual device

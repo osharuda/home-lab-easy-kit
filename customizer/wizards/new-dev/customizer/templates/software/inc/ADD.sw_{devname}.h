@@ -39,6 +39,8 @@ typedef struct tag_{DevName}Instance {{
 	uint16_t        dev_buffer_len;     ///< Length of the {DevName} internal buffer
 }} {DevName}Instance;
 
+typedef {DevName}Instance* P{DevName}Instance;
+
 /// \def {DEVNAME}_SW_DEV_DESCRIPTOR
 /// \brief Defines array with configurations for {DevName} virtual devices.
 #define {DEVNAME}_SW_DEV_DESCRIPTOR {{  {__{DEVNAME}_SW_DEV_DESCRIPTOR__} }}

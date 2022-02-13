@@ -35,7 +35,7 @@ volatile uint16_t g_current_pwm_index;
 volatile PWM_ENTRY g_pwm_data[SPWM_MAX_PWM_ENTRIES_COUNT]; // SPWM_MAX_PWM_ENTRIES_COUNT is maximum amount of the entries, it could be less entries
 volatile uint16_t  g_pwm_entries_count;
 volatile SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
-DeviceContext spwm_ctx;
+volatile DeviceContext spwm_ctx __attribute__ ((aligned));
 
 void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
@@ -110,7 +110,7 @@ void spwm_init(void) {
     TIM_Cmd(SPWM_TIMER, ENABLE);
 
     // Register device
-    memset(&spwm_ctx, 0, sizeof(spwm_ctx));
+    memset((void*)&spwm_ctx, 0, sizeof(spwm_ctx));
     spwm_ctx.device_id = SPWM_ADDR;
     spwm_ctx.on_command = spwm_dev_execute;
     comm_register_device(&spwm_ctx);

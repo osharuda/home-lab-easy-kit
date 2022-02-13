@@ -35,36 +35,36 @@
 /// \image latex under_construction.eps
 ///
 
-#pragma pack(push, 1)
-
 /// \struct tag_{DevName}PrivData
 /// \brief Structure that describes private {DevName} data
 typedef struct tag_{DevName}PrivData {
     uint8_t priv_data;  ///< Some private data.
 } {DevName}PrivData;
+typedef volatile {DevName}PrivData* P{DevName}PrivData;
 
-
-#pragma pack(pop)
 
 /// \struct tag_{DevName}Instance
 /// \brief Structure that describes {DevName} virtual device
-typedef __attribute__ ((aligned (8))) struct tag_{DevName}Instance {
-        uint8_t                     dev_id;             ///< Device ID for {DevName} virtual device
-
-        uint16_t                    buffer_size;        ///< Circular buffer size
-
-#if {DEVNAME}_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
-        volatile uint8_t*           buffer;             ///< Internal buffer
-#endif
+typedef struct __attribute__ ((aligned)) tag_{DevName}Instance {
+        volatile DeviceContext      dev_ctx __attribute__ ((aligned));            ///< Virtual device context
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
         volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
 #endif
 
-        __attribute__ ((aligned (8))) volatile DeviceContext      dev_ctx;            ///< Virtual device context
-
         volatile {DevName}PrivData   privdata;          ///< Private data used by this {DevName} device
+
+#if {DEVNAME}_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
+        volatile uint8_t*           buffer;             ///< Internal buffer
+
+        uint16_t                    buffer_size;        ///< Buffer size
+#endif
+
+        uint8_t                     dev_id;             ///< Device ID for {DevName} virtual device
+
 } {DevName}Instance;
+
+typedef volatile {DevName}Instance* P{DevName}Instance;
 
 /// \brief Initializes all {DevName} virtual devices
 void {devname}_init();

@@ -26,8 +26,6 @@
 #define DEV_CIRCULAR_BUFFER     2
 #define {DEVNAME}_DEVICE_BUFFER_TYPE __DEVICE_BUFFER_TYPE__
 
-#pragma pack(push, 1)
-
 /// \addtogroup group_{devname}
 /// @{{
 
@@ -45,10 +43,9 @@
 
 /// \struct tag_{DevName}Command
 /// \brief This structure describes {DevName} command
+#pragma pack(push, 1)
 typedef struct tag_{DevName}Command {{
     uint16_t data;  ///< Some data. Customize it for particular device.
 }} {DevName}Command;
-
-/// @}}
-
 #pragma pack(pop)
+/// @}}

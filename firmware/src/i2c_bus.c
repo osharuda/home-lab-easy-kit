@@ -30,7 +30,7 @@
 
 /// \brief Timestamp when #i2c_pool_devices() was called for the last time. It is used to figure out which of virtual
 ///        devices should be notified with tag_DeviceContext#on_polling() callback.
-volatile uint64_t g_last_usClock;
+volatile uint64_t g_last_usClock __attribute__ ((aligned));
 
 /// \brief This value indicates direction of ongoing communication. Non zero indicates master (software) is reading data.
 ///        from #g_resp_header and corresponding virtual device buffer. Zero indicates software (master) is writing data
@@ -172,12 +172,17 @@ void i2c_bus_reinit(void) {
 
 void i2c_bus_init(void)
 {
+    IS_ALIGNED(&g_last_usClock, sizeof(uint64_t));
     memset((void*)g_devices, 0, sizeof(g_devices));
     i2c_bus_reinit();
     g_last_usClock = get_us_clock();
 }
 
 void comm_register_device(PDeviceContext dev_ctx) {
+	IS_ALIGNED(dev_ctx, sizeof(uint64_t));
+	IS_ALIGNED(&(dev_ctx->polling_period), sizeof(uint64_t));
+	IS_ALIGNED(&(dev_ctx->next_pooling_ev), sizeof(uint64_t));
+
 	if (dev_ctx->device_id <= COMM_MAX_DEV_ADDR) {
 		g_devices[dev_ctx->device_id] = dev_ctx;
 		uint64_t now = get_us_clock();
