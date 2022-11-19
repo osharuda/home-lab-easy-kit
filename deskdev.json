@@ -1,0 +1,22 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 32,
+      "requires" :  {"i2c" : "I2C2"}}},
+
+  "devices" : {
+
+    "DeskDevCustomizer" : {
+      "controls" : {
+        "dev_id" : 1,
+        "requires" : {  "up"      : { "gpio" : "PA_3" },
+                        "down"    : { "gpio" : "PA_2" },
+                        "left"    : { "gpio" : "PA_5" },
+                        "right"   : { "gpio" : "PA_4" },
+                        "encoder" : {"A" : { "gpio" : "PA_7"}, "B" : {"gpio" : "PA_6"}}}}}
+
+  }
+}

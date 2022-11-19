@@ -21,9 +21,9 @@
  */
 
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "gpio_dev.h"
 
 #ifdef GPIODEV_DEVICE_ENABLED

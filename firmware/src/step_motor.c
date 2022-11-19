@@ -21,8 +21,8 @@
  */
 
 #include <string.h>
-#include "utools.h"
 #include "fw.h"
+#include "utools.h"
 #include "step_motor.h"
 #include "step_motor_commands.h"
 #include "extihub.h"
@@ -52,7 +52,7 @@ extern PFN_STEP_MOTOR_CMD_FUNC g_step_motor_cmd_map[STEP_MOTOR_CMD_COUNT];
 
 
 static inline uint16_t step_motor_fetch_cmd(volatile PCircBuffer circ, volatile PStepMotorCmd cmd);
-static inline uint8_t step_motor_get_ustep_bitshift(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift);
+static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift);
 
 void STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER(uint16_t dev_index) {
     volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
@@ -105,8 +105,8 @@ void step_motor_fault_handler(uint64_t clock, volatile void* ctx) {
 
     volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
-    StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_FAULT;
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_FAULT;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_FAULT_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_FAULT_ACTIVE_HIGH);
 
@@ -126,9 +126,9 @@ void step_motor_cw_end_stop_handler(uint64_t clock, volatile void* ctx) {
 
     volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
 
-    StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CWENDSTOP;
+    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CWENDSTOP;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);
@@ -158,8 +158,8 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
 
     volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
-    StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CCWENDSTOP;
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CCWENDSTOP;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);
@@ -182,7 +182,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
     }
 }
 
-void step_motor_init_motor_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum) {
+void step_motor_init_motor_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum) {
     START_PIN_DECLARATION
     assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
     assert_param((linenum != STEP_MOTOR_LINE_FAULT) &&
@@ -194,7 +194,7 @@ void step_motor_init_motor_line(volatile PStepMotorDescriptor mdescr, uint8_t li
     DECLARE_PIN(mdescr->lines[linenum].port, pin_mask, GPIO_Mode_Out_PP)
 }
 
-void step_motor_set_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum, BitAction value) {
+void step_motor_set_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value) {
     assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
     assert_param((linenum != STEP_MOTOR_LINE_FAULT) &&
                  (linenum != STEP_MOTOR_LINE_CWENDSTOP) &&
@@ -204,7 +204,7 @@ void step_motor_set_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum, 
     GPIO_WriteBit(line->port, 1 << line->pin, value);
 }
 
-uint8_t step_motor_init_exti(volatile PStepMotorDescriptor mdescr, uint8_t linenum, uint16_t exti_cr, uint16_t active_high,
+uint8_t step_motor_init_exti(volatile StepMotorDescriptor* mdescr, uint8_t linenum, uint16_t exti_cr, uint16_t active_high,
                           PFN_EXTIHUB_CALLBACK callback, uint8_t dev_index, uint8_t mindex) {
     assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
     assert_param((linenum == STEP_MOTOR_LINE_FAULT) ||
@@ -225,7 +225,7 @@ uint8_t step_motor_init_exti(volatile PStepMotorDescriptor mdescr, uint8_t linen
                                   1);
 }
 
-uint8_t step_motor_mask_exti(volatile PStepMotorDescriptor mdescr, uint8_t linenum) {
+uint8_t step_motor_mask_exti(volatile StepMotorDescriptor* mdescr, uint8_t linenum) {
     assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
     assert_param((linenum == STEP_MOTOR_LINE_FAULT) || (linenum == STEP_MOTOR_LINE_CWENDSTOP) || (linenum == STEP_MOTOR_LINE_CCWENDSTOP));
     assert_param(mdescr->lines[linenum].port!=0);
@@ -233,7 +233,7 @@ uint8_t step_motor_mask_exti(volatile PStepMotorDescriptor mdescr, uint8_t linen
     return exti_mask_callback(mdescr->lines[linenum].port, mdescr->lines[linenum].pin);
 }
 
-static inline uint8_t step_motor_get_ustep_bitshift(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift) {
+static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift) {
     uint8_t mval = STEP_MOTOR_MICROSTEP_STATUS_TO_VALUE(mstatus->motor_state);
     *bitshift = g_step_motor_microstep_tables[mdescr->motor_driver][mval];
     uint8_t res = 0;
@@ -249,7 +249,7 @@ static inline uint8_t step_motor_get_ustep_bitshift(volatile PStepMotorDescripto
 
 uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, StepMotorCmd* cmd) {
     volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     volatile PStepMotorContext  mcontext = MOTOR_CONTEXT(dev, mindex);
 
@@ -343,7 +343,7 @@ uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, StepMotor
 }
 
 void step_motor_suspend_motor(volatile PStepMotorDevice dev,
-                              volatile PStepMotorDescriptor mdescr,
+                              volatile StepMotorDescriptor* mdescr,
                               volatile PStepMotorStatus mstatus,
                               uint8_t error) {
     uint32_t mcfg = mdescr->config_flags;
@@ -375,7 +375,7 @@ void step_motor_suspend_motor(volatile PStepMotorDevice dev,
     }
 }
 
-void step_motor_resume_motor(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus) {
+void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus) {
     uint32_t mcfg = mdescr->config_flags;
     // initialize GPIO : ENABLE (optional) with preserved power state
     if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
@@ -390,7 +390,7 @@ void step_motor_resume_motor(volatile PStepMotorDescriptor mdescr, volatile PSte
 
 void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev) {
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
-        volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+        volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
         volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
         // Reset motor state to default
@@ -483,7 +483,7 @@ void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev) {
 
 
 void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t mcfg = mstatus->motor_state;
     uint8_t pin_val;
@@ -698,12 +698,12 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
         priv_data->last_event_timestamp = now;
 
         if (is_irq_handler) {
-            timer_reschedule_update_ev(dev->timer, w);
+            timer_reschedule_us(dev->timer, w);
         } else {
-            timer_schedule_update_ev(dev->timer, w, dev->timer_irqn, IRQ_PRIORITY_STEP_MOTOR_TIMER);
+            timer_start_us(dev->timer, w, dev->timer_irqn, IRQ_PRIORITY_STEP_MOTOR_TIMER);
         }
     } else {
-        timer_disable(dev->timer);
+        timer_disable(dev->timer, dev->timer_irqn);
         step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, any_error ? STEP_MOTOR_DEV_STATUS_ERROR : STEP_MOTOR_DEV_STATUS_IDLE);
     }
 }
@@ -721,7 +721,7 @@ void step_motor_dev_stop(volatile PStepMotorDevice dev) {
     step_motor_dev_reset(dev, 1); // stop everything, drop existing commands
 }
 
-uint8_t step_motor_update_pos_change_by_step(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus, volatile PStepMotorContext mcontext) {
+uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, volatile PStepMotorContext mcontext) {
     // Calculate default delta
     uint8_t bitshift;
     uint8_t res = step_motor_get_ustep_bitshift(mdescr, mstatus, &bitshift);
@@ -738,7 +738,7 @@ uint8_t step_motor_update_pos_change_by_step(volatile PStepMotorDescriptor mdesc
 void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
     volatile PStepMotorDevStatus dev_status = MOTOR_DEV_STATUS(dev);
 
-    timer_disable(dev->timer);
+    timer_disable(dev->timer, dev->timer_irqn);
 
     if (full_reset) {
         DISABLE_IRQ
@@ -749,7 +749,7 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
 
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
         volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
-        volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+        volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
         volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
         // Handle motor context

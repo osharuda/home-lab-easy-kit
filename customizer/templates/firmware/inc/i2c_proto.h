@@ -155,6 +155,11 @@ typedef struct tag_CommCommandHeader{{
 /// \brief This communication status indicates that circular buffer of the device is overflow and some data is lost
 #define COMM_STATUS_OVF               16
 
+/// \def COMM_STATUS_OK
+/// \brief This communication status indicates successful operation
+#define COMM_STATUS_OK               0
+
+
 /// \struct tag_CommResponseHeader
 /// \brief This structure represent information being received by software from firmware.
 #pragma pack(push, 1)
@@ -176,7 +181,7 @@ typedef struct tag_CommResponseHeader{{
 
 /// \def COMM_MAX_DEV_ADDR
 /// \brief Defines maximum device ID value.
-#define COMM_MAX_DEV_ADDR             15
+#define COMM_MAX_DEV_ADDR             {__COMM_MAX_DEV_ADDR__}
 
 // CRC initial value
 /// \def COMM_CRC_INIT_VALUE
@@ -195,5 +200,4 @@ typedef struct tag_CommResponseHeader{{
 /// \def I2C_FIRMWARE_ADDRESS
 /// \brief Defines first I2C address for the device
 #define I2C_FIRMWARE_ADDRESS          {__I2C_FIRMWARE_ADDRESS__}
-
 /// @}}

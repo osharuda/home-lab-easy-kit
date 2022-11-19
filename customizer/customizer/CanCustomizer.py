@@ -18,15 +18,24 @@ from tools import *
 
 
 class CanCustomizer(DeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "CAN")
-        self.fw_header = "fw_can.h"
-        self.sw_header = "sw_can.h"
-        self.shared_header = "can_proto.h"
+    def __init__(self, mcu_hw, dev_config, common_config):
+        super().__init__(mcu_hw, dev_config, common_config, "CAN")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "can_conf.hpp"
+        self.sw_lib_source = "can_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__CAN_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
+                             self.shared_token)
 
     def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
         return
@@ -101,9 +110,14 @@ class CanCustomizer(DeviceCustomizer):
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
         fw_device_buffers = []          # these buffers are used to be internal buffers for all configured devices on firmware side
         can_isr_list = []
+        sw_config_array_name = "can_configs"
+        sw_config_declarations = []
+        sw_configs = []
 
         index = 0
         for dev_name, dev_config in self.device_list:
+
+            self.require_feature("SYSTICK", dev_config)
 
             dev_requires = dev_config["requires"]
             dev_id       = dev_config["dev_id"]
@@ -167,12 +181,22 @@ class CanCustomizer(DeviceCustomizer):
 
             fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
+            sw_config_name = "can_{0}_config_ptr".format(dev_name)
+            sw_config_declarations.append(f"extern const CANConfig* {sw_config_name};")
+            sw_configs.append(
+                f"const CANConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+
             index += 1
 
-        vocabulary = {"__CAN_DEVICE_COUNT__": len(fw_device_descriptors),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__CAN_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__CAN_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
                       "__CAN_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),
                       "__CAN_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1],
-                      "__CAN_FW_IRQ_HANDLERS__": concat_lines(can_isr_list)[:-1]}
+                      "__CAN_FW_IRQ_HANDLERS__": concat_lines(can_isr_list)[:-1],
+                      "__CAN_CONFIGURATION_DECLARATIONS__": concat_lines(sw_config_declarations),
+                      "__CAN_CONFIGURATIONS__": concat_lines(sw_configs),
+                      "__CAN_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
+                      }
 
         self.patch_templates(vocabulary)

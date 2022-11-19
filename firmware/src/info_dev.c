@@ -22,9 +22,9 @@
 
 #include <assert.h>
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "info_dev.h"
 
 #ifdef INFO_DEVICE_ENABLED

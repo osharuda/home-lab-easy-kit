@@ -18,15 +18,24 @@ from tools import *
 
 
 class SPWMCustomizer(ExclusiveDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "CONTROLS")
-        self.fw_header = "fw_spwm.h"
-        self.sw_header = "sw_spwm.h"
-        self.shared_header = "spwm_proto.h"
+    def __init__(self, mcu_hw, dev_config, common_config):
+        super().__init__(mcu_hw, dev_config, common_config, "CONTROLS")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "spwm_conf.hpp"
+        self.sw_lib_source = "spwm_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__SPWM_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
+                             self.shared_token)
 
     def customize(self):
         fw_pin_list = []
@@ -81,7 +90,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
         pin_sw_defines = []
 
         index = 0
-        port_index = 0;
+        port_index = 0
         for port, val in used_ports.items():
             bitmask = val["bitmask"]
             def_vals = val["def_vals"]
@@ -98,14 +107,15 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
                 if t & bitmask != 0:
                     p = self.mcu_hw.get_GPIO(port, i)
                     name = "SPWM_" + pin_to_name[p].upper()
-                    pin_name_defines.append("#define {0} {1}".format(name, index))
+                    pin_name_defines.append("constexpr size_t {0} = {1};".format(name, index))
                     descr = '{{ {0}, {1}, {2}, "{3}" }} '.format(port_index, i, int_to_bool(def_vals & t), pin_to_name[p])
                     pin_sw_defines.append(descr)
                     index += 1
 
             port_index += 1
 
-        vocabulary = {"__DEVICE_ID__": self.dev_config["dev_id"],
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__SPWM_DEVICE_NAME__": self.device_name,
                       "__SPWM_PORT_COUNT__": len(used_ports),
                       "__SPWM_TIMER__": timer,

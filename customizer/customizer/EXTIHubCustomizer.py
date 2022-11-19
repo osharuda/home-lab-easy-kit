@@ -20,14 +20,15 @@ import glob
 from shutil import copy
 
 class EXTIHubCustomizer(BaseDeviceCustomizer):
-    def __init__(self, mcu_hw):
-        super().__init__(mcu_hw, None)
+    def __init__(self, mcu_hw, common_config):
+        super().__init__(mcu_hw, None, common_config)
         self.device_name = "EXTIHUB"
         self.exti_dict = dict()
-        self.fw_header = "fw_exti.h"
+        self.fw_header = "exti_conf.h"
         self.required_resources = None
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
 
     def register_exti(self, dev_name, dev_cfg):
         req_list = get_leaf_values(dev_cfg)
@@ -49,6 +50,7 @@ class EXTIHubCustomizer(BaseDeviceCustomizer):
 
         configuration["devices"]["EXTIHubCustomizer"] = {self.device_name: {"requires": dict()}}
         config_dict = configuration["devices"]["EXTIHubCustomizer"]
+        self.require_feature("SYSTICK", config_dict)
 
         dev_requires = config_dict[self.device_name]["requires"]
         irq_handlers = set()

@@ -29,7 +29,7 @@
 #include <vector>
 #include <list>
 #include <cassert>
-#include "texttools.hpp"
+#include <libhlek/texttools.hpp>
 
 /// \addtogroup group_tools
 /// @{
@@ -980,7 +980,7 @@ class TUI {
 public:
 
     TUI(const TUI &) = delete;             ///< This class doesn't allow copying
-    virtual void init();                   ///< This method is used to complete initialization
+    virtual void init();                   ///< This method is used to uid_ready initialization
     TUI &operator()(const TUI &) = delete; ///< This class doesn't allow assignment
 
     /// \brief TUI constructor.

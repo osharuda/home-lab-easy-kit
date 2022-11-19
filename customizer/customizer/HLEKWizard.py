@@ -178,18 +178,17 @@ class HLEKWizard:
         for f, d in self.mod_file_list.items():
             modfile = SourceFileParser(f)
             for mt, t in d.items():
-                open_comment = modfile.make_comment(self.open_sub_comment + mt)
-                close_comment = modfile.make_comment(self.open_sub_comment + mt)
+                comment = modfile.make_comment(self.open_sub_comment + mt)
 
                 if remove:
-                    open_index = modfile.find(open_comment)
-                    close_index = modfile.find(close_comment)
+                    open_index = modfile.find(comment)
+                    close_index = modfile.find(comment, open_index + 1)
                     modfile.remove(open_index, close_index)
                 else:
                     ins_token = modfile.make_comment(mt, "")
                     ins_index = modfile.find(ins_token)
                     s = patch_text(t, self.substitutions)
-                    modfile.add(ins_index, [open_comment, s, close_comment])
+                    modfile.add(ins_index, [comment, s, comment])
 
                 modfile.store()
 

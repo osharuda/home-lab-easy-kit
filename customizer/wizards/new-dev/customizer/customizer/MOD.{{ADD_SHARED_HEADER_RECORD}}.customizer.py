@@ -1,0 +1,1 @@
+shared_headers[{DevName}Customizer.__name__] = ("{devname}_common.hpp", "{devname}_shared.h", "{devname}_conf.h", "{devname}_conf.hpp", "__{DEVNAME}_SHARED_HEADER__")

@@ -211,7 +211,7 @@ The following table describes pin configurations available in STM32F103x. It is 
 |`"GPIO_Mode_Out_OD"`     | Output | Open drain
 |`"GPIO_Mode_Out_PP"`     | Output | Push pull
 
-Be very careful with logic levels. Some STM32F103C8T6 are 5v tolerant, some not. Improper electrical connection may cause a lot of harm. If doubt, refer documentation provided by manufacturer.
+Be very careful with logic levels. Some STM32F103C8T6 pins are 5v tolerant, some not. Improper electrical connection may cause a lot of harm. If doubt, refer documentation provided by manufacturer.
 
 The table below describes ADC inputs available in STM32F103C8T6.
 

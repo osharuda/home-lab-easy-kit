@@ -18,15 +18,23 @@ from tools import *
 
 
 class ADCDevCustomizer(DeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "ADCDEV")
-        self.fw_header = "fw_adcdev.h"
-        self.sw_header = "sw_adcdev.h"
-        self.shared_header = "adc_proto.h"
+    def __init__(self, mcu_hw, dev_config, common_config):
+        super().__init__(mcu_hw, dev_config, common_config, "ADCDEV")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "adc_conf.hpp"
+        self.sw_lib_source = "adc_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__ADC_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
     def sanity_checks(self, dev_config: dict, adcdev_requires: dict, dev_name : str):
         if "sample_time" not in dev_config.keys():
@@ -80,6 +88,7 @@ class ADCDevCustomizer(DeviceCustomizer):
 
         return res
 
+
     def customize(self):
         fw_device_descrs = []
         fw_device_buffers = []      # these buffers are used to buffer all samples
@@ -88,6 +97,9 @@ class ADCDevCustomizer(DeviceCustomizer):
         buffer_size_defs = []
         fw_device_analog_inputs = []
         sw_device_analog_inputs = []
+        sw_config_declarations = []
+        sw_config_array_name = "adc_configs"
+        sw_configs = []
         adc_isr_list = []
         dma_isr_list = []
         timer_irq_handler_list = []
@@ -100,7 +112,7 @@ class ADCDevCustomizer(DeviceCustomizer):
             dev_id = dev_config["dev_id"]
             buffer_size = dev_config["buffer_size"]
             use_dma = dev_config["use_dma"] != 0
-            adc_input_count = 0
+            adc_input_number = 0
             timer_count = 0
             dma_channel = "0"
             dma = "0"
@@ -117,7 +129,7 @@ class ADCDevCustomizer(DeviceCustomizer):
 
                 rtype, res = self.get_resource(ritem)
                 if rtype == "adc_input":
-                    adc_input_count += 1
+                    adc_input_number += 1
                     try:
                         gpio = self.mcu_hw.ADCChannel_to_GPIO(res)
                         channel_port = self.mcu_hw.GPIO_to_port(gpio)
@@ -142,9 +154,9 @@ class ADCDevCustomizer(DeviceCustomizer):
                 else:
                     raise RuntimeError("Wrong device specified in {0} requirements".format(dev_name))
 
-            if adc_input_count == 0:
+            if adc_input_number == 0:
                 raise RuntimeError("Device {0} must have at least one adc_input".format(dev_name))
-            sample_block_size = adc_input_count*2
+            sample_block_size = adc_input_number*2
 
             if timer_count == 0:
                 raise RuntimeError("Device {0} must have one timer assigned".format(dev_name))
@@ -181,30 +193,43 @@ class ADCDevCustomizer(DeviceCustomizer):
 
             scan_complete_irqn = self.mcu_hw.ISRHandler_to_IRQn(irq_handler)
 
-            if not check_buffer_size_multiplicity(buffer_size, adc_input_count*2):
+            if not check_buffer_size_multiplicity(buffer_size, adc_input_number*2):
                 print("Warning: device {0} has buffer size ({1}) not multiply to the number of inputs ({2}) * sizeof("
                       "uint16_t)".format(dev_name,
                                          buffer_size,
-                                         adc_input_count))
+                                         adc_input_number))
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             fw_inputs_name = "g_{0}_inputs".format(dev_name)
-            fw_device_descrs.append("{{ {{0}}, {{0}}, {{0}}, {13}, {10}, {2}, {12}, {3}, {4}, {5}, {6}, {9}, {11}, {7}, {8}, {0}, {1} }}".format(
-                                                                                dev_id,             #0
-                                                                                adc_input_count,    #1
-                                                                                adc,                #2
-                                                                                dr_address,         #3
-                                                                                dma_channel,        #4
-                                                                                dma,                #5
-                                                                                dma_it,             #6
-                                                                                self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler),   #7
-                                                                                scan_complete_irqn, #8
-                                                                                buffer_size,        #9
-                                                                                fw_buffer_name,     #10
-                                                                                sample_block_size,  #11
-                                                                                timer,              #12
-                                                                                fw_inputs_name))    #13
+            fw_device_descrs.append(f"""{{\\
+    {{0}},\\
+    {{0}},\\
+    {{0}},\\
+    {fw_inputs_name},\\
+    {fw_buffer_name},\\
+    {adc},\\
+    {timer},\\
+    {dr_address},\\
+    {dma_channel},\\
+    {dma},\\
+    {dma_it},\\
+    {buffer_size},\\
+    {sample_block_size},\\
+    {self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler)},\\
+    {scan_complete_irqn},\\
+    {dev_id},\\
+    {adc_input_number} }}""")
 
-            sw_device_descrs.append('{{ {0}, "{1}", {2}, {3}, {4}, {5}, {6}, {7} }}'.format(dev_id, dev_name, buffer_size, adc_input_count, self.mcu_hw.get_TIMER_freq(timer), vref, adc_maxval, fw_inputs_name))
+
+            sw_device_descrs.append(f"""{{  \\
+    {dev_id},                              /* Device Id */ \\
+    "{dev_name}",                          /* Device name */ \\
+    {buffer_size},                         /* Buffer size */ \\
+    {adc_input_number},                    /* Number of ADC inputs*/ \\
+    {self.mcu_hw.get_TIMER_freq(timer)},   /* Timer frequency */ \\
+    {vref},                                /* Reference voltage */ \\
+    {adc_maxval},                          /* ADC maximum value */ \\
+    {fw_inputs_name}                       /* Inputs */ }}""")
+
             fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
             fw_device_analog_inputs.append("volatile ADCDevFwChannel {0}[]= {{ {1} }};\\".format(fw_inputs_name,
@@ -212,11 +237,14 @@ class ADCDevCustomizer(DeviceCustomizer):
 
             sw_device_analog_inputs.append("const ADCInput {0}[]= {{ {1} }};\\".format(fw_inputs_name,
                                                                                                  ", ".join(sw_analog_inputs)))
-
+            sw_config_name = "adc_{0}_config".format(dev_name)
+            sw_config_declarations.append(f"extern const ADCConfig* {sw_config_name};")
+            sw_configs.append(f"const ADCConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 
-        vocabulary = {"__ADCDEV_BUFFERS__": concat_lines(buffer_defs),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__ADCDEV_BUFFERS__": concat_lines(buffer_defs),
                       "__ADCDEV_DEVICE_COUNT__": len(fw_device_descrs),
                       "__ADCDEV_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descrs),
                       "__ADCDEV_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_descrs),
@@ -225,6 +253,10 @@ class ADCDevCustomizer(DeviceCustomizer):
                       "__ADCDEV_SW_CHANNELS__": concat_lines(sw_device_analog_inputs)[:-1],
                       "__ADCDEV_FW_ADC_IRQ_HANDLERS__": concat_lines(adc_isr_list)[:-1],
                       "__ADCDEV_FW_TIMER_IRQ_HANDLERS__": concat_lines(timer_irq_handler_list)[:-1],
-                      "__ADCDEV_FW_DMA_IRQ_HANDLERS__": concat_lines(dma_isr_list)[:-1]}
+                      "__ADCDEV_FW_DMA_IRQ_HANDLERS__": concat_lines(dma_isr_list)[:-1],
+
+                      "__ADCDEV_CONFIGURATION_DECLARATIONS__": concat_lines(sw_config_declarations),
+                      "__ADCDEV_CONFIGURATIONS__": concat_lines(sw_configs),
+                      "__ADCDEV_CONFIGURATION_ARRAY_NAME__": sw_config_array_name}
 
         self.patch_templates(vocabulary)

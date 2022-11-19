@@ -17,8 +17,8 @@ from BaseDeviceCustomizer import *
 
 
 class ExclusiveDeviceCustomizer(BaseDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_configs, device_name):
-        super().__init__(mcu_hw, dev_configs)
+    def __init__(self, mcu_hw, dev_configs, common_config, device_name):
+        super().__init__(mcu_hw, dev_configs, common_config)
         self.device_name = device_name
         self.check_instance_count(1)
         self.dev_config = next(iter(self.dev_configs.values()))

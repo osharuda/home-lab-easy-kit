@@ -21,9 +21,9 @@
  */
 
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "deskdev.h"
 #include "extihub.h"
 

@@ -22,10 +22,12 @@
 
 #include <string.h>
 #include <stm32f10x.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "can.h"
+
+
 
 #ifdef CAN_DEVICE_ENABLED
 

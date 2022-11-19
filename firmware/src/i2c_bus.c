@@ -21,16 +21,18 @@
  */
 
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 
 /// \addtogroup group_communication_i2c_impl
 ///  @{
 
+#if ENABLE_SYSTICK!=0
 /// \brief Timestamp when #i2c_pool_devices() was called for the last time. It is used to figure out which of virtual
 ///        devices should be notified with tag_DeviceContext#on_polling() callback.
 volatile uint64_t g_last_usClock __attribute__ ((aligned));
+#endif
 
 /// \brief This value indicates direction of ongoing communication. Non zero indicates master (software) is reading data.
 ///        from #g_resp_header and corresponding virtual device buffer. Zero indicates software (master) is writing data
@@ -172,10 +174,14 @@ void i2c_bus_reinit(void) {
 
 void i2c_bus_init(void)
 {
+#if ENABLE_SYSTICK!=0
     IS_ALIGNED(&g_last_usClock, sizeof(uint64_t));
+#endif
     memset((void*)g_devices, 0, sizeof(g_devices));
     i2c_bus_reinit();
+#if ENABLE_SYSTICK!=0
     g_last_usClock = get_us_clock();
+#endif
 }
 
 void comm_register_device(PDeviceContext dev_ctx) {
@@ -185,11 +191,14 @@ void comm_register_device(PDeviceContext dev_ctx) {
 
 	if (dev_ctx->device_id <= COMM_MAX_DEV_ADDR) {
 		g_devices[dev_ctx->device_id] = dev_ctx;
+
+#if ENABLE_SYSTICK!=0
 		uint64_t now = get_us_clock();
 		if (dev_ctx->on_polling!=0 && dev_ctx->polling_period>0) {
 			dev_ctx->next_pooling_ev = now + dev_ctx->polling_period;
 			dev_ctx->next_pooling_ovrrun = (now >= dev_ctx->next_pooling_ev) ? 1 : 0;
 		}
+#endif
 	}
 }
 
@@ -244,6 +253,7 @@ void i2c_check_command(void) {
 	}
 }
 
+#if ENABLE_SYSTICK!=0
 void i2c_pool_devices(void) {
 	uint64_t now = get_us_clock();
 	if (g_last_usClock >= now) {
@@ -272,6 +282,7 @@ void i2c_pool_devices(void) {
 
 	g_last_usClock = now;
 }
+#endif
 
 void i2c_addr_init(uint8_t transmit, uint8_t first_byte_sent) {
 	uint8_t prev_crc = g_crc;

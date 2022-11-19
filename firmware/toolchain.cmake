@@ -6,7 +6,7 @@ set(CMAKE_SYSTEM_PROCESSOR arm)
 set(tools "< GNU ARM Toolchain >")
 
 # Should point to the CMSIS library. For the latest version of the library
-# this path should end with "/STM32F10x_StdPeriph_Lib_V3.5.0"
+# this path should end with "/STM32F10x_StdPeriph_Lib_V3.6.0"
 set(STDPERIF_PATH "< CMSIS >")
 
 set(CMAKE_C_COMPILER ${tools}/bin/arm-none-eabi-gcc)

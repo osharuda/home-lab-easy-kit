@@ -82,7 +82,7 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset);
 /// \brief Helper function that wraps initialization of the stepper motor driver line.
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param linenum - line index (see @ref group_step_motor_dev_motor_lines)
-void step_motor_init_motor_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum);
+void step_motor_init_motor_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum);
 
 /// \brief Initialize step motor GPIO lines and external interruppts to default state.
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
@@ -97,7 +97,7 @@ void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex);
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param linenum - line index (see @ref group_step_motor_dev_motor_lines)
 /// \param value - value to set (0 or non-zero)
-void step_motor_set_line(volatile PStepMotorDescriptor mdescr, uint8_t linenum, BitAction value);
+void step_motor_set_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value);
 
 /// \brief Helper function that sets stepper motor device tag_StepMotorDevStatus#status
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
@@ -112,7 +112,7 @@ void step_motor_set_dev_status(volatile PStepMotorDevice dev, uint8_t mask, uint
 /// \param mstatus - pointer to the corresponding stepper motor #tag_StepMotorStatus structure
 /// \param mcontext - pointer to the corresponding stepper motor #tag_StepMotorContext structure
 /// \return 0 if success, non-zero indicates an error due to incorrect micro stepping value
-uint8_t step_motor_update_pos_change_by_step(volatile PStepMotorDescriptor mdescr,
+uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdescr,
                                              volatile PStepMotorStatus mstatus,
                                              volatile PStepMotorContext mcontext);
 
@@ -125,7 +125,7 @@ uint8_t step_motor_update_pos_change_by_step(volatile PStepMotorDescriptor mdesc
 /// \details This function is called in context of #step_motor_timer_event(), it may become inline in future
 /// \details May suspend other motors if stepper motor is configured to affect other motors.
 void step_motor_suspend_motor(volatile PStepMotorDevice dev,
-                              volatile PStepMotorDescriptor mdescr,
+                              volatile StepMotorDescriptor* mdescr,
                               volatile PStepMotorStatus mstatus,
                               uint8_t error);
 
@@ -133,7 +133,7 @@ void step_motor_suspend_motor(volatile PStepMotorDevice dev,
 ///        lines into their preserved state
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param mstatus - pointer to the corresponding stepper motor #tag_StepMotorStatus structure
-void step_motor_resume_motor(volatile PStepMotorDescriptor mdescr, volatile PStepMotorStatus mstatus);
+void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus);
 
 /// \brief Helper function that implements similar logic for handling hardware end-stops, software position limits and
 ///        faults.
@@ -207,7 +207,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #tag_StepMotorDescriptor structure
-#define MOTOR_DESCR(dev, mindex)    ((volatile PStepMotorDescriptor)(*((dev)->motor_descriptor + (mindex))))
+#define MOTOR_DESCR(dev, mindex)    ((volatile StepMotorDescriptor*)(*((dev)->motor_descriptor + (mindex))))
 
 /// \def MOTOR_STATUS
 /// \brief This macro returns pointer to #tag_StepMotorStatus structure corresponding to selected stepper motor status

@@ -1,0 +1,40 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C2"}
+    }},
+
+  "devices" : {
+    "SPIDACCustomizer": {
+      "spidac_0" : {
+        "dev_id" : 1,
+        "model"  : "dacchip",
+        "samples_number" : 100,
+        "clock_phase" : "second",
+        "clock_polarity" : "idle_high",
+        "clock_speed" : "9MHz",
+        "frame_format" : "msb",
+        "frame_size" : 16,
+        "frames_per_sample" : 1,
+        "ld_mode" : "fall",
+
+        "bits_per_sample" : 12,
+        "channels" : {
+            "dac_out" : {
+              "index" : 0,
+              "min_value" : 0.0,
+              "max_value" : 4.0,
+              "default_value" : 0.0
+            }
+        },
+        "requires" :  {"SPI" : {"spi": "SPI2"},
+                       "TIMER" : {"timer": "TIM1"},
+                       "LD" : {"gpio" : "PA_12"}}
+        }
+      }
+  }
+}

@@ -17,25 +17,34 @@ from ExclusiveDeviceCustomizer import *
 
 
 class IRRCCustomizer(ExclusiveDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_configs):
-        super().__init__(mcu_hw, dev_configs, "IRRC")
-        self.fw_header = "fw_irrc.h"
-        self.sw_header = "sw_irrc.h"
-        self.shared_header = "irrc_proto.h"
+    def __init__(self, mcu_hw, dev_configs, common_config):
+        super().__init__(mcu_hw, dev_configs, common_config, "IRRC")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "irrc_conf.hpp"
+        self.sw_lib_source = "irrc_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
-        self.add_shared_code(self.shared_templ + self.shared_header, "__CONTROLS_SHARED_HEADER__")
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
+                             self.shared_token)
 
     def customize(self):
+        self.require_feature("SYSTICK", self.dev_config)
         irrc_requires = self.dev_config["requires"]
         data_pin = self.get_gpio(irrc_requires["data"])
         irrc_requires["exti_line_irrc"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(data_pin)}
         data_pin_number = self.mcu_hw.GPIO_to_pin_number(data_pin)
 
-        vocabulary = {"__DEVICE_ID__": self.dev_config["dev_id"],
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__IRRC_DEVICE_NAME__": self.device_name,
                       "__IRRC_BUF_LEN__": self.dev_config["buffer_size"],
 

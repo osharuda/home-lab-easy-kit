@@ -20,8 +20,8 @@
  *   \author Oleh Sharuda
  */
 
-#include "utools.h"
 #include "fw.h"
+#include "utools.h"
 #include "step_motor.h"
 #include "step_motor_commands.h"
 #include "circbuffer.h"
@@ -96,7 +96,7 @@ uint8_t step_motor_invalid_cmd(volatile PStepMotorDevice dev, uint8_t mindex, St
 }
 
 uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_ENABLE_IN_USE) {
@@ -111,7 +111,7 @@ uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex,
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_SLEEP_IN_USE) {
@@ -127,7 +127,7 @@ uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, 
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_ENABLE_IN_USE) {
@@ -142,7 +142,7 @@ uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_general_wakeup(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_SLEEP_IN_USE) {
@@ -157,7 +157,7 @@ uint8_t step_motor_general_wakeup(volatile PStepMotorDevice dev, uint8_t mindex,
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_general_reset(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     uint8_t res = STE_MOTOR_CMD_RESULT_OK;
 
     switch (cmd->state) {
@@ -206,7 +206,7 @@ uint8_t step_motor_general_config(volatile PStepMotorDevice dev, uint8_t mindex,
 }
 
 uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
 
@@ -224,7 +224,7 @@ uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, Ste
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
 
@@ -242,7 +242,7 @@ uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, St
     return STE_MOTOR_CMD_RESULT_OK;
 }
 uint8_t step_motor_set_microstep(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
     uint8_t result = STE_MOTOR_CMD_RESULT_OK;
@@ -333,7 +333,7 @@ uint8_t step_motor_set_ccw_sft_limit(volatile PStepMotorDevice dev, uint8_t mind
 }
 
 uint8_t step_motor_move(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDescriptor mdescr = MOTOR_DESCR(dev, mindex);
+    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     volatile PStepMotorContext  mcontext = MOTOR_CONTEXT(dev, mindex);
     volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);

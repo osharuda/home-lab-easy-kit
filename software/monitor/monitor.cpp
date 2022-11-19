@@ -21,26 +21,34 @@
  */
 
 #include <memory>
-#include "monitor.hpp"
-#include "ekit_i2c_bus.hpp"
-#include "ekit_firmware.hpp"
-#include "info_dev.hpp"
-#include "lcd1602a.hpp"
-#include "deskdev.hpp"
-#include "irrc.hpp"
-#include "rtc.hpp"
-#include "gpio_dev.hpp"
-#include "spwm.hpp"
-#include "adcdev.hpp"
-#include "step_motor.hpp"
-#include "can.hpp"
+#include <monitor.hpp>
+#include <libhlek/ekit_i2c_bus.hpp>
+#include <libhlek/ekit_firmware.hpp>
+#include <libconfig.hpp>
+#include <libhlek/info_dev.hpp>
+#include <libhlek/deskdev.hpp>
+#include <libhlek/irrc.hpp>
+#include <libhlek/gpio_dev.hpp>
+#include <libhlek/spwm.hpp>
+#include <libhlek/adcdev.hpp>
+#include <libhlek/ad9850dev.hpp>
+#include <libhlek/spidac.hpp>
+#include <libhlek/spiproxy.hpp>
+#include <libhlek/gsmmodem.hpp>
+#include <libhlek/uartdev.hpp>
+#include <libhlek/lcd1602a.hpp>
+#include <libhlek/rtc.hpp>
+#include <libhlek/step_motor.hpp>
+#include <libhlek/can.hpp>
 // INCLUDE_HEADER
-#include "i2c_proto.h"
+#include <libhlek/i2c_proto.h>
 #include "handlers.hpp"
-#include "texttools.hpp"
-#include "ekit_error.hpp"
-#include "termui.hpp"
+#include <libhlek/texttools.hpp>
+#include <libhlek/ekit_error.hpp>
+#include <termui.hpp>
 #define I2C_BUS_NAME "/dev/i2c-0"
+
+using namespace LIBCONFIG_NAMESPACE;
 
 
 /*
@@ -152,6 +160,9 @@ void HLEKMON::on_command() {
         catch(EKitException& ee) {
             log(ee.what());
         }
+        catch (std::length_error& le) {
+            log(le.what());
+        }
         catch(...) {
             exit(1);
         }
@@ -242,23 +253,19 @@ int main(int argc, char* argv[])
     // Create firmware using a bus opened above
     std::shared_ptr<EKitBus> firmware (new EKitFirmware(i2cbus, I2C_FIRMWARE_ADDRESS));
 
-#ifdef INFO_DEVICE_ENABLED
-    std::shared_ptr<INFODev> info_dev(new INFODev(firmware, INFO_ADDR));
+    std::shared_ptr<INFODev> info_dev(new INFODev(firmware, LIBCONFIG_NAMESPACE::info_config_ptr));
     std::shared_ptr<CommandHandler> info_dev_handler(dynamic_cast<CommandHandler*>(new InfoDevHandler(std::dynamic_pointer_cast<EKitDeviceBase>(info_dev), ui)));
     ui->add_command(cmd_index++, info_dev_handler);
-#endif
 
 #ifdef UART_PROXY_DEVICE_ENABLED
-    UartProxyDevInstance uart_proxies[] = UART_PROXY_DESCRIPTOR;
-
-    for (size_t i = 0; i<UART_PROXY_DEVICE_NUMBER; i++) {
-        PInfoDeviceDescriptor descr = info_dev->get_device_info(uart_proxies->dev_id);
+    for (size_t i = 0; i<uart_proxy_configs_number; i++) {
+        const UARTProxyConfig* config = uart_proxy_configs + i;
         bool add_uart_dev = true;
 
-        if (descr->hint==INFO_DEV_HINT_GSM_MODEM) {
+        if (info_dev->config[config->dev_id].devices[i].hint == INFO_DEV_HINT_GSM_MODEM) {
             // attempt to add GSM modem
             try {
-                std::shared_ptr<GSMModem> modem(new GSMModem(firmware, uart_proxies[0].dev_id, 30000, descr->name));
+                std::shared_ptr<GSMModem> modem(new GSMModem(firmware, config, 30000));
 
                 std::shared_ptr<CommandHandler> at_handler(dynamic_cast<CommandHandler*>(new ATHandler(std::dynamic_pointer_cast<EKitDeviceBase>(modem), ui)));
                 std::shared_ptr<CommandHandler> ussd_handler(dynamic_cast<CommandHandler*>(new USSDHandler(std::dynamic_pointer_cast<EKitDeviceBase>(modem), ui)));
@@ -284,7 +291,7 @@ int main(int argc, char* argv[])
         }
 
         if (add_uart_dev) {
-            std::shared_ptr<UARTDev> uart_dev(new UARTDev(firmware, uart_proxies[i].dev_id));
+            std::shared_ptr<UARTDev> uart_dev(new UARTDev(firmware, config));
             std::shared_ptr<CommandHandler> uart_info_handler(dynamic_cast<CommandHandler*>(new UartDevInfo(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_read_handler(dynamic_cast<CommandHandler*>(new UartDevRead(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_write_handler(dynamic_cast<CommandHandler*>(new UartDevWrite(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
@@ -297,7 +304,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef LCD1602a_DEVICE_ENABLED
-    std::shared_ptr<LCD1602ADev> lcd(new LCD1602ADev(firmware, LCD1602a_ADDR));
+    std::shared_ptr<LCD1602ADev> lcd(new LCD1602ADev(firmware, lcd1602a_config_ptr));
 
     std::shared_ptr<CommandHandler> lcd_print_handler(dynamic_cast<CommandHandler*>(new LCDPrintHandler(std::dynamic_pointer_cast<EKitDeviceBase>(lcd), ui)));
     std::shared_ptr<CommandHandler> lcd_light_handler(dynamic_cast<CommandHandler*>(new LCDLightHandler(std::dynamic_pointer_cast<EKitDeviceBase>(lcd), ui)));
@@ -307,7 +314,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef DESKDEV_DEVICE_ENABLED
-    std::shared_ptr<DESKDev> deskdev(new DESKDev(firmware, DESKDEV_ADDR));
+    std::shared_ptr<DESKDev> deskdev(new DESKDev(firmware, desk_config_ptr));
 
     std::shared_ptr<CommandHandler> deskdev_status_handler(dynamic_cast<CommandHandler*>(new DeskDevStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(deskdev), ui)));
 
@@ -315,7 +322,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef IRRC_DEVICE_ENABLED    
-    std::shared_ptr<IRRCDev> irrc(new IRRCDev(firmware, IRRC_ADDR));
+    std::shared_ptr<IRRCDev> irrc(new IRRCDev(firmware, irrc_config_ptr));
 
     std::shared_ptr<CommandHandler> irrc_handler(dynamic_cast<CommandHandler*>(new IRRCHandler(std::dynamic_pointer_cast<EKitDeviceBase>(irrc), ui)));
 
@@ -323,7 +330,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef RTC_DEVICE_ENABLED    
-    std::shared_ptr<RTCDev> rtc(new RTCDev(firmware, RTC_ADDR));
+    std::shared_ptr<RTCDev> rtc(new RTCDev(firmware, rtc_config_ptr));
 
     std::shared_ptr<CommandHandler> rtc_get_handler(dynamic_cast<CommandHandler*>(new RTCGetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(rtc), ui)));
     std::shared_ptr<CommandHandler> rtc_sync_rtc_handler(dynamic_cast<CommandHandler*>(new RTCSyncRtcHandler(std::dynamic_pointer_cast<EKitDeviceBase>(rtc), ui)));
@@ -335,7 +342,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef GPIODEV_DEVICE_ENABLED
-    std::shared_ptr<GPIODev> gpio(new GPIODev(firmware, GPIODEV_ADDR));
+    std::shared_ptr<GPIODev> gpio(new GPIODev(firmware, gpio_config_ptr));
 
     std::shared_ptr<CommandHandler> gpio_handler(dynamic_cast<CommandHandler*>(new GPIOHandler(std::dynamic_pointer_cast<EKitDeviceBase>(gpio), ui)));
 
@@ -344,7 +351,7 @@ int main(int argc, char* argv[])
 
 
 #ifdef SPWM_DEVICE_ENABLED
-    std::shared_ptr<SPWMDev> spwm(new SPWMDev(firmware, SPWM_ADDR));
+    std::shared_ptr<SPWMDev> spwm(new SPWMDev(firmware, spwm_config_ptr));
 
     std::shared_ptr<CommandHandler> spwm_list_handler(dynamic_cast<CommandHandler*>(new SPWMListHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
     std::shared_ptr<CommandHandler> spwm_set_handler(dynamic_cast<CommandHandler*>(new SPWMSetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spwm), ui)));
@@ -368,15 +375,13 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> adc_mean_handler;
     };
 
-    std::vector<ADCCommandHandlers> adc_handlers(ADCDEV_DEVICE_COUNT);
+    std::vector<ADCCommandHandlers> adc_handlers(adc_configs_number);
 
-    for (size_t index=0; index<ADCDEV_DEVICE_COUNT; index++) {
-        const ADCDevInstance* descr = ADCDev::get_descriptor(index);
-        uint8_t dev_id = descr->dev_id;
+    for (size_t index=0; index<adc_configs_number; index++) {
+        const ADCConfig* config = adc_configs + index;
         ADCCommandHandlers& h = adc_handlers.at(index);
 
-
-        h.dev.reset(new ADCDev(firmware, dev_id));
+        h.dev.reset(new ADCDev(firmware, config));
 
         h.adc_start_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_stop_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
@@ -413,14 +418,14 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> step_motor_sft_endstop_handler;
     };
 
-    std::vector<StepMotorCommandHandlers> step_motor_handlers(SW_STEP_MOTOR_DEVICE_COUNT);
+    std::vector<StepMotorCommandHandlers> step_motor_handlers(step_motor_configs_number);
 
-    for (size_t i=0; i<SW_STEP_MOTOR_DEVICE_COUNT; i++) {
-        PStepMotorDevice descr = StepMotorDev::get_descriptor(i);
-        uint8_t dev_id = descr->dev_id;
+    for (size_t i=0; i<step_motor_configs_number; i++) {
+        const StepMotorConfig* config = step_motor_configs + i;
+        uint8_t dev_id = config->dev_id;
         StepMotorCommandHandlers& h = step_motor_handlers.at(i);
 
-        h.dev.reset(new StepMotorDev(firmware, dev_id));
+        h.dev.reset(new StepMotorDev(firmware, config));
 
         h.step_motor_info_handler.reset(dynamic_cast<CommandHandler*>(new StepMotorInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.step_motor_status_handler.reset(dynamic_cast<CommandHandler*>(new StepMotorStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
@@ -472,15 +477,14 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> can_read_handler;
     };
 
-    std::vector<CanCommandHandlers> can_handlers(CAN_DEVICE_COUNT);
+    std::vector<CanCommandHandlers> can_handlers(can_configs_number);
 
-    for (size_t index=0; index<CAN_DEVICE_COUNT; index++) {
-        const CanInstance* descr = CanDev::get_descriptor(index);
-        uint8_t dev_id = descr->dev_id;
+    for (size_t index=0; index<can_configs_number; index++) {
+        const CANConfig* config = can_configs + index;
         CanCommandHandlers& h = can_handlers.at(index);
 
 
-        h.dev.reset(new CanDev(firmware, dev_id));
+        h.dev.reset(new CanDev(firmware, config));
 
         h.can_info_handler.reset(dynamic_cast<CommandHandler*>(new CanInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         ui->add_command(cmd_index++, h.can_info_handler);
@@ -502,6 +506,95 @@ int main(int argc, char* argv[])
 
         h.can_filter_handler.reset(dynamic_cast<CommandHandler*>(new CanFilterHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         ui->add_command(cmd_index++, h.can_filter_handler);
+    }
+#endif  
+#ifdef SPIPROXY_DEVICE_ENABLED
+    struct SPIProxyCommandHandlers {
+        std::shared_ptr<SPIProxyDev> dev;
+        std::shared_ptr<CommandHandler> spiproxy_info_handler;
+        std::shared_ptr<CommandHandler> spiproxy_read_handler;
+        std::shared_ptr<CommandHandler> spiproxy_write_handler;
+        std::shared_ptr<CommandHandler> spiproxy_reset_handler;
+    };
+
+    std::vector<SPIProxyCommandHandlers> spiproxy_handlers(spiproxy_configs_number);
+
+    for (size_t index=0; index<spiproxy_configs_number; index++) {
+        const SPIProxyConfig* config = spiproxy_configs + index;
+        const InfoDeviceDescriptor* info_descr = info_dev->get_device_info(config->dev_id);
+        SPIProxyCommandHandlers& h = spiproxy_handlers.at(index);
+        h.dev.reset(new SPIProxyDev(firmware, config));
+
+        // Initialize SPIProxy
+        h.spiproxy_info_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spiproxy_read_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spiproxy_write_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyWriteHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+
+        ui->add_command(cmd_index++, h.spiproxy_info_handler);
+        ui->add_command(cmd_index++, h.spiproxy_read_handler);
+        ui->add_command(cmd_index++, h.spiproxy_write_handler);
+    }
+#endif  
+
+#ifdef AD9850DEV_DEVICE_ENABLED
+    struct AD9850DevCommandHandlers {
+        std::shared_ptr<AD9850Dev> dev;
+        std::shared_ptr<CommandHandler> ad9850dev_reset_handler;
+        std::shared_ptr<CommandHandler> ad9850dev_update_handler;
+    };
+
+    std::vector<AD9850DevCommandHandlers> ad9850dev_handlers(ad9850_configs_number);
+
+    for (size_t index=0; index<ad9850_configs_number; index++) {
+        const AD9850Config* config = ad9850_configs + index;
+        AD9850DevCommandHandlers& h = ad9850dev_handlers.at(index);
+
+
+        h.dev.reset(new AD9850Dev(firmware, config));
+        h.ad9850dev_reset_handler.reset(dynamic_cast<CommandHandler*>(new AD9850DevResetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.ad9850dev_update_handler.reset(dynamic_cast<CommandHandler*>(new AD9850DevUpdateHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.ad9850dev_reset_handler);
+        ui->add_command(cmd_index++, h.ad9850dev_update_handler);
+    }
+#endif  
+
+#ifdef SPIDAC_DEVICE_ENABLED
+    struct SPIDACCommandHandlers {
+        std::shared_ptr<SPIDACDev> dev;
+        std::shared_ptr<CommandHandler> spidac_start_cont_handler;
+        std::shared_ptr<CommandHandler> spidac_start_period_handler;
+        std::shared_ptr<CommandHandler> spidac_set_default_handler;
+        std::shared_ptr<CommandHandler> spidac_stop_handler;
+        std::shared_ptr<CommandHandler> spidac_is_running_handler;
+        std::shared_ptr<CommandHandler> spidac_sin_handler;
+        std::shared_ptr<CommandHandler> spidac_saw_handler;
+        std::shared_ptr<CommandHandler> spidac_triangle_handler;
+    };
+
+    std::vector<SPIDACCommandHandlers> spidac_handlers(spidac_configs_number);
+
+    for (size_t index=0; index<spidac_configs_number; index++) {
+        const SPIDACConfig* config = spidac_configs + index;
+        SPIDACCommandHandlers& h = spidac_handlers.at(index);
+
+        h.dev.reset(new SPIDACDev(firmware, config));
+        h.spidac_start_cont_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStartContinuousHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_start_period_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStartPeriodHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_set_default_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACSetDefaultHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_stop_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_is_running_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACIsRunningHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_sin_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadSinWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_saw_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadSawWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_triangle_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadTriangleWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+
+        ui->add_command(cmd_index++, h.spidac_start_cont_handler);
+        ui->add_command(cmd_index++, h.spidac_start_period_handler);
+        ui->add_command(cmd_index++, h.spidac_set_default_handler);
+        ui->add_command(cmd_index++, h.spidac_stop_handler);
+        ui->add_command(cmd_index++, h.spidac_is_running_handler);
+        ui->add_command(cmd_index++, h.spidac_sin_handler);
+        ui->add_command(cmd_index++, h.spidac_saw_handler);
+        ui->add_command(cmd_index++, h.spidac_triangle_handler);
     }
 #endif  
 // ADD_DEVICE

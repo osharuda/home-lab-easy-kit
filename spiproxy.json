@@ -1,0 +1,74 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C1"}
+    }},
+
+  "devices" : {
+    "SPIProxyCustomizer": {
+      "spiproxy_0" : {
+        "dev_id" : 1,
+        "use_dma" : 1,
+        "bidirectional" : 1,
+        "buffer_size" : 256,
+        "clock_phase" : "first",
+        "clock_polarity" : "idle_low",
+        "clock_speed" : "281KHz",
+        "frame_format" : "msb",
+        "frame_size" : 8,
+        "requires" :  { "SPI" : {"spi": "SPI1"}}
+      }
+    },
+
+    "SPIDACCustomizer": {
+      "spidac_0" : {
+        "dev_id" : 3,
+        "model"  : "dacchip",
+        "samples_number" : 100,
+        "clock_phase" : "second",
+        "clock_polarity" : "idle_high",
+        "clock_speed" : "9MHz",
+        "frame_format" : "msb",
+        "frame_size" : 16,
+        "frames_per_sample" : 1,
+        "ld_mode" : "fall",
+        "bits_per_sample" : 12,
+        "channels" : {
+            "dac_out" : {
+              "index" : 0,
+              "min_value" : 0.0,
+              "max_value" : 4.0,
+              "default_value" : 2.0
+            }
+        },
+        "requires" :  {"SPI" : {"spi": "SPI2"},
+                       "TIMER" : {"timer": "TIM1"},
+                       "LD" : {"gpio" : "PA_12"}}
+        }
+      },
+
+    "AD9850DevCustomizer": {
+      "gen_0" : {
+        "dev_id" : 7,
+        "clock_frequency": "125MHz",
+        "requires" : {
+          "D0" :    {"gpio" : "PC_13"},
+          "D1" :    {"gpio" : "PC_14"},
+          "D2" :    {"gpio" : "PC_15"},
+          "D3" :    {"gpio" : "PB_14"},
+          "D4" :    {"gpio" : "PA_8"},
+          "D5" :    {"gpio" : "PA_9"},
+          "D6" :    {"gpio" : "PA_10"},
+          "D7" :    {"gpio" : "PA_15"},
+          "W_CLK" : {"gpio" : "PB_3"},
+          "FQ_UD" : {"gpio" : "PB_4"},
+          "RESET" : {"gpio" : "PB_5"}
+        }
+      }
+    }
+  }
+}

@@ -14,8 +14,10 @@
 #   limitations under the License.
 
 import json
-from tools import *
+import re
 
+from tools import *
+import operator
 
 mcu_name = "stm32f103"
 mcu_gpio_pin_types = {"GPIO_Mode_IN_FLOATING", "GPIO_Mode_IPU", "GPIO_Mode_IPD", "GPIO_Mode_Out_OD", "GPIO_Mode_Out_PP"}
@@ -37,6 +39,20 @@ APB2_BUS = {"RCC_APB2Periph_AFIO", "RCC_APB2Periph_GPIOA", "RCC_APB2Periph_GPIOB
             "RCC_APB2Periph_TIM8", "RCC_APB2Periph_USART1", "RCC_APB2Periph_ADC3", "RCC_APB2Periph_TIM15",
             "RCC_APB2Periph_TIM16", "RCC_APB2Periph_TIM17", "RCC_APB2Periph_TIM9", "RCC_APB2Periph_TIM10",
             "RCC_APB2Periph_TIM11"}
+
+FW_FEATURES = {"SYSTICK"}
+
+
+def get_bus_frequency(bus: str) -> int:
+    if bus in APB1_BUS:
+        return 18000000
+    elif bus in APB2_BUS:
+        return 72000000
+    elif bus in AHB_BUS:
+        return 72000000
+    else:
+        raise RuntimeError(f'Unknown bus: "{bus}"')
+
 
 GPIO_PORT_LEN = 16
 
@@ -213,16 +229,16 @@ mcu_available_resources += """
      """
 
 # EXTI_Line16 is connected to PVD output, and therefore is not supported
-#mcu_available_resources += """
+# mcu_available_resources += """
 #     "EXTI_Line16" : {"type" : "exti_line", "requires" : {}},"""
 # EXTI_Line17 is connected to RTC Alarm event, and therefore is not supported
-#mcu_available_resources += """
+# mcu_available_resources += """
 #     "EXTI_Line17" : {"type" : "exti_line", "requires" : {}},"""
 # EXTI_Line18 is connected to USB Wakeup event, and therefore is not supported
-#mcu_available_resources += """
+# mcu_available_resources += """
 #     "EXTI_Line18" : {"type" : "exti_line", "requires" : {}},"""
 # EXTI_Line19 is connected to Ethernet Wakeup event, and therefore is not supported
-#mcu_available_resources += """
+# mcu_available_resources += """
 #     "EXTI_Line19" : {"type" : "exti_line", "requires" : {}},"""
 
 
@@ -339,22 +355,22 @@ mcu_available_resources += """
 #    "DMA2" : { "type" : "dma", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2"},
 #    """
 mcu_available_resources += """
-    "DMA1_Channel1" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel1_IRQHandler"}},
-    "DMA1_Channel2" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel2_IRQHandler"}},
-    "DMA1_Channel3" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel3_IRQHandler"}},
-    "DMA1_Channel4" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel4_IRQHandler"}},
-    "DMA1_Channel5" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel5_IRQHandler"}},
-    "DMA1_Channel6" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel6_IRQHandler"}},
-    "DMA1_Channel7" : { "type" : "dma_channel", "requires" : {"dma" : "DMA1"}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel7_IRQHandler"}},
+    "DMA1_Channel1" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel1_IRQHandler"}},
+    "DMA1_Channel2" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel2_IRQHandler"}},
+    "DMA1_Channel3" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel3_IRQHandler"}},
+    "DMA1_Channel4" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel4_IRQHandler"}},
+    "DMA1_Channel5" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel5_IRQHandler"}},
+    "DMA1_Channel6" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel6_IRQHandler"}},
+    "DMA1_Channel7" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {"irq_handler" : "DMA1_Channel7_IRQHandler"}},
     """
 
 # The DMA2 controller and its relative requests are available only in high-density and connectivity line devices
 # mcu_available_resources += """
-#    "DMA2_Channel1" : { "type" : "dma_channel", "requires" : {"dma" : "DMA2"}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel1_IRQHandler"}},
-#    "DMA2_Channel2" : { "type" : "dma_channel", "requires" : {"dma" : "DMA2"}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel2_IRQHandler"}},
-#    "DMA2_Channel3" : { "type" : "dma_channel", "requires" : {"dma" : "DMA2"}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel3_IRQHandler"}},
-#    "DMA2_Channel4" : { "type" : "dma_channel", "requires" : {"dma" : "DMA2"}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel4_IRQHandler"}},
-#    "DMA2_Channel5" : { "type" : "dma_channel", "requires" : {"dma" : "DMA2"}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel5_IRQHandler"}},
+#    "DMA2_Channel1" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel1_IRQHandler"}},
+#    "DMA2_Channel2" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel2_IRQHandler"}},
+#    "DMA2_Channel3" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel3_IRQHandler"}},
+#    "DMA2_Channel4" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel4_IRQHandler"}},
+#    "DMA2_Channel5" : { "type" : "dma_channel", "requires" : {}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {"irq_handler" : "DMA2_Channel5_IRQHandler"}},
 # """
 
 # map resource/feature onto DMA channel
@@ -388,6 +404,15 @@ dma_request_map = {"ADC1": "DMA1_Channel1", "TIM2_CH3": "DMA1_Channel1", "TIM4_C
                    "ADC3": "DMA2_Channel5", "UART4_TX": "DMA2_Channel5", "TIM5_CH1": "DMA2_Channel5",
                    "TIM8_CH2": "DMA2_Channel5",
                    }
+
+def get_DMA_Channel(feature: str) -> str:
+    if feature not in dma_request_map:
+        raise RuntimeError("There is no DMA channel defined for {0} feature".format(feature))
+
+    return dma_request_map[feature]
+
+def get_DMA_from_channel(channel: str) -> str:
+    return channel[:4]
 
 # ADC and ADC channels
 mcu_available_resources += """
@@ -457,8 +482,8 @@ mcu_available_resources += """
     },
 """
 
-#"ADC1": {"type": "adc", "requires": {}, "features": ["dma_support"], "dma_dr_address": "0x4001244C",         "bus": "RCC_APB2Periph_ADC1", "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
-#"ADC2": {"type": "adc", "requires": {}, "features": [], "bus": "RCC_APB2Periph_ADC2",         "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
+# "ADC1": {"type": "adc", "requires": {}, "features": ["dma_support"], "dma_dr_address": "0x4001244C",         "bus": "RCC_APB2Periph_ADC1", "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
+# "ADC2": {"type": "adc", "requires": {}, "features": [], "bus": "RCC_APB2Periph_ADC2",         "adc_handler": {"irq_handler": "ADC1_2_IRQHandler"}},
 
 
 # USB
@@ -467,16 +492,50 @@ mcu_available_resources += """
         "sram"      : {"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"},
         "USB_MINUS" : {"gpio" : "PA_11"},
         "USB_PLUS"  : {"gpio" : "PA_12"}} 
-    }
+    },
+"""
+
+# SPI
+mcu_available_resources += f"""
+    "SPI1" : {{"type" : "spi", "bus": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "requires" : {{
+        "SPI_SCK" : {{"gpio" : "PA_5"}},
+        "SPI_MISO" : {{"gpio" : "PA_6"}},
+        "SPI_MOSI" : {{"gpio" : "PA_7"}},
+        "SPI_NSS" : {{"gpio" : "PA_4"}},
+        "SPI_RX_DMA" : {{"dma" : "{get_DMA_Channel("SPI1_RX")}"}},
+        "SPI_TX_DMA" : {{"dma" : "{get_DMA_Channel("SPI1_TX")}"}},
+        "SPI_IRQ" : {{"irq_handler" : "SPI1_IRQHandler"}}
+        }}
+    }},
+
+    "SPI1_REMAP" : {{"type" : "spi", "bus": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "requires" : {{
+        "SPI_SCK" : {{"gpio" : "PB_3"}},
+        "SPI_MISO" : {{"gpio" : "PB_4"}},
+        "SPI_MOSI" : {{"gpio" : "PB_5"}},
+        "SPI_NSS" : {{"gpio" : "PA_15"}},
+        "SPI_RX_DMA" : {{"dma" : "{get_DMA_Channel("SPI1_RX")}"}},
+        "SPI_TX_DMA" : {{"dma" : "{get_DMA_Channel("SPI1_TX")}"}},
+        "SPI_IRQ" : {{"irq_handler" : "SPI1_IRQHandler"}}
+        }}
+    }},
+    
+    "SPI2" : {{"type" : "spi", "bus": ["RCC_APB1Periph_SPI2", "RCC_APB2Periph_AFIO"], "requires" : {{
+        "SPI_SCK" : {{"gpio" : "PB_13"}},
+        "SPI_MISO" : {{"gpio" : "PB_14"}},
+        "SPI_MOSI" : {{"gpio" : "PB_15"}},
+        "SPI_NSS" : {{"gpio" : "PB_12"}},
+        "SPI_RX_DMA" : {{"dma" : "{get_DMA_Channel("SPI2_RX")}"}},
+        "SPI_TX_DMA" : {{"dma" : "{get_DMA_Channel("SPI2_TX")}"}},
+        "SPI_IRQ" : {{"irq_handler" : "SPI2_IRQHandler"}}
+        }}
+    }}
 """
 
 # The last line
 mcu_available_resources += """
 }"""
 
-#test_lines = mcu_available_resources.splitlines()
-#print(test_lines[273])
-
+test_lines = mcu_available_resources.splitlines()
 
 mcu_resources = json.loads(mcu_available_resources)
 
@@ -484,12 +543,14 @@ system_clock = 72000000  # 72Mhz
 
 max_address = 15
 
+
 def is_remaped(obj: str):
-    remap_required = obj[-6:] == "_REMAP"
+    remap_required = len(obj)>6 and obj[-6:] == "_REMAP"
     if remap_required:
         return (obj[:-6], remap_required)
     else:
         return (obj, remap_required)
+
 
 def get_GPIO(port: str, pin_number: int) -> str:
     if pin_number >= GPIO_PORT_LEN:
@@ -516,12 +577,14 @@ def ADCChannel_to_GPIO(adc_channel: str) -> str:
 def ADC_to_ADCHandler(adc: str) -> str:
     return mcu_resources[adc]["adc_handler"]["irq_handler"]
 
+
 def get_ADC_MAXVAL() -> int:
-    return 4095 # 12 bit ADC
+    return 4095  # 12 bit ADC
 
 
 def check_ADC_sample_time(st: str) -> bool:
     return st in adc_sample_times
+
 
 def is_GPIO_input(intype: str) -> bool:
     if intype not in mcu_gpio_pin_types:
@@ -547,7 +610,8 @@ def GPIO_to_AFIO_EXTICR(gpio: str) -> str:
 
 
 def GPIO_to_PortSource(gpio: str) -> str:
-    return "GPIO_PortSourceGPIO"+gpio[1]
+    return "GPIO_PortSourceGPIO" + gpio[1]
+
 
 def GPIO_to_PinSource(gpio: str) -> str:
     pin_number = int(GPIO_to_pin_number(gpio))
@@ -559,7 +623,7 @@ def GPIO_to_EXTI_line(gpio: str) -> str:
     return "EXTI_Line{0}".format(pin_number)
 
 
-def EXTINum_to_EXTIHandler(extinum : int) -> str:
+def EXTINum_to_EXTIHandler(extinum: int) -> str:
     if 5 <= extinum <= 9:
         return "EXTI9_5_IRQHandler"
     elif 10 <= extinum <= 15:
@@ -569,17 +633,20 @@ def EXTINum_to_EXTIHandler(extinum : int) -> str:
     else:
         raise RuntimeError("Unsupported EXTI line used: {0}".format(extinum))
 
-def EXTINum_to_EXTILine(extinum : int) -> str:
+
+def EXTINum_to_EXTILine(extinum: int) -> str:
     "EXTI_Line{0}".format(extinum)
+
 
 def GPIO_to_EXTIHandler(gpio: str) -> str:
     pin_number = int(GPIO_to_pin_number(gpio))
     return EXTINum_to_EXTIHandler(pin_number)
 
 
-def EXTIline_to_EXTIHandler(extiline : str) -> str:
+def EXTIline_to_EXTIHandler(extiline: str) -> str:
     extinum = int(extiline[9:])
     return EXTINum_to_EXTIHandler(extinum)
+
 
 def ISRHandler_to_IRQn(isr_handler: str) -> str:
     return isr_handler[:-7] + "n"
@@ -620,9 +687,9 @@ def get_TIMER_freq(timer: str, prescaller: int = 1) -> int:
     # get number of APB bus RCC_APB ->2<- Periph_TIM1
     n = int(mcu_resources[timer]["bus"][7])
     if n == 1:
-        return mult*system_clock // 2
+        return mult * system_clock // 2
     elif n == 2:
-        return mult*system_clock
+        return mult * system_clock
     else:
         raise RuntimeError("Invalid bus definition for timer {0}".format(timer))
 
@@ -631,14 +698,8 @@ def DMA_Channel_to_IRQHandler(dmachannel: str) -> str:
     return mcu_resources[dmachannel]["dma_handler"]["irq_handler"]
 
 
-def get_DMA_Channel(feature: str) -> str:
-    if feature not in dma_request_map:
-        raise RuntimeError("There is no DMA channel defined for {0} feature".format(feature))
 
-    return dma_request_map[feature]
-
-
-def get_DMA_IT_Flag(channel: str, flag : str) -> str:
+def get_DMA_IT_Flag(channel: str, flag: str) -> str:
     if channel not in mcu_resources:
         raise RuntimeError("Invalid resource is used")
 
@@ -686,3 +747,122 @@ def ENABLE_CLOCK_on_APB(res: list) -> str:
         lines.append("RCC_APB2PeriphClockCmd({0}, ENABLE); \\".format("|".join(list(apb2_set))))
 
     return concat_lines(lines)[:-1]
+
+def check_errata(config):
+    i2c1_re = re.compile(r'.*\"i2c\"\s*\:\s*\"I2C1\".*', re.DOTALL)
+    spi1_remap_re = re.compile(r'.*SPI_MOSI\S*\"\s*\:\s*\"PB_5\".*', re.DOTALL)
+
+    errata = 'I2C1 with SPI1 remapped and used in master mode'
+    if i2c1_re.match(config) and spi1_remap_re.match(config):
+        raise RuntimeError(f"ERRATA detected: {errata}")
+
+
+def generate_set_gpio_bus_function(func_name: str, inp_type: str, port_type: str, pins : dict) -> str:
+    allowed_types = {"uint8_t", "uint16_t", "uint32_t"}
+    if inp_type not in allowed_types:
+        raise ValueError("Invalid inp_type")
+
+    if port_type != "uint16_t":
+        raise ValueError("Invalid port_type")
+    header = f"void {func_name}({inp_type} data);"
+    result = f"""void {func_name}({inp_type} data) {{ \\
+    {port_type} accumulator = 0; \\
+    {port_type} port_mask = 0;\\"""
+
+    ports = dict()
+    for data_bit,v in pins.items():
+        port, pin = v
+        if port not in ports:
+            ports[port] = [(data_bit, pin, data_bit-pin)]
+        else:
+            ports[port].append((data_bit, pin, data_bit-pin))
+
+    port_counter = 0
+    for port, v in ports.items():
+        sorted_by_offset = sorted(v, key=operator.itemgetter(2))
+        last_offset = sorted_by_offset[0][2]
+        data_mask = 0
+        for data_bit, pin, offset in sorted_by_offset:
+            if offset != last_offset:
+                if data_mask == 0:
+                    raise AssertionError("data_mask should be non-zero")
+
+                # update accumulator
+                shift_kind = ">>" if last_offset > 0 else "<<"
+                result += f"""
+    accumulator |= ({port_type})( (data & {data_mask}) {shift_kind} {abs(last_offset)} );\\
+    port_mask |= ({port_type})({data_mask} {shift_kind} {abs(last_offset)});\\"""
+                last_offset = offset
+                data_mask = 0
+            data_mask = data_mask + (1 << data_bit)
+
+        # Put last block of bits (it should be anyway)
+        shift_kind = ">>" if last_offset > 0 else "<<"
+        result += f"""
+    accumulator += ({port_type})( (data & {data_mask}) {shift_kind} {abs(offset)} );\\
+    port_mask |= ({port_type})({data_mask} {shift_kind} {abs(last_offset)});\\"""
+
+        # write to port
+        result += f"""
+    {port}->BSRR = port_mask & accumulator;\\
+    {port}->BRR = port_mask & ( ~accumulator );\\"""
+
+        port_counter += 1
+        if port_counter < len(ports):
+            result += f"""
+    accumulator = 0;\\
+    port_mask = 0;\\"""
+
+    result = result + """
+}"""
+    return (header, result)
+
+
+def spi_get_baud_rate_control(spi: str, value : str):
+    bus_list = mcu_resources[spi]["bus"]
+    bus = next(b for b in bus_list if b.find('Periph_SPI') != -1)
+    freq = get_bus_frequency(bus)
+    in_val = (str(freq) + "_" + value).lower()
+    val_map = {
+        # 18MHz bus
+        "18000000_9mhz":        0x0000, # prescaller=2
+        "18000000_4.5mhz":      0x0008, # prescaller=4
+        "18000000_2.25mhz":     0x0010, # prescaller=8
+        "18000000_1.125mhz":    0x0018, # prescaller=16
+        "18000000_562khz":      0x0020, # prescaller=32
+        "18000000_281khz":      0x0028, # prescaller=64
+        "18000000_140hz":       0x0030, # prescaller=128
+        "18000000_70khz":       0x0038, # prescaller=256
+
+        # 72MHz bus
+        "72000000_36mhz":       0x0000, # prescaller=2
+        "72000000_18mhz":       0x0008, # prescaller=4
+        "72000000_9mhz":        0x0010, # prescaller=8
+        "72000000_4.5mhz":      0x0018, # prescaller=16
+        "72000000_2.25mhz":     0x0020, # prescaller=32
+        "72000000_1.125mhz":    0x0028, # prescaller=64
+        "72000000_562khz":      0x0030, # prescaller=128
+        "72000000_281khz":      0x0038  # prescaller=256
+    }
+
+    if in_val not in val_map:
+        raise RuntimeError(f'Unsupported clock frequency ({value})for {spi}')
+
+    brc = val_map.get(in_val)
+    return brc, freq // (1 << ((brc >> 3) + 1))
+
+def spi_get_clock_phase(value: str):
+    val_map = {"first" : 0, "second": 1}
+    return val_map.get(str(value).lower())
+
+def spi_get_clock_polarity(value: str):
+    val_map = {"idle_low": 0, "idle_high": 1}
+    return val_map.get(str(value).lower())
+
+def spi_get_frame_format(value: str):
+    val_map = {"msb": 1, "lsb": 0}
+    return val_map.get(str(value).lower())
+
+def spi_get_frame_size(value: str):
+    val_map = {8: 0, 16: 1}
+    return val_map.get(int(value))

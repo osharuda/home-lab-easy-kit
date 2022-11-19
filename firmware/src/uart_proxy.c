@@ -20,9 +20,9 @@
  *   \author Oleh Sharuda
  */
 
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "uart_proxy.h"
 
 #ifdef UART_PROXY_DEVICE_ENABLED

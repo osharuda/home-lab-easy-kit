@@ -16,15 +16,24 @@
 from ExclusiveDeviceCustomizer import *
 
 class DeskDevCustomizer(ExclusiveDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "DESKDEV")
-        self.fw_header = "fw_deskdev.h"
-        self.sw_header = "sw_deskdev.h"
-        self.shared_header = "deskdev_proto.h"
+    def __init__(self, mcu_hw, dev_config, common_config):
+        super().__init__(mcu_hw, dev_config, common_config, "DESKDEV")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "desk_conf.hpp"
+        self.sw_lib_source = "desk_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__DESKDEV_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path + self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
+                             self.shared_token)
 
     def customize(self):
         requires = self.dev_config["requires"]
@@ -36,7 +45,8 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
         enc_a = self.get_gpio(requires["encoder"]["A"])
         enc_b = self.get_gpio(requires["encoder"]["B"])
 
-        params = {"__DEVICE_ID__": self.dev_config["dev_id"],
+        params = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                  "__DEVICE_ID__": self.dev_config["dev_id"],
                   "__DESKDEV_DEVICE_NAME__": self.device_name,
 
                   "__BUTTON_UP_PORT__": self.mcu_hw.GPIO_to_port(btn_up),

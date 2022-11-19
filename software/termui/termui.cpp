@@ -23,8 +23,8 @@
 #include "termui.hpp"
 #include <string>
 #include <cassert>
-#include "tools.hpp"
-#include "texttools.hpp"
+#include <libhlek/tools.hpp>
+#include <libhlek/texttools.hpp>
 
 using namespace TERMUI;
 

@@ -21,11 +21,11 @@
  */
 
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "adcdev.h"
-#include <stm32f10x.h>
+
 
 
 #ifdef ADCDEV_DEVICE_ENABLED
@@ -42,7 +42,7 @@ volatile ADCDevFwInstance g_adc_devs[] = ADCDEV_FW_DEV_DESCRIPTOR;
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
-void adc_start_timer(volatile ADCDevFwInstance* dev);
+//void adc_start_timer(volatile ADCDevFwInstance* dev);
 void adc_start_int_mode(volatile ADCDevFwInstance* dev);
 void adc_singl_channel_conversion(volatile ADCDevFwInstance* dev, uint8_t channel);
 void adc_start_dma_mode(volatile ADCDevFwInstance* dev);
@@ -70,7 +70,7 @@ void ADC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
         return;
     }
 
-    timer_disable(dev->timer);
+    timer_disable(dev->timer, dev->timer_irqn);
 
     // start new conversion if required
     if (ADC_INT_MODE(dev)) {
@@ -120,25 +120,15 @@ void ADC_COMMON_DMA_IRQ_HANDLER(uint16_t index) {
 ADCDEV_FW_DMA_IRQ_HANDLERS
 
 
+
 void adc_start_timer(volatile ADCDevFwInstance* dev) {
-    TIM_TimeBaseInitTypeDef timer;
-
-    TIM_Cmd(dev->timer, DISABLE);
-
-    // Prepare timer
-    timer.TIM_CounterMode       = TIM_CounterMode_Up;
-    timer.TIM_Prescaler         = dev->privdata.prescaller;
-    timer.TIM_Period            = dev->privdata.period;
-    timer.TIM_ClockDivision     = TIM_CKD_DIV1;
-    timer.TIM_RepetitionCounter = 0;
-
-    // Setup interrupt and enable timer
-    NVIC_SetPriority(dev->timer_irqn, IRQ_PRIORITY_ADC_TIMER);
-    NVIC_EnableIRQ(dev->timer_irqn);
-    TIM_TimeBaseInit(dev->timer, &timer);
-    TIM_ITConfig(dev->timer, TIM_IT_Update, ENABLE);
-    TIM_Cmd(dev->timer, ENABLE);
+    timer_start(dev->timer,
+                dev->privdata.prescaller,
+                dev->privdata.period,
+                dev->timer_irqn,
+                IRQ_PRIORITY_ADC_TIMER);
 }
+
 
 void adc_singl_channel_conversion(volatile ADCDevFwInstance* dev, uint8_t channel) {
     ADC_InitTypeDef adcinit;
@@ -285,7 +275,7 @@ void stop_adc(volatile ADCDevFwInstance* dev) {
     assert_param(dev->privdata.started!=0);
 
     // Disable ADC timer
-    timer_disable(dev->timer);
+    timer_disable(dev->timer, dev->timer_irqn);
 
     // Set flag indicating we've stopped
     dev->privdata.stop = 1;

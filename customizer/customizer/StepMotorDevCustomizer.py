@@ -18,15 +18,24 @@ from tools import *
 
 
 class StepMotorDevCustomizer(DeviceCustomizer):
-    def __init__(self, mcu_hw, dev_configs):
-        super().__init__(mcu_hw, dev_configs, "STEP_MOTOR")
-        self.fw_header = "fw_step_motor.h"
-        self.sw_header = "sw_step_motor.h"
-        self.shared_header = "step_motor_proto.h"
+    def __init__(self, mcu_hw, dev_configs, common_config):
+        super().__init__(mcu_hw, dev_configs, common_config, "STEP_MOTOR")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "step_motor_conf.hpp"
+        self.sw_lib_source = "step_motor_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__STEP_MOTOR_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
+                             self.shared_token)
 
     def customize(self):
         indx = 0
@@ -41,11 +50,15 @@ class StepMotorDevCustomizer(DeviceCustomizer):
         fw_motor_context_arrays = ["#define STEP_MOTOR_MOTOR_CONTEXT_ARRAYS \\"]
         fw_motor_status_arrays = ["#define STEP_MOTOR_MOTOR_STATUS_ARRAYS \\"]
         fw_devices_array = []
-        sw_motor_descriptors = ["#define SW_STEP_MOTOR_MOTOR_DESCRIPTORS \\"]
-        sw_motor_descriptor_arrays = ["#define SW_STEP_MOTOR_MOTOR_DESCRIPTOR_ARRAYS \\"]
+        sw_motor_descriptors = []
+        sw_motor_descriptor_arrays = []
         sw_devices_descriptors = []
+        sw_config_array_name = "step_motor_configs"
+        sw_config_declarations = []
+        sw_configs = []
 
         for dev_name, dev_config in self.device_list:
+            self.require_feature("SYSTICK", dev_config)
             dev_id = dev_config["dev_id"]
             motors_cfg = dev_config["motors"]
             dev_requires = dev_config["requires"]
@@ -97,12 +110,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                 fw_motor_descriptors.append(
                     "volatile StepMotorDescriptor {0} = {{ {1} }}; \\".format(mot_descriptor_name, mot_descriptor))
                 dev_motor_descr_list.append("&" + mot_descriptor_name)
-                sw_dev_motor_descr_list.append("const_cast<PStepMotorDescriptor>(&" + mot_descriptor_name + ")")
+                sw_dev_motor_descr_list.append("&" + mot_descriptor_name)
 
                 mot_descriptor = self.get_motor_description(False, used_pins, mot_name, mot_cfg, dev_name, dev_requires,
                                                             mot_buffer_name, mot_buf_size, default_speed, drive_type)
                 sw_motor_descriptors.append(
-                    "const StepMotorDescriptor {0} = {{ {1} }}; \\".format(mot_descriptor_name, mot_descriptor))
+                    "const StepMotorDescriptor {0} = {{ {1} }};".format(mot_descriptor_name, mot_descriptor))
 
             # Motor descriptors
             motor_descriptors_array_name = "g_" + dev_name.lower() + "_motor_descriptors"
@@ -110,7 +123,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                 "volatile StepMotorDescriptor* {0}[] = {{ {1} }};\\".format(motor_descriptors_array_name,
                                                                             ", ".join(dev_motor_descr_list)))
             sw_motor_descriptor_arrays.append(
-                "const PStepMotorDescriptor {0}[] = {{ {1} }};\\".format(motor_descriptors_array_name,
+                "const StepMotorDescriptor* {0}[] = {{ {1} }};".format(motor_descriptors_array_name,
                                                                            ", ".join(sw_dev_motor_descr_list)))
 
             # Motor contexts
@@ -126,7 +139,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             # Device descriptors
             dev_motor_descr_list.append(dev_descriptor_name)
             fw_device_descriptors.append(
-                "volatile StepMotorDevice {0} = {{ {{0}}, {{0}}, {4}, (volatile PStepMotorContext){6}, (volatile PStepMotorDevStatus){7}, {8}, {5}, (volatile PStepMotorDescriptor*){3}, {2}, {1} }}; \\".format(
+                "volatile StepMotorDevice {0} = {{ {{0}}, {{0}}, {4}, (volatile PStepMotorContext){6}, (volatile PStepMotorDevStatus){7}, {8}, {5}, (volatile StepMotorDescriptor**){3}, {2}, {1} }}; \\".format(
                     dev_descriptor_name,                #0
                     dev_id,                             #1
                     motors_count,                       #2
@@ -142,9 +155,15 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
             fw_devices_array.append("(volatile PStepMotorDevice)&" + dev_descriptor_name)
 
+            sw_config_name = "step_motor_{0}_config_ptr".format(dev_name)
+            sw_config_declarations.append(f"extern const StepMotorConfig* {sw_config_name};")
+            sw_configs.append(
+                f"const StepMotorConfig* {sw_config_name} = {sw_config_array_name} + {indx};")
+
             indx += 1
 
-        vocabulary = {"__STEP_MOTORS_BUFFERS__": concat_lines(fw_motor_buffers)[:-1],
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__STEP_MOTORS_BUFFERS__": concat_lines(fw_motor_buffers)[:-1],
                       "__STEP_MOTOR_MOTOR_DESCRIPTORS__": concat_lines(fw_motor_descriptors)[:-1],
                       "__STEP_MOTOR_DEVICE_DESCRIPTORS__": concat_lines(fw_device_descriptors)[:-1],
                       "__STEP_MOTOR_MOTOR_DESCRIPTORS_ARRAYS__": concat_lines(fw_motor_descriptor_arrays)[:-1],
@@ -155,9 +174,13 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                       "__STEP_MOTOR_FW_TIMER_IRQ_HANDLERS__": concat_lines(timer_irq_handler_list)[:-1],
                       "__STEP_MOTORS_MOTOR_COUNTS__": concat_lines(fw_motor_dev_counts),
                       "__STEP_MOTORS_DEV_STATUSES__": concat_lines(fw_dev_status_buffers)[:-1],
-                      "__SW_STEP_MOTOR_DESCRIPTORS__": concat_lines(sw_motor_descriptors)[:-1],
-                      "__SW_STEP_MOTOR_MOTOR_DESCRIPTOR_ARRAYS__": concat_lines(sw_motor_descriptor_arrays)[:-1],
-                      "__SW_STEP_MOTOR_DEVICE_DESCRIPTORS__": ", ".join(sw_devices_descriptors)}
+                      "__SW_STEP_MOTOR_DESCRIPTORS__": concat_lines(sw_motor_descriptors),
+                      "__SW_STEP_MOTOR_MOTOR_DESCRIPTOR_ARRAYS__": concat_lines(sw_motor_descriptor_arrays),
+                      "__SW_STEP_MOTOR_DEVICE_DESCRIPTORS__": ", ".join(sw_devices_descriptors),
+                      "__STEP_MOTOR_CONFIGURATION_DECLARATIONS__": concat_lines(sw_config_declarations),
+                      "__STEP_MOTOR_CONFIGURATIONS__": concat_lines(sw_configs),
+                      "__STEP_MOTOR_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
+                      }
 
         self.patch_templates(vocabulary)
 

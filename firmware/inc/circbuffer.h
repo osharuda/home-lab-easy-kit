@@ -121,6 +121,8 @@ typedef struct tag_CircBuffer {
                                     ///< mode is disabled (byte mode) circbuf_put_byte() must be used; block mode functions
                                     ///< must not be used in byte mode.
 
+    volatile uint8_t block_mode;    ///< Switches on block mode. 0: block mode disabled, non-zero block mode enabled.
+
     volatile uint8_t ovf;           ///< indicates overflow, cleared by circbuf_clear_ovf()
 } CircBuffer, *PCircBuffer;
 
@@ -159,6 +161,12 @@ void circbuf_reset_no_irq(volatile PCircBuffer circ);
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_len(volatile PCircBuffer circ);
 
+/// \brief Returns amount of data stored in circular buffer (not including status data memory block, doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \return amount of data stored in circular buffer, in bytes.
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+uint16_t circbuf_len_no_irq(volatile PCircBuffer circ);
+
 /// \brief Returns amount of data stored in circular buffer including status data memory block.
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer and in status data memory block, in bytes.
@@ -166,7 +174,7 @@ uint16_t circbuf_len(volatile PCircBuffer circ);
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_total_len(volatile PCircBuffer circ);
 
-/// \brief Returns amount of data stored in circular buffer including status data memory block  (doesn't disable IRQ internally).
+/// \brief Returns amount of data stored in circular buffer including status data memory block (doesn't disable IRQ internally).
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer and in status data memory block, in bytes.
 /// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
@@ -186,6 +194,11 @@ void circbuf_put_byte(volatile PCircBuffer circ, uint8_t b);
 ///          use this function when interrupts are disabled.
 void circbuf_start_read(volatile PCircBuffer circ);
 
+/// \brief Initializes read operation from circular buffer (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+void circbuf_start_read_no_irq(volatile PCircBuffer circ);
+
 /// \brief Reads a byte from circular buffer.
 /// \param circ - pointer to the circular buffer structure
 /// \param b - pointer to a byte to be written by read value. If buffer is empty #COMM_BAD_BYTE is returned.
@@ -193,6 +206,13 @@ void circbuf_start_read(volatile PCircBuffer circ);
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 uint8_t circbuf_get_byte(volatile PCircBuffer circ, volatile uint8_t *b);
+
+/// \brief Reads a byte from circular buffer (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \param b - pointer to a byte to be written by read value. If buffer is empty #COMM_BAD_BYTE is returned.
+/// \return non-zero if successfull, 0 if circular buffer is empty.
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+uint8_t circbuf_get_byte_no_irq(volatile PCircBuffer circ, volatile uint8_t *b);
 
 /// \brief Returns buffer overflow flag.
 /// \param circ - pointer to the circular buffer structure
@@ -207,14 +227,27 @@ uint8_t circbuf_get_ovf(volatile PCircBuffer circ);
 ///          use this function when interrupts are disabled.
 void circbuf_clear_ovf(volatile PCircBuffer circ);
 
+/// \brief Clears overflow flag (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+void circbuf_clear_ovf_no_irq(volatile PCircBuffer circ);
+
 /// \brief Stop read operation from circular buffer. This will "commit" changes caused by read operations into circular
 ///        buffer structure.
 /// \param circ - pointer to the circular buffer structure
 /// \param num_bytes
-/// \return
+/// \return number of bytes remaining in the buffer
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 uint16_t circbuf_stop_read(volatile PCircBuffer circ, uint16_t num_bytes);
+
+/// \brief Stop read operation from circular buffer. This will "commit" changes caused by read operations into circular
+///        buffer structure (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \param num_bytes
+/// \return number of bytes remaining in the buffer
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+uint16_t circbuf_stop_read_no_irq(volatile PCircBuffer circ, uint16_t num_bytes);
 
 /// \brief Initializes block mode for circular buffer.
 /// \param circ - pointer to the circular buffer structure
@@ -222,6 +255,12 @@ uint16_t circbuf_stop_read(volatile PCircBuffer circ, uint16_t num_bytes);
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 void circbuf_init_block_mode(volatile PCircBuffer circ, uint16_t bs);
+
+/// \brief Initializes block mode for circular buffer (doesn't disable IRQ internally).
+/// \param circ - pointer to the circular buffer structure
+/// \param bs - size of the block. Circular buffer size must be multiple to this value.
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+void circbuf_init_block_mode_no_irq(volatile PCircBuffer circ, uint16_t bs);
 
 /// \brief Reserves block from circular buffer
 /// \param circ - pointer to the circular buffer structure
@@ -238,6 +277,12 @@ void *circbuf_reserve_block(volatile PCircBuffer circ);
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
 void circbuf_commit_block(volatile PCircBuffer circ);
+
+/// \brief Commits block into circular buffer (doesn't disable IRQ internally)
+/// \param circ - pointer to the circular buffer structure
+/// \warning This function must be used for circular buffer working in block mode only (byte mode is disabled).
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+void circbuf_commit_block_no_irq(volatile PCircBuffer circ);
 
 /// \brief Cancel reserved memory block
 /// \param circ - pointer to the circular buffer structure

@@ -18,15 +18,25 @@ from tools import *
 
 
 class {DevName}Customizer(DeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "{DEVNAME}")
-        self.fw_header = "fw_{devname}.h"
-        self.sw_header = "sw_{devname}.h"
-        self.shared_header = "{devname}_proto.h"
+    def __init__(self, mcu_hw, dev_configs, common_config):
+        super().__init__(mcu_hw, dev_configs, common_config, "{DEVNAME}")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "{devname}_conf.hpp"
+        self.sw_lib_source = "{devname}_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__{DEVNAME}_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
     def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
         return
@@ -82,6 +92,9 @@ class {DevName}Customizer(DeviceCustomizer):
                     pass
                 elif rtype == "adc_input":
                     # process ADC input
+                    pass
+                elif rtype == "spi":
+                    # process SPI
                     pass
                 else:
                     raise RuntimeError('Wrong resource specified in {0} requirements: "{1}"'.format(dev_name, rdecl))

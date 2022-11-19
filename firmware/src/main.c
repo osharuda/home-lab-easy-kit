@@ -21,9 +21,9 @@
  */
 
 #include <stm32f10x_flash.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "info_dev.h"
 #include "deskdev.h"
 #include "rtc.h"
@@ -37,6 +37,9 @@
 #include "step_motor.h"
 #include "extihub.h"
 #include "can.h"
+#include "spiproxy.h"
+#include "ad9850dev.h"
+#include "spidac.h"
 // INCLUDE_HEADER
 
 void init_NVIC() {
@@ -109,10 +112,13 @@ int main(void)
 	// This macro enables clock on required peripheral devices. It is auto-generated and defined in hal.h
     ENABLE_PERIPH_CLOCK
 
-    // enable_debug_pins();
     debug_checks_init();
     init_NVIC();
+
+#if ENABLE_SYSTICK!=0
     systick_init();
+#endif
+
     i2c_bus_init();
 
 #ifdef EXTIHUB_DEVICE_ENABLED
@@ -166,12 +172,27 @@ int main(void)
     can_init();
 #endif
 
+#ifdef SPIPROXY_DEVICE_ENABLED
+    spiproxy_init();
+#endif
+
+#ifdef AD9850DEV_DEVICE_ENABLED
+    ad9850dev_init();
+#endif
+
+#ifdef SPIDAC_DEVICE_ENABLED
+    spidac_init();
+#endif
 // ADD_DEVICE
 
+    enable_debug_pins();
 
     while(1) {
     	i2c_check_command();
+
+#if ENABLE_SYSTICK!=0
     	i2c_pool_devices();
+#endif
     }
 
 }

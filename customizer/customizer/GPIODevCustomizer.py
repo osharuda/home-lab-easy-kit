@@ -18,20 +18,29 @@ from tools import concat_lines
 
 
 class GPIODevCustomizer(ExclusiveDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config):
-        super().__init__(mcu_hw, dev_config, "CONTROLS")
-        self.fw_header = "fw_gpiodev.h"
-        self.sw_header = "sw_gpiodev.h"
-        self.shared_header = "gpio_proto.h"
+    def __init__(self, mcu_hw, dev_config, common_config):
+        super().__init__(mcu_hw, dev_config, common_config, "CONTROLS")
+        self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
+        self.sw_lib_header = "gpio_conf.hpp"
+        self.sw_lib_source = "gpio_conf.cpp"
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_shared_code(self.shared_templ + self.shared_header, "__GPIO_SHARED_HEADER__")
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
+
+        self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
+                          [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+        self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
+                          [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
+
+        self.add_shared_code(self.shared_templ + self.shared_header, self.shared_token)
 
     def customize(self):
         fw_pin_list = []
         sw_pin_list = []
-        pin_defs = []
+        cpp_pin_defs = []
+        c_pin_defs = []
         gpio_requires = dict()
         self.dev_config["requires"] = gpio_requires
         index = 0
@@ -57,13 +66,17 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
                                                             def_val,
                                                             pin_name))
 
-            pin_defs.append("#define {0}  {1}".format(pin_def_name, index))
+            cpp_pin_defs.append("constexpr size_t {0} = {1};".format(pin_def_name, index))
+            c_pin_defs.append("#define {0}  {1}".format(pin_def_name, index))
             gpio_requires[pin_def_name] = {"gpio": gpio}
             index += 1
 
-        vocabulary = {"__DEVICE_ID__": self.dev_config["dev_id"],
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__NAMESPACE_NAME__": self.project_name.lower(),
                       "__GPIO_DEVICE_NAME__": self.device_name,
-                      "__GPIO_DEV_PINS_DECLARATION__": concat_lines(pin_defs),
+                      "__CPP_GPIO_DEV_PINS_DECLARATION__": concat_lines(cpp_pin_defs),
+                      "__C_GPIO_DEV_PINS_DECLARATION__": concat_lines(c_pin_defs),
                       "__GPIO_FW_DEV_DESCRIPTION__": ", ".join(fw_pin_list),
                       "__GPIO_SW_DEV_DESCRIPTION__": ", ".join(sw_pin_list),
                       "__GPIO_PIN_COUNT__": index}

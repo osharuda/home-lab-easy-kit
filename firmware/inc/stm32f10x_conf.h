@@ -35,6 +35,7 @@
 #include "stm32f10x_rtc.h"
 #include "stm32f10x_tim.h"
 #include "stm32f10x_usart.h"
+#include "stm32f10x_spi.h"
 #include "misc.h"
 
 #ifdef  IGNORE_FAILED_ASSERTS

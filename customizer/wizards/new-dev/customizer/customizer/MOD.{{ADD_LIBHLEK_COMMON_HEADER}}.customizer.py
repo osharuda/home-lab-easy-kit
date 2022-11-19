@@ -1,0 +1,1 @@
+fw_customizer.add_libhlek_common_header(configuration, {DevName}Customizer.__name__)

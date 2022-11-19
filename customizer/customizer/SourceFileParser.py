@@ -78,16 +78,16 @@ class SourceFileParser:
         del self.lines[start:end+1]
         return
 
-    def find(self, expression) -> int:
-        index = 0
+    def find(self, expression, index: int = 0) -> int:
+        search_lines = self.lines[index:]
         if isinstance(expression, str):
             strip_exp = expression.strip()
-            for l in self.lines:
+            for l in search_lines:
                 if l.strip() == strip_exp:
                     return index
                 index += 1
         elif isinstance(expression, Pattern):
-            for l in self.lines:
+            for l in search_lines:
                 if expression.match(l):
                     return index
                 index += 1

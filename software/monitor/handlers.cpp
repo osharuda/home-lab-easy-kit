@@ -22,9 +22,31 @@
 
 #include <memory>
 #include <climits>
-#include "ekit_error.hpp"
+#include <algorithm>
+#include <vector>
+#include <libhlek/ekit_error.hpp>
+#include <libhlek/info_dev.hpp>
+#include <libhlek/deskdev.hpp>
+#include <libhlek/irrc.hpp>
+#include <libhlek/gpio_dev.hpp>
+#include <libhlek/spwm.hpp>
+#include <libhlek/adcdev.hpp>
+#include <libhlek/ad9850dev.hpp>
+#include <libhlek/spidac.hpp>
+#include <libhlek/spiproxy.hpp>
+#include <libhlek/gsmmodem.hpp>
+#include <libhlek/uartdev.hpp>
+#include <libhlek/lcd1602a.hpp>
+#include <libhlek/rtc.hpp>
+#include <libhlek/step_motor.hpp>
+#include <libhlek/can.hpp>
+// INCLUDE_HEADER
+
 #include "handlers.hpp"
 #include "monitor.hpp"
+#include <math.h>
+
+using namespace LIBCONFIG_NAMESPACE;
 
 //----------------------------------------------------------------------------------------------//
 //                                    CommandHandlerException                                   //
@@ -163,6 +185,34 @@ double CommandHandler::arg_time_to_sec(double val, const std::string& unit) {
     throw CommandHandlerException(tools::format_string("Unknown unit for time %s", unit));
 }
 
+double CommandHandler::arg_angle_to_rad(	double val, const std::string& unit) {
+    if (unit=="rad") {
+        return val;
+    } else
+    if (unit=="deg") {
+        return val * M_PI / 1.8e2;
+    }
+
+    throw CommandHandlerException(tools::format_string("Unknown unit for angle %s", unit));
+}
+
+double CommandHandler::arg_frequency_to_hz(	double val, const std::string& unit) {
+    if (unit=="khz") {
+        return val * 1.0e3;
+    } else
+    if (unit=="mhz") {
+        return val * 1.0e6;
+    } else
+    if (unit=="ghz") {
+        return val * 1.0e9;
+    } else
+    if (unit=="hz") {
+        return val;
+    }
+
+    throw CommandHandlerException(tools::format_string("Unknown unit for frequency %s", unit));
+}
+
 double CommandHandler::arg_double(  const std::vector<std::string>& args, 
                                     const char* name, 
                                     double min_val, 
@@ -192,6 +242,37 @@ double CommandHandler::arg_double(  const std::vector<std::string>& args,
     } else if (res > max_val) {
         err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %f%s <= v <= %f%s)", name, min_val, default_unit, max_val, default_unit);
         throw CommandHandlerException(err);        
+    }
+
+    return res;
+}
+
+double CommandHandler::arg_double(  const std::vector<std::string>& args,
+                                    const char* name,
+                                    double min_val,
+                                    double max_val) {
+    std::string v = arg_get(args, name);
+    double res;
+    std::string err;
+
+    // convert to double
+    try {
+        res = std::stod(v);
+    } catch (std::invalid_argument& e) {
+        err = tools::format_string("Invalid value is specified for %s (value must be between: %f <= v <= %f)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    }
+    catch (std::out_of_range& oore) {
+        err = tools::format_string("Invalid value is specified (out of range) for %s (value must be between: %f <= v <= %f)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    }
+
+    if (res < min_val) {
+        err = tools::format_string("Less than minimal value is specified for %s (value must be between: %f%s <= v <= %f%s)", name, min_val, max_val);
+        throw CommandHandlerException(err);
+    } else if (res > max_val) {
+        err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %f%s <= v <= %f%s)", name, min_val, max_val);
+        throw CommandHandlerException(err);
     }
 
     return res;
@@ -230,41 +311,18 @@ int CommandHandler::arg_int(    const std::vector<std::string>& args,
 
     return res;
 }
-/*
-unsigned int CommandHandler::arg_uint(   const std::vector<std::string>& args,
-                                const char* name,
-                                unsigned int min_val,
-                                unsigned int max_val,
-                                const std::list<std::string>& allowed_units,
-                                std::string& unit,
-                                const char* default_unit) {
-    std::string v = arg_unit(args, name, allowed_units, unit);
-    unsigned int res;
-    std::string err;
 
-    // convert to double
-    try {
-        res = std::stol(v);
-    } catch (std::invalid_argument& e) {
-        err = tools::format_string("Invalid value is specified for %s (value must be between: %d%s <= v <= %d%s)", name, min_val, default_unit, max_val, default_unit);
-        throw CommandHandlerException(err);
-    }
-    catch (std::out_of_range& oore) {
-        err = tools::format_string("Invalid value is specified (out of range) for %s (value must be between: %d%s <= v <= %d%s)", name, min_val, default_unit, max_val, default_unit);
-        throw CommandHandlerException(err);
-    }
-
-    if (res < min_val) {
-        err = tools::format_string("Less than minimal value is specified for %s (value must be between: %d%s <= v <= %d%s)", name, min_val, default_unit, max_val, default_unit);
-        throw CommandHandlerException(err);
-    } else if (res > max_val) {
-        err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %d%s <= v <= %d%s)", name, min_val, default_unit, max_val, default_unit);
-        throw CommandHandlerException(err);
-    }
-
-    return res;
+std::vector<uint8_t>
+CommandHandler::arg_hex_buffer(    const std::vector<std::string>& args,
+                               const char* name,
+                               size_t min_len,
+                               size_t max_len) {
+    std::string v = arg_get(args, name);
+    auto erase_from = std::remove_if(v.begin(), v.end(), [](char c){return ::isspace(c);});
+    v.erase(erase_from, v.end());
+    return tools::buffer_from_hex(v);
 }
-*/
+
 unsigned int CommandHandler::arg_unsigned_int(  const std::vector<std::string>& args, 
                                                 const char* name, 
                                                 unsigned int min_val, 
@@ -319,7 +377,7 @@ unsigned int CommandHandler::arg_unsigned_int(  const std::vector<std::string>& 
     unsigned int res;
     std::string err;
 
-    // convert to double
+    // convert to long
     try {
         res = std::stoul(v, nullptr, 0);
     } catch (std::invalid_argument& e) {
@@ -472,7 +530,6 @@ unsigned long long CommandHandler::arg_unsigned_long_long(  const std::vector<st
     return res;
 }
 
-#ifdef INFO_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    InfoDevHandler                                            //
 //----------------------------------------------------------------------------------------------//
@@ -493,25 +550,19 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
             {INFO_DEV_HINT_NONE,      ""},
             {INFO_DEV_HINT_GSM_MODEM, "GSM MODEM"}};
 
-    std::map<uint8_t, std::string> device_type_map = {
-            {INFO_DEV_TYPE_NONE,      "<none>"},
-            {INFO_DEV_TYPE_INFO,      "INFODev"},
-            {INFO_DEV_TYPE_DESKDEV,  "DESKDev"},
-            {INFO_DEV_TYPE_IRRC,      "IRRCDev"},
-            {INFO_DEV_TYPE_LCD1602a,  "LCD1602ADev"},
-            {INFO_DEV_TYPE_RTC,       "RTCDev"},
-            {INFO_DEV_TYPE_UART_PROXY,"UARTDev"},
-            {INFO_DEV_TYPE_GPIO,      "GPIODev"},
-            {INFO_DEV_TYPE_SPWM,      "SPWMDev"},
-            {INFO_DEV_TYPE_ADC,       "ADCDev"},
-            {INFO_DEV_TYPE_STEP_MOTOR,"StepMotorDev"},
-            {INFO_DEV_TYPE_CAN,       "CAN"}};
+    std::map<uint8_t, std::string> device_type_map;
+    for (size_t i=0; i<INFO_DEVICE_ADDRESSES; i++) {
+        const InfoDeviceDescriptor* dev = LIBCONFIG_NAMESPACE::info_config_ptr->devices + i;
+        if (dev->type != INFO_DEV_TYPE_NONE) {
+            device_type_map[dev->type] = dev->name;
+        }
+    }
 
     ui->log(tools::str_format("Project: %s", pname.c_str()));
 
     size_t li = 0;
-    for (size_t i=0; i<INFO_DEVICES_NUMBER; i++) {
-        const InfoDeviceDescriptor* di = INFODev::get_device_info(i);
+    for (size_t i=0; i<INFO_DEVICE_ADDRESSES; i++) {
+        const InfoDeviceDescriptor* di = LIBCONFIG_NAMESPACE::info_config_ptr->devices + i;
         if (di->type==INFO_DEV_TYPE_NONE) {
             continue;
         }
@@ -526,10 +577,6 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
         }
     }
 }
-#endif
-
-
-#ifdef UART_PROXY_DEVICE_ENABLED
 
 //----------------------------------------------------------------------------------------------//
 //                                    UartDevInfo                                               //
@@ -541,7 +588,7 @@ std::string UartDevInfo::help() const {
 }
 void UartDevInfo::handle(const std::vector<std::string>& args) {
     auto uart = dynamic_cast<UARTDev*>(device.get());
-    const UartProxyDevInstance* descr = uart->get_descriptor();
+    const UARTProxyConfig* descr = uart->config;
 
     ui->log(tools::str_format("UART Proxy for: \"%s\" (%d)", descr->dev_name, descr->dev_id));
     ui->log(tools::str_format("    Baud rate: %d", descr->baud_rate));
@@ -791,9 +838,6 @@ std::string AnswerCallHandler::help() const {
 
         ui->log("[status=" + GSMModem::status_description(status) + "]");            
     }    
-#endif
-
-#ifdef LCD1602a_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    LCDPrintHandler                                         //
 //----------------------------------------------------------------------------------------------//
@@ -843,9 +887,7 @@ std::string LCDLightHandler::help() const {
             throw CommandHandlerException("Invalid argument specified for state (valid values are: on, off, blink)");
         }
     }
-#endif
 
-#ifdef DESKDEV_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    DeskDevStatusHandler                                          //
 //----------------------------------------------------------------------------------------------//
@@ -877,9 +919,6 @@ void DeskDevStatusHandler::handle(const std::vector<std::string>& args) {
         ui->log(tools::str_format("encoder: %i", ncodeder));
     }
 }
-#endif
-
-#ifdef IRRC_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    IRRCHandler                                               //
 //----------------------------------------------------------------------------------------------//
@@ -923,9 +962,7 @@ void IRRCHandler::handle(const std::vector<std::string>& args) {
         ui->log(tools::str_format("[N=%d], Address: 0x%X, Command: 0x%X", n_rpt, prev_cmd.address, prev_cmd.command));
     }
 }
-#endif
 
-#ifdef RTC_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    RTCGetHandler                                             //
 //----------------------------------------------------------------------------------------------//
@@ -978,55 +1015,53 @@ void RTCSyncHostHandler::handle(const std::vector<std::string>& args) {
     std::string str_time = tools::g_unicode_ts.dtime_to_utf8(t);
     ui->log(tools::str_format("HOST time updated to : %s", str_time.c_str()));
 }
-#endif
-
-#ifdef GPIODEV_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    GPIOHandler                                               //
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(GPIOHandler,"gpio::", "::sync")
 std::string GPIOHandler::help() const {
+    auto gpiodev = dynamic_cast<GPIODev*>(device.get());
     return tools::format_string("# %s synchronizes with GPIO device.\n"
                                 "# usage:  <state> or no parameters\n"
                                 "#         <state> to be set. state should be a sequance of 0 and 1 (%u bits total) to set corresponding gpio:\n"
                                 "#         if no parameters given gpio is read and reported\n",
-                                GPIO_PIN_COUNT,
-                                get_command_name());
+                                get_command_name(),
+                                gpiodev->config->pin_number);
 }
 void GPIOHandler::handle(const std::vector<std::string>& args) {
 
     size_t arg_c = args.size();
     auto gpiodev = dynamic_cast<GPIODev*>(device.get());
     bool bad_param = false;
-    std::bitset<GPIO_PIN_COUNT> bits;
+    std::vector<bool> bits(gpiodev->config->pin_number, false);
     std::string p = args[0];
     std::string t;
     size_t arg_len = p.length();
-    bits.reset();
 
     if (arg_c==1 && arg_len==0) {
         gpiodev->read(bits);
-        t = bits.to_string();
+        std::string t;
+        for (auto b=bits.begin(); b!=bits.end(); ++b)
+            t+= *b ? "1" : "0";
         ui->log(tools::str_format("READ: %s", t.c_str()));
-    } else if (arg_c==2 && arg_len==GPIO_PIN_COUNT) {
-        for (size_t i=0; i<GPIO_PIN_COUNT; i++) {
+    } else if (arg_c==2 && arg_len==gpiodev->config->pin_number) {
+        for (size_t i=0; i<gpiodev->config->pin_number; i++) {
             if (p[i]=='1') {
-                bits.set(GPIO_PIN_COUNT - i - 1);
+                bits[gpiodev->config->pin_number - i - 1] = true;
             } else if (p[i]!='0') {
                 throw CommandHandlerException(tools::format_string( "Invalid argument specified for state (valid value should be a sequance of 0 and 1, %d symbols in length)",
-                                                                    GPIO_PIN_COUNT));
+                                                                    gpiodev->config->pin_number));
             }
         }
 
         gpiodev->write(bits);
-        t = bits.to_string();
+        std::string t;
+        for (auto b=bits.begin(); b!=bits.end(); ++b)
+            t+= *b ? "1" : "0";
         ui->log(tools::str_format("SET: %s", t.c_str()));
     }
 }
-#endif
 
-
-#ifdef SPWM_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    SPWMListHandler                                           //
 //----------------------------------------------------------------------------------------------//
@@ -1046,7 +1081,7 @@ void SPWMListHandler::handle(const std::vector<std::string>& args) {
         
         uint16_t val = it->second;
 
-        const SPWM_SW_DESCRIPTOR* cdescr = spwm->get_channel_info(channel_index);
+        const SPWMChannel* cdescr = spwm->get_channel_info(channel_index);
         size_t port_index = cdescr->port_index;
         size_t pin_number = cdescr->pin_number;
         const char* name = cdescr->channel_name;
@@ -1152,9 +1187,7 @@ void SPWMResetHandler::handle(const std::vector<std::string>& args) {
     check_arg_count(args, 0);    
     spwm->reset();
 }
-#endif
 
-#ifdef ADCDEV_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    ADCDevStartHandler                                        //
 //----------------------------------------------------------------------------------------------//
@@ -1260,9 +1293,7 @@ void ADCDevReadMeanHandler::handle(const std::vector<std::string>& args) {
     }
 }
 
-#endif
 
-#ifdef STEP_MOTOR_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    StepMotorInfoHandler                                      //
 //----------------------------------------------------------------------------------------------//
@@ -1723,9 +1754,7 @@ void StepMotorSoftwareEndstopHandler::handle(const std::vector<std::string>& arg
     smd->set_software_endstop(mindex, dir, limit);
 }
 
-#endif
 
-#ifdef CAN_DEVICE_ENABLED
 //----------------------------------------------------------------------------------------------//
 //                                    CanInfoHandler                                        //
 //----------------------------------------------------------------------------------------------//
@@ -1924,5 +1953,371 @@ void CanReadHandler::handle(const std::vector<std::string>& args) {
         ui->log(CanDev::can_msg_to_str(m));
     }
 }
-#endif
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIProxyInfoHandler                                       //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIProxyInfoHandler,"spiproxy::", "::info")
+std::string SPIProxyInfoHandler::help() const {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+    return tools::format_string("# %s shows information for %s device. No parameters are required.\n",
+                                get_command_name(), 
+                                d->get_dev_name());
+}
+
+void SPIProxyInfoHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+    ui->log(tools::str_format("Not implemented"));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIProxyReadHandler                                       //
+//----------------------------------------------------------------------------------------------//
+
+DEFINE_HANDLER_DEFAULT_IMPL(SPIProxyReadHandler,"spiproxy::", "::read")
+std::string SPIProxyReadHandler::help() const {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+    return tools::format_string("# %s reads data from %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIProxyReadHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+
+    std::vector<uint8_t> data;
+    EKIT_ERROR err = d->read_all(data);
+
+    if (err!=EKIT_OK) {
+        ui->log(tools::format_string("Error occured: %s", errname(err)));
+    }
+
+    std::string s = tools::format_buffer(16, data.data(), data.size(), " ", " | ");
+    ui->log(s);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIProxyWriteHandler                                       //
+//----------------------------------------------------------------------------------------------//
+
+DEFINE_HANDLER_DEFAULT_IMPL(SPIProxyWriteHandler,"spiproxy::", "::write")
+std::string SPIProxyWriteHandler::help() const {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+    return tools::format_string("# %s writes data into %s device. Pass array of bytes separated by space.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIProxyWriteHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIProxyDev*>(device.get());
+
+    check_arg_count_min(args, 1);
+    std::vector<uint8_t> data = arg_hex_buffer(args, "buffer", 0, std::numeric_limits<uint16_t>::max());
+
+    EKIT_ERROR err = d->write(data.data(), data.size());
+    if (err != EKIT_OK) {
+        ui->log(tools::str_format("Failed with: %d", err));
+    } else {
+        ui->log(tools::str_format("OK"));
+    }
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    AD9850DevResetHandler                                     //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(AD9850DevResetHandler,"ad9850dev::", "::reset")
+std::string AD9850DevResetHandler::help() const {
+    auto d = dynamic_cast<AD9850Dev*>(device.get());
+    return tools::format_string("# %s resets %s device. No parameters are required.\n",
+                                get_command_name(), 
+                                d->get_dev_name());
+}
+
+void AD9850DevResetHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<AD9850Dev*>(device.get());
+    d->reset();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    AD9850DevUpdateHandler                                    //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(AD9850DevUpdateHandler,"ad9850dev::", "::update")
+std::string AD9850DevUpdateHandler::help() const {
+    auto d = dynamic_cast<AD9850Dev*>(device.get());
+    return tools::format_string("# %s set frequency and phase for %s device. Requires two parameters:\n"
+                                "<frequency> - frequency in Hz\n"
+                                "<phase> - phase in radians\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void AD9850DevUpdateHandler::handle(const std::vector<std::string>& args) {
+    std::string unit;
+    auto d = dynamic_cast<AD9850Dev*>(device.get());
+    size_t argc = check_arg_count_min(args, 1);
+
+    double frequency = arg_double(args, "frequency", 0.0, DBL_MAX, {"khz", "mhz", "hz"}, unit, "hz");
+    frequency = arg_frequency_to_hz(frequency, unit);
+
+    double phase = 0.0L;
+    if (argc>1) {
+        arg_double(args, "phase", -DBL_MAX, DBL_MAX, {"rad", "deg"}, unit, "deg");
+        phase = arg_angle_to_rad(phase, unit);
+    }
+    d->update(frequency, phase);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACStartContinuousHandler                              //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACStartContinuousHandler,"spidac::", "::start_continuous")
+std::string SPIDACStartContinuousHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s starts %s device.\n"
+                                "Parameters are:\n"
+                                "Sampling rate\n"
+                                "Phase increment\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACStartContinuousHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    check_arg_count(args, 2);
+    std::string unit;
+
+    double frequency = arg_double(args, "sampling frequency", 0.0, DBL_MAX, {"khz", "mhz", "hz"}, unit, "hz");
+    frequency = arg_frequency_to_hz(frequency, unit);
+
+    unsigned int phase_inc = arg_unsigned_int(args, "phase increment", 1, UINT16_MAX); // <!CHECKIT!> check if the same macroes are used in whole project
+
+    d->start_signal(frequency, phase_inc, true);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACStartPeriodHandler                                  //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACStartPeriodHandler,"spidac::", "::start_period")
+std::string SPIDACStartPeriodHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s starts %s device.\n"
+                                "Parameters are:\n"
+                                "Sampling rate\n"
+                                "Phase increment\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACStartPeriodHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    check_arg_count(args, 2);
+    std::string unit;
+
+    double frequency = arg_double(args, "sampling frequency", 0.0, DBL_MAX, {"khz", "mhz", "hz"}, unit, "hz");
+    frequency = arg_frequency_to_hz(frequency, unit);
+
+    unsigned int phase_inc = arg_unsigned_int(args, "phase increment", 1, UINT16_MAX); // <!CHECKIT!> check if the same macroes are used in whole project
+
+    d->start_signal(frequency, phase_inc, false);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACSetDefaultHandler                                   //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACSetDefaultHandler,"spidac::", "::set_default")
+std::string SPIDACSetDefaultHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+
+    size_t channel_count = d->get_channels_count();
+
+    return tools::format_string("# %s starts %s device.\n"
+                                "Parameters are:\n"
+                                "%d comma separated values per each channel\n",
+                                get_command_name(),
+                                d->get_dev_name(),
+                                channel_count);
+}
+
+void SPIDACSetDefaultHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    size_t channel_count = d->get_channels_count();
+    check_arg_count(args, channel_count);
+    std::string unit;
+    SPIDAC_CHANNELS_VALUE_RANGE vr = d->get_value_range();
+    SPIDAC_SAMPLE_VECT data;
+
+    for (size_t i=0; i<channel_count; i++) {
+        std::string descr = tools::format_string("Default value for channel %d", i);
+        double value = arg_double(args, descr.c_str(), vr.at(i).first, vr.at(i).second);
+        data.push_back(value);
+    }
+
+    d->set_default_values(data);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACStopHandler                                         //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACStopHandler,"spidac::", "::stop")
+std::string SPIDACStopHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s stops %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACStopHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    d->stop();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACIsRunningHandler                                    //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACIsRunningHandler,"spidac::", "::is_running")
+std::string SPIDACIsRunningHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s checks if %s device is running. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACIsRunningHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    bool res = d->is_running();
+    std::string tres = res ? "Device is running." : "Device is stopped.";
+    ui->log(tres);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACUploadSinWaveform                                   //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadSinWaveform,"spidac::", "::upload_sin")
+std::string SPIDACUploadSinWaveform::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s uploads sin waveform to %s device.\n"
+                                "Parameters are:\n"
+                                "Number of samples to use (optional, by default all possible samples are used)\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACUploadSinWaveform::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    size_t argc = check_arg_count_min(args, 0);
+
+    size_t sample_count = d->get_max_samples_per_channel();
+    size_t channel_count = d->get_channels_count();
+    SPIDAC_CHANNELS_VALUE_RANGE ranges = d->get_value_range();
+    if (argc!=0) {
+        sample_count = arg_unsigned_int(args, "samples count", 0, UINT_MAX);
+    }
+
+    SPIDAC_CHANNELS channels;
+    for (size_t ch = 0; ch<channel_count; ch++) {
+        SPIDAC_SAMPLE_VECT samples;
+        double min_val = ranges.at(ch).first;
+        double max_val = ranges.at(ch).second;
+
+        for (size_t s = 0; s<sample_count; s++) {
+            double x = 2.0L * M_PI * (double)s/(double)sample_count;
+            double val = ((sin(x) + 1.0L) * (max_val - min_val) / 2.0L) + min_val;
+            samples.push_back(val);
+        }
+        channels.push_back(samples);
+    }
+
+    d->upload(channels, false);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACUploadSawWaveform                                   //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadSawWaveform,"spidac::", "::upload_saw")
+std::string SPIDACUploadSawWaveform::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s uploads saw waveform to %s device.\n"
+                                "Parameters are:\n"
+                                "Number of samples to use (optional, by default all possible samples are used)\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACUploadSawWaveform::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    size_t argc = check_arg_count_min(args, 0);
+
+    size_t sample_count = d->get_max_samples_per_channel();
+    size_t channel_count = d->get_channels_count();
+    SPIDAC_CHANNELS_VALUE_RANGE ranges = d->get_value_range();
+    if (argc!=0) {
+        sample_count = arg_unsigned_int(args, "samples count", 0, UINT_MAX);
+    }
+
+    SPIDAC_CHANNELS channels;
+    for (size_t ch = 0; ch<channel_count; ch++) {
+        SPIDAC_SAMPLE_VECT samples;
+        double min_val = ranges.at(ch).first;
+        double max_val = ranges.at(ch).second;
+
+        for (size_t s = 0; s<sample_count; s++) {
+            double x = (double)s/(double)sample_count;
+            double val = (x * (max_val - min_val)) + min_val;
+            samples.push_back(val);
+        }
+        channels.push_back(samples);
+    }
+
+    d->upload(channels, false);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACUploadTriangleWaveform                              //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadTriangleWaveform,"spidac::", "::upload_triangle")
+std::string SPIDACUploadTriangleWaveform::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s uploads triangle waveform to %s device.\n"
+                                "Parameters are:\n"
+                                "Number of samples to use (optional, by default all possible samples are used)\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACUploadTriangleWaveform::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    size_t argc = check_arg_count_min(args, 0);
+
+    size_t sample_count = d->get_max_samples_per_channel();
+    size_t channel_count = d->get_channels_count();
+    SPIDAC_CHANNELS_VALUE_RANGE ranges = d->get_value_range();
+    if (argc!=0) {
+        sample_count = arg_unsigned_int(args, "samples count", 0, UINT_MAX);
+    }
+
+    SPIDAC_CHANNELS channels;
+    for (size_t ch = 0; ch<channel_count; ch++) {
+        SPIDAC_SAMPLE_VECT samples;
+        double min_val = ranges.at(ch).first;
+        double max_val = ranges.at(ch).second;
+
+        size_t middle = sample_count / 2;
+        for (size_t s = 0; s<middle; s++) {
+            double x = (double)s/(double)middle;
+            double val = (x * (max_val - min_val)) + min_val;
+            samples.push_back(val);
+        }
+
+        for (size_t s = middle; s<sample_count; s++) {
+            double x = (double)s/(double)middle;
+            double val = ((2.0L - x) * (max_val - min_val)) + min_val;
+            samples.push_back(val);
+        }
+
+        channels.push_back(samples);
+    }
+
+    d->upload(channels, false);
+}
+
 // ADD_DEVICE

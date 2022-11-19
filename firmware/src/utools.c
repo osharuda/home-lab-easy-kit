@@ -21,6 +21,7 @@
  */
 
 #include "utools.h"
+#include <string.h>
 
 #ifdef DISABLE_NOT_TESTABLE_CODE
 int g_assert_param_count = 0;
@@ -30,6 +31,20 @@ int g_assert_param_count = 0;
 
 /// \addtogroup group_utools
 /// @{
+
+GPIO_TypeDef g_null_port;
+
+#ifndef NDEBUG
+volatile uint8_t g_irq_disabled = 0;
+#endif
+
+void debug_checks_init(void) {
+#ifndef NDEBUG
+    g_irq_disabled = 0;
+#endif
+}
+
+#if ENABLE_SYSTICK!=0
 
 /// \brief This global variable is used by #delay_us() in order to provide required wait.
 /// \warning Don't access to this variable, it's dedicated solely by #delay_us() use.
@@ -41,10 +56,6 @@ volatile uint32_t g_usTicks = 0;
 ///       Atomicity is achieved by disabling interrupts in functions that read it (#get_us_clock()) and by modifying it
 ///       in SysTick interrupt only.
 volatile uint64_t g_usClock __attribute__ ((aligned)) = 0;
-
-#ifndef NDEBUG
-volatile uint8_t g_irq_disabled = 0;
-#endif
 
 uint64_t get_us_clock(void) {
     uint64_t res_clock;
@@ -70,12 +81,6 @@ void systick_init(void)
 	NVIC_SetPriority(SysTick_IRQn, IRQ_PRIORITY_SYSTICK);
 }
 
-void debug_checks_init(void) {
-#ifndef NDEBUG
-    g_irq_disabled = 0;
-#endif
-}
-
 void delay_us(uint32_t us)
 {
     DISABLE_IRQ
@@ -98,7 +103,33 @@ void delay_ms(uint32_t ms) {
 		delay_us(1000);
 }
 
-void timer_schedule_update_ev(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority) {
+#endif
+
+
+
+
+
+void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority) {
+    TIM_TimeBaseInitTypeDef init_struct;
+
+    TIM_Cmd(timer, DISABLE);
+
+    // Prepare timer
+    init_struct.TIM_CounterMode       = TIM_CounterMode_Up;
+    init_struct.TIM_Prescaler         = prescaller;
+    init_struct.TIM_Period            = period;
+    init_struct.TIM_ClockDivision     = TIM_CKD_DIV1;
+    init_struct.TIM_RepetitionCounter = 0;
+
+    // Setup interrupt and enable timer
+    NVIC_SetPriority(irqn, priority);
+    NVIC_EnableIRQ(irqn);
+    TIM_TimeBaseInit(timer, &init_struct);
+    TIM_Cmd(timer, ENABLE);
+    TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
+}
+
+void timer_start_us(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority) {
     TIM_TimeBaseInitTypeDef init_struct;
     TIM_Cmd(timer, DISABLE);
 
@@ -116,7 +147,16 @@ void timer_schedule_update_ev(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, u
     TIM_Cmd(timer, ENABLE);
 }
 
-void timer_reschedule_update_ev(TIM_TypeDef* timer, uint32_t us) {
+void timer_reschedule(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period) {
+    SET_FLAGS(timer->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION BECAUSE OF setting EGR->UG
+    timer->PSC = prescaller;
+    timer->ARR = period;
+    timer->CNT=0;
+    timer->EGR = TIM_PSCReloadMode_Immediate;
+    CLEAR_FLAGS(timer->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
+}
+
+void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us) {
     SET_FLAGS(timer->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION BECAUSE OF setting EGR->UG
     timer_get_params(us, &(timer->PSC), &(timer->ARR));
     timer->CNT=0;
@@ -124,10 +164,12 @@ void timer_reschedule_update_ev(TIM_TypeDef* timer, uint32_t us) {
     CLEAR_FLAGS(timer->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
 }
 
-void timer_disable(TIM_TypeDef* timer) {
+void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn) {
     DISABLE_IRQ
     TIM_ITConfig(timer, TIM_IT_Update, DISABLE);
     TIM_Cmd(timer, DISABLE);
+    timer->SR = (uint16_t)~TIM_IT_Update;
+    NVIC_DisableIRQ(irqn);
     ENABLE_IRQ
 }
 
@@ -221,5 +263,4 @@ void timer_get_params(uint32_t us, volatile uint16_t* prescaller, volatile uint1
     *prescaller = (uint16_t)psc;
     *period = (uint16_t)per;
 }
-
 /// @}

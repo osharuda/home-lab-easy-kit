@@ -2,8 +2,6 @@
   "firmware" : {
     "mcu_model" : "stm32f103",
     "device_name" : "{devname}_tester",
-    "install_prefix" : "{devname}_prefix",
-    "install_path" : "/opt",
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,

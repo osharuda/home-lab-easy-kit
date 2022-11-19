@@ -15,37 +15,66 @@
 
 import os
 from tools import *
+from shutil import copy2
 
 class BaseDeviceCustomizer:
-    def __init__(self, mcu_hw, dev_configs):
+    def __init__(self, mcu_hw, dev_configs, common_config):
         self.mcu_hw = mcu_hw
         self.dev_configs = dev_configs
         self.device_name = "BASE_DEVICE"
+        self.config_name = common_config['firmware']['device_name'] #<!CHECKIT!> device name should become config name
 
+        self.fw_templ = "../templates/firmware/"
         self.fw_inc_templ = "../templates/firmware/inc/"
         self.fw_src_templ = "../templates/firmware/src/"
-        self.fw_inc_dest = "../../firmware/inc/"
-        self.fw_src_dest = "../../firmware/src/"
+        self.fw_path = "../../firmware/"
+        self.fw_inc_source_path = "../../firmware/inc/"
+        self.fw_src_source_path = "../../firmware/src/"
+        self.fw_inc_dest = common_config['firmware']['firmware_inc_path']
+        self.fw_dest = common_config['firmware']['firmware_path']
         self.shared_templ = "../templates/shared/"
 
-        self.sw_templ = "../templates/software/"
-        self.sw_dest = "../../software/"
-        self.sw_example_templ = "../templates/software/example/"
-        self.sw_example_dest = "../../software/example/"
-        self.sw_inc_templ = "../templates/software/inc/"
+        self.sw_templ = "../templates/monitor/"
+        self.sw_example_templ = "../templates/example/"
+        self.sw_example_inc_templ = "../templates/example/inc/"
+        self.sw_example_src_templ = "../templates/example/src/"
+        self.sw_monitor_dest = common_config["firmware"]["monitor_path"] + os.path.sep
+
+        self.sw_example_dest = common_config["firmware"]["example_path"] + os.path.sep
+        self.sw_example_inc_dest = common_config["firmware"]["example_inc_path"] + os.path.sep
+        self.sw_example_src_dest = common_config["firmware"]["example_src_path"] + os.path.sep
+
+        self.sw_inc_templ = "../templates/libhlek/inc/"
         self.sw_src_templ = "../templates/software/src/"
+
+
         self.sw_inc_dest = "../../software/inc/"
         self.sw_src_dest = "../../software/src/"
+        self.sw_testtool_templ = "../templates/software/testtool/"
         self.sw_testtool_dest = "../../software/testtool/"
 
+        self.sw_lib_path = common_config['firmware']['libconfig_path']
+        self.sw_lib_inc_dest = common_config['firmware']['libconfig_inc_path'] + os.path.sep
+        self.sw_lib_src_dest = common_config['firmware']['libconfig_src_path'] + os.path.sep
+
+        self.sw_lib_templ_path = os.path.abspath("../templates/libconfig/") + os.path.sep
+        self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc/") + os.path.sep
+        self.sw_lib_src_templ_path = os.path.join(self.sw_lib_templ_path, "src/") + os.path.sep
+        self.build_script = "build.sh"
         self.fw_base_header = "fw.h"
-        self.sw_base_header = "sw.h"
         self.fw_header = self.fw_base_header
-        self.sw_header = self.sw_base_header
+
+        self.libhlek_templ_path = os.path.abspath("../templates/libhlek/") + os.path.sep
+        self.libhlek_dest_path = os.path.abspath("../../libhlek") + os.path.sep
+        self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc") + os.path.sep
+        self.libhlek_src_dest_path = os.path.join(self.libhlek_dest_path, "src") + os.path.sep
 
         self.template_list = dict()
+        self.file_copy_list = dict()
         self.shared_code = dict()
         self.tab = "    "
+        self.newline = "\n"
+        self.project_name = common_config['firmware']['device_name']
 
         self.check_mcu_support()
 
@@ -63,6 +92,9 @@ class BaseDeviceCustomizer:
     def add_template(self, in_file: str, out_file_list: list):
         self.template_list[in_file] = out_file_list
 
+    def add_copy(self, in_file: str, out_file_list: list):
+        self.file_copy_list[in_file] = out_file_list
+
     def add_shared_code(self, in_file: str, token: str):
         header_separator = "/* --------------------> END OF THE TEMPLATE HEADER <-------------------- */"
         with open(os.path.abspath(in_file), 'r') as f:
@@ -76,7 +108,6 @@ class BaseDeviceCustomizer:
     def patch_templates(self, vocabulary: dict):
 
         for in_file, out_file_list in self.template_list.items():
-
             # read in_file
             with open(os.path.abspath(in_file), 'r') as f:
                 template = f.read()
@@ -91,6 +122,13 @@ class BaseDeviceCustomizer:
             for fn in out_file_list:
                 with open(os.path.abspath(fn), 'w') as f:
                     f.write(template)
+
+        # Process file copy
+        for in_file, out_file_list in self.file_copy_list.items():
+            for fn in out_file_list:
+                copy2(in_file, fn)
+
+
 
     def get_gpio(self, d: dict) -> str:
         if (d is None) or ("gpio" not in d):
@@ -118,6 +156,11 @@ class BaseDeviceCustomizer:
         rtc = d["rtc"]
         self.check_resource(rtc, "rtc")
         return rtc
+
+    def get_spi(self, d: dict) -> str:
+        spi = d["spi"]
+        self.check_resource(spi, "spi")
+        return spi
 
     def get_backup_reg(self, d: dict) -> str:
         br = d["bkp"]
@@ -207,31 +250,29 @@ class BaseDeviceCustomizer:
     def get_fw_header(self):
         return self.fw_header
 
-    def get_sw_header(self):
-        return self.sw_header
-
     def check_mcu_support(self):
         # check MCU support in self.mcu_hw.mcu_name
         return
 
-    def check_requirements(self, obj: str, dev_requires: dict, dev_suffix: str):
+    def check_requirements(self, obj: str, dev_requires: dict, dev_suffix: str, exclude: set = {}):
         required = self.check_resource(obj)['requires']
 
         if not dev_suffix:
             raise RuntimeError("dev_suffix may not be empty")
 
-        self.check_requirements_dict(required, dev_requires, dev_suffix)
+        self.check_requirements_dict(required, dev_requires, dev_suffix, exclude)
         return
 
-    def check_requirements_dict(self, required: dict, dev_requires: dict, dev_suffix: str):
+    def check_requirements_dict(self, required: dict, dev_requires: dict, dev_suffix: str, exclude: set):
         for k, v in required.items():
             if isinstance(k, str) and isinstance(v, str):
                 # both k is type, v is resource
                 dev_requires[k+dev_suffix] = v
                 self.check_resource(v)
-                self.check_requirements(v, dev_requires, dev_suffix)
+                self.check_requirements(v, dev_requires, dev_suffix, exclude)
             elif isinstance(k, str) and isinstance(v, dict):
-                self.check_requirements_dict(v, dev_requires, "{0}_{1}".format(k, dev_suffix))
+                if k not in exclude:
+                    self.check_requirements_dict(v, dev_requires, "{0}_{1}".format(k, dev_suffix), exclude)
             else:
                 raise RuntimeError("Bad requirement")
         return
@@ -262,3 +303,10 @@ class BaseDeviceCustomizer:
                     self.device_name, value, val, periph, str(values)))
 
         return val
+
+    def require_feature(self, feature: str, dev_config: dict):
+        if feature not in self.mcu_hw.FW_FEATURES:
+            raise RuntimeError(f"Unknown feature '{feature}' is required by device {self.device_name}")
+
+        feature_dict = dev_config.setdefault("required_features", set())
+        feature_dict.add(feature)

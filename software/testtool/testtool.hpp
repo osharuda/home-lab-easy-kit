@@ -28,3 +28,17 @@
 #define DECLARE_TEST(y) const char* func_name = #y; \
                         size_t _test_counter = 0;
 #define REPORT_CASE tools::debug_print("%s : %d (%s:%d)", func_name, _test_counter++, __FILE__, __LINE__);
+
+#define TRY_SIGNAL(s)                              \
+    struct sigaction new_action;                   \
+    struct sigaction old_action;                   \
+    memset(&new_action, 0, sizeof(new_action));    \
+    new_action.sa_handler = s ## _HANDLER;         \
+    new_action.sa_flags = SA_NODEFER | SA_NOMASK;  \
+    sigaction( s, &new_action, &old_action);      \
+    if (setjmp(jmpbuf)==0) {
+
+#define CATCH_SIGNAL(s) \
+} else {                \
+    sigaction((s), &old_action, &new_action);\
+}

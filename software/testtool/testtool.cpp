@@ -21,7 +21,7 @@
  */
 
 #include <iostream>
-#include "tools.hpp"
+#include <tools.hpp>
 #include "texttools.hpp"
 #include <cassert>
 #include "testtool.hpp"
@@ -31,6 +31,15 @@
 #include "circbuffer.h"
 #include "i2c_proto.h"
 #include "math.h"
+#include <signal.h>
+#include <csetjmp>
+
+jmp_buf jmpbuf;
+
+void SIGFPE_HANDLER(int signum) {
+    g_assert_param_count++;
+    longjmp(jmpbuf, 1);
+}
 
 void test_stm32_timer_params_integer() {
     DECLARE_TEST(test_stm32_timer_params_integer)
@@ -264,6 +273,7 @@ void test_circbuffer_single_byte() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         refcirc.status = 0;
         refcirc.status_size = 0;
@@ -434,12 +444,14 @@ void test_circbuffer_single_block() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         circbuf_init_block_mode(&circ, block_size);
         refcirc.block_size=block_size;
+        refcirc.block_mode=1;
         refcirc.free_size=0;
         assert(g_assert_param_count==0); // no asserts
         assert(circbuf_len(&circ)==0);
@@ -683,6 +695,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         refcirc.status = 0;
         refcirc.start_pos = 0;
@@ -690,7 +703,7 @@ void test_circbuffer_asserts() {
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         block = (uint8_t*)circbuf_reserve_block(&circ);
-        assert(g_assert_param_count==1); // undefined behaviour, assertion must be triggered
+        assert(g_assert_param_count>0); // undefined behaviour, assertion must be triggered
     }
 
     REPORT_CASE
@@ -718,6 +731,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -751,6 +765,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -784,15 +799,16 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==1); // undefined behaviour, assertion must be triggered)
+        assert(g_assert_param_count>0); // undefined behaviour, assertion must be triggered)
     }    
 
-    REPORT_CASE // block mode: attempt to init with block size == 1
+    REPORT_CASE // block mode: attempt to init with block size == 0
     {
         g_assert_param_count = 0;        
         CircBuffer circ;
@@ -800,7 +816,7 @@ void test_circbuffer_asserts() {
         memset(&circ, 0, sizeof(circ));
         memset(&refcirc, 0, sizeof(refcirc));
         const uint16_t buffer_size = 9;
-        const uint16_t block_size = 1;
+        const uint16_t block_size = 0;
         uint8_t* block;
         uint8_t buffer[buffer_size] = {0};
         uint8_t refbuffer[buffer_size] = {0};
@@ -817,12 +833,16 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
+        TRY_SIGNAL(SIGFPE)
         circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==1); // undefined behaviour, assertion must be triggered)
+        CATCH_SIGNAL(SIGFPE)
+
+        assert(g_assert_param_count!=0); // undefined behaviour, assertion must be triggered)
     } 
 
     REPORT_CASE // block mode: attempt to init with block size > buffer_size
@@ -850,12 +870,13 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==2); // undefined behaviour, assertion must be triggered: one time for being non multuple by block_size, another time for buffer size
+        assert(g_assert_param_count>0); // undefined behaviour
     }     
 
     REPORT_CASE // block mode: attempt to init block mode while in block mode
@@ -883,14 +904,17 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         circbuf_init_block_mode(&circ, block_size);
+        refcirc.block_mode=1;
+        refcirc.block_size=block_size;
         assert(g_assert_param_count==0); // must be ok
         circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==1); // not ok - already in block mode
+        assert(g_assert_param_count!=0); // not ok - already in block mode
     }         
 
     REPORT_CASE // block mode attempt to call circbuf_put_byte()
@@ -918,6 +942,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -926,7 +951,7 @@ void test_circbuffer_asserts() {
         assert(g_assert_param_count==0); // must be ok
         b = 0;
         circbuf_put_byte(&circ, b);
-        assert(g_assert_param_count==1); // not ok - in block mode
+        assert(g_assert_param_count>0); // not ok - in block mode
     }    
 
     REPORT_CASE // block mode attempt to call circbuf_commit_block() when block is not allocated
@@ -954,6 +979,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -961,7 +987,7 @@ void test_circbuffer_asserts() {
         circbuf_init_block_mode(&circ, block_size);
         assert(g_assert_param_count==0); // must be ok
         circbuf_commit_block(&circ);
-        assert(g_assert_param_count==1); // not ok - block was not reserved
+        assert(g_assert_param_count>0); // not ok - block was not reserved
     }        
 
     REPORT_CASE // block mode attempt to call circbuf_cancel_block() when block is not allocated
@@ -989,6 +1015,7 @@ void test_circbuffer_asserts() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -996,7 +1023,7 @@ void test_circbuffer_asserts() {
         circbuf_init_block_mode(&circ, block_size);
         assert(g_assert_param_count==0); // must be ok
         circbuf_cancel_block(&circ);
-        assert(g_assert_param_count==1); // not ok - block was not reserved
+        assert(g_assert_param_count>0); // not ok - block was not reserved
     }            
 }
 
@@ -1027,6 +1054,7 @@ void test_circbuffer_block_mode_work() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         refcirc.status = 0;
         refcirc.status_size = 0;
@@ -1036,6 +1064,7 @@ void test_circbuffer_block_mode_work() {
 
         circbuf_init_block_mode(&circ, block_size);
         refcirc.block_size=block_size;
+        refcirc.block_mode=1;
         refcirc.free_size=buffer_size-block_size;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -1121,7 +1150,7 @@ void test_circbuffer_block_mode_work() {
             assert(b==1+i);
 
             refcirc.bytes_read=1+i;
-            refcirc.read_pos=1+i;
+            refcirc.read_pos= (1+i) % buffer_size;
 
             assert(memcmp(buffer,refbuffer,buffer_size)==0);
             assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
@@ -1275,6 +1304,359 @@ void test_circbuffer_block_mode_work() {
         assert(circbuf_len(&circ)==0);        
 
     }
+
+    // Special case: 1 byte block size
+    REPORT_CASE
+    {
+        CircBuffer circ;
+        CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
+        const uint16_t buffer_size = 2;
+        const uint16_t block_size = 1;
+        uint8_t* block;
+        uint8_t buffer[buffer_size] = {0};
+        uint8_t refbuffer[buffer_size] = {0};
+        circbuf_init(&circ, buffer, buffer_size);
+        uint8_t opres,b,res;
+
+        refcirc.buffer=buffer;
+        refcirc.buffer_size=buffer_size;
+        refcirc.put_pos=0;
+        refcirc.start_pos=0;
+        refcirc.data_len=0;
+        refcirc.read_pos=0;
+        refcirc.bytes_read=0;
+        refcirc.ovf=0;
+        refcirc.free_size=buffer_size-1;
+        refcirc.block_size=1;
+        refcirc.block_mode=0;
+        refcirc.current_block=0;
+        refcirc.status = 0;
+        refcirc.status_size = 0;
+
+        assert(circbuf_len(&circ)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        circbuf_init_block_mode(&circ, block_size);
+        refcirc.block_size=block_size;
+        refcirc.block_mode=1;
+        refcirc.free_size=buffer_size-block_size;
+        assert(circbuf_len(&circ)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // reserve a block
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+        block[0] = 6;
+        refbuffer[0] = 6;
+
+        refcirc.current_block = buffer;
+        assert(block==buffer);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+
+        // commit block
+        circbuf_commit_block(&circ);
+
+        refcirc.current_block = 0;
+        refcirc.data_len = block_size;
+        refcirc.put_pos = block_size;
+
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // reserve a block
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+
+        refcirc.current_block = buffer+block_size;
+        assert(block==refcirc.current_block);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // cancel block
+        circbuf_cancel_block(&circ);
+        refcirc.current_block = 0;
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // reserve a block
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+
+        refcirc.current_block = buffer+block_size;
+        assert(block==refcirc.current_block);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        block[0] = 7;
+        refbuffer[1] = 7;
+
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+
+        // commit block
+        circbuf_commit_block(&circ);
+
+        refcirc.current_block = 0;
+        refcirc.data_len = block_size*2;
+        refcirc.put_pos = 0;
+
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // start reading from circular buffer
+        circbuf_start_read(&circ);
+        refcirc.read_pos = refcirc.start_pos;
+        refcirc.bytes_read = 0;
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_len(&circ)==2);
+
+        // read 2 bytes (1)
+        for (uint8_t i=0; i<2; i++)
+        {
+            opres = circbuf_get_byte(&circ, &b);
+            assert(opres==1);
+            assert(b==6+i);
+
+            refcirc.bytes_read=1+i;
+            refcirc.read_pos= (1+i) % buffer_size;
+
+            assert(memcmp(buffer,refbuffer,buffer_size)==0);
+            assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+            assert(circbuf_len(&circ)==buffer_size);
+            assert(circbuf_get_ovf(&circ)==0);
+        }
+
+        // stop reading
+        res = circbuf_stop_read(&circ, 3);
+        refcirc.data_len = 0;
+        refcirc.start_pos = 0;
+
+        assert(res == 0); // 2 bytes remains
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_get_ovf(&circ)==0);
+        assert(circbuf_len(&circ)==0);
+
+        // reserve block again
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+
+        refcirc.current_block = buffer;
+        assert(block==refcirc.current_block);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // write
+        block[0] = 8;
+        refbuffer[0] = 8;
+
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+
+        // commit block
+        circbuf_commit_block(&circ);
+
+        refcirc.current_block = 0;
+        refcirc.data_len = block_size;
+        refcirc.put_pos = 1;
+
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        // prepare for read
+        circbuf_start_read(&circ);
+        refcirc.read_pos = refcirc.start_pos;
+        refcirc.bytes_read = 0;
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_len(&circ)==1);
+
+        // read all the data in the buffer (8 bytes)
+        for (uint8_t i=0; i<1; i++)
+        {
+            opres = circbuf_get_byte(&circ, &b);
+            assert(opres==1);
+            assert(b==8+i);
+
+            refcirc.bytes_read=1+i;
+            refcirc.read_pos=1+i;
+            refcirc.read_pos=refcirc.read_pos%buffer_size;
+
+            assert(memcmp(buffer,refbuffer,buffer_size)==0);
+            assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+            assert(circbuf_len(&circ)==1);
+            assert(circbuf_get_ovf(&circ)==0);
+        }
+
+        // read one byte from empty buffer
+        opres = circbuf_get_byte(&circ, &b);
+        assert(opres==0);
+        assert(b == COMM_BAD_BYTE);
+
+        refcirc.bytes_read=1;
+        refcirc.read_pos=1;
+
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==1);
+        assert(circbuf_len(&circ)==1);
+        assert(circbuf_get_ovf(&circ)==1);
+
+        // stop reading
+        res = circbuf_stop_read(&circ, 1);
+        refcirc.data_len = 0;
+        refcirc.start_pos = 1;
+
+        assert(res == 0); // 0 bytes remains
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==1);
+        assert(circbuf_get_ovf(&circ)==1);
+        assert(circbuf_len(&circ)==0);
+
+        // Clear overflow
+        circbuf_clear_ovf(&circ);
+        refcirc.ovf=0;
+
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_get_ovf(&circ)==0);
+        assert(circbuf_len(&circ)==0);
+    }
+
+    // Special case: 1 byte block size and test overflow
+    REPORT_CASE
+    {
+        CircBuffer circ;
+        CircBuffer refcirc;
+        memset(&circ, 0, sizeof(circ));
+        memset(&refcirc, 0, sizeof(refcirc));
+        const uint16_t buffer_size = 2;
+        const uint16_t block_size = 1;
+        uint8_t* block;
+        uint8_t buffer[buffer_size] = {0};
+        uint8_t refbuffer[buffer_size] = {0};
+        circbuf_init(&circ, buffer, buffer_size);
+        uint8_t opres,b,res;
+
+        refcirc.buffer=buffer;
+        refcirc.buffer_size=buffer_size;
+        refcirc.put_pos=0;
+        refcirc.start_pos=0;
+        refcirc.data_len=0;
+        refcirc.read_pos=0;
+        refcirc.bytes_read=0;
+        refcirc.ovf=0;
+        refcirc.free_size=buffer_size-1;
+        refcirc.block_size=1;
+        refcirc.block_mode=0;
+        refcirc.current_block=0;
+        refcirc.status = 0;
+        refcirc.status_size = 0;
+
+        assert(circbuf_len(&circ)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        circbuf_init_block_mode(&circ, block_size);
+        refcirc.block_size=block_size;
+        refcirc.block_mode=1;
+        refcirc.free_size=buffer_size-block_size;
+        refcirc.start_pos = 0;
+        assert(circbuf_len(&circ)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+
+        uint8_t start_val=9;
+
+        for (size_t i=0; i<buffer_size; i++) {
+            // reserve a block
+            block = (uint8_t*)circbuf_reserve_block(&circ);
+            block[0] = start_val+i;
+            refbuffer[i] = start_val+i;
+
+            refcirc.current_block = buffer+i;
+            refcirc.start_pos = 0;
+            assert(block==buffer+i);
+            assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+            assert(memcmp(buffer,refbuffer,buffer_size)==0);
+
+            // commit block
+            circbuf_commit_block(&circ);
+
+            refcirc.current_block = 0;
+            refcirc.data_len = block_size*(i+1);
+            refcirc.put_pos = block_size*(i+1) % buffer_size;
+            refcirc.start_pos = 0;
+
+            assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+            assert(circbuf_get_ovf(&circ)==0);
+        }
+
+        // attempt reserve block again, must fail
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+        refcirc.ovf = 1;
+
+        assert(block==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+        assert(circbuf_get_ovf(&circ)==1);
+
+
+        // start reading from circular buffer
+        circbuf_start_read(&circ);
+        refcirc.read_pos = refcirc.start_pos;
+        refcirc.bytes_read = 0;
+        refcirc.start_pos = 0;
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_len(&circ)==2);
+
+        // read 1 byte
+        opres = circbuf_get_byte(&circ, &b);
+        assert(opres==1);
+        assert(b==start_val);
+
+        refcirc.bytes_read=1;
+        refcirc.read_pos=1;
+        refcirc.read_pos=refcirc.read_pos%buffer_size;
+        refcirc.start_pos = 0;
+
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_len(&circ)==buffer_size);
+        assert(circbuf_get_ovf(&circ)==1);
+        assert(circ.put_pos==0);
+
+        // stop reading
+        res = circbuf_stop_read(&circ, 1);
+        refcirc.data_len = 1;
+        refcirc.start_pos = 1;
+
+        assert(res == 1); // 1 bytes remains
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+        assert(memcmp(&circ,&refcirc,sizeof(refcirc))==0);
+        assert(circbuf_get_ovf(&circ)==1);
+        assert(circbuf_len(&circ)==1);
+
+        // clear overflow
+        circbuf_clear_ovf(&circ);
+        refcirc.ovf = 0;
+        assert(circbuf_get_ovf(&circ)==0);
+
+        // attempt to write one more byte again:
+        // reserve a block
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+        block[0] = start_val+4;
+        refbuffer[0] = start_val+4;
+
+        refcirc.current_block = buffer;
+        assert(block==buffer);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+        assert(memcmp(buffer,refbuffer,buffer_size)==0);
+
+        // commit block
+        circbuf_commit_block(&circ);
+
+        refcirc.current_block = 0;
+        refcirc.data_len = buffer_size;
+        refcirc.put_pos = 1;
+
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+        assert(circbuf_get_ovf(&circ)==0);
+
+        // attempt reserve block again, must fail
+        block = (uint8_t*)circbuf_reserve_block(&circ);
+        refcirc.ovf = 1;
+
+        assert(block==0);
+        assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
+        assert(circbuf_get_ovf(&circ)==1);
+    }
 }
 
 
@@ -1303,12 +1685,14 @@ void test_circbuffer_block_mode_initialization() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
 
         circbuf_init_block_mode(&circ, block_size);
         refcirc.block_size=block_size;
+        refcirc.block_mode = 1;
         refcirc.free_size=buffer_size-block_size;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);        
@@ -1336,6 +1720,7 @@ void test_circbuffer_block_mode_initialization() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -1344,6 +1729,7 @@ void test_circbuffer_block_mode_initialization() {
 
         refcirc.block_size=block_size;
         refcirc.buffer_size = (buffer_size / block_size)*block_size;
+        refcirc.block_mode = 1;
         refcirc.free_size=refcirc.buffer_size-block_size;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);        
@@ -1374,6 +1760,7 @@ void test_circbuffer_byte_mode() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         assert(circbuf_len(&circ)==0);
         assert(memcmp(&circ,&refcirc,sizeof(CircBuffer))==0);
@@ -1401,6 +1788,7 @@ void test_circbuffer_byte_mode() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
 
         circbuf_init(&circ, buffer, buffer_size);
@@ -1476,6 +1864,7 @@ void test_circbuffer_byte_mode() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
 
         circbuf_init(&circ, buffer, buffer_size);
@@ -1548,6 +1937,7 @@ void test_circbuffer_byte_mode() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
 
         circbuf_init(&circ, buffer, buffer_size);
@@ -1696,6 +2086,7 @@ void test_circbuffer_byte_mode() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
 
         circbuf_init(&circ, buffer, buffer_size);
@@ -2059,6 +2450,7 @@ void test_circbuffer_block_mode_work_with_status() {
         refcirc.ovf=0;
         refcirc.free_size=buffer_size-1;
         refcirc.block_size=1;
+        refcirc.block_mode=0;
         refcirc.current_block=0;
         refcirc.status = &status;
         refcirc.status_size = 1;

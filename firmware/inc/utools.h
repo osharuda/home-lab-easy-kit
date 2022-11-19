@@ -35,6 +35,7 @@ extern int g_assert_param_count;
 
 #else
 
+#include "fw.h"
 #include <limits.h>
 #include "stm32f10x_conf.h"
 
@@ -53,6 +54,8 @@ extern int g_assert_param_count;
 /// - Timer functions.
 /// - Some debugging functions.
 ///
+
+extern GPIO_TypeDef g_null_port;
 
 #ifndef NDEBUG
 /// \brief This variable is used in order to check if #DISABLE_IRQ and #ENABLE_IRQ macro were used correctly.
@@ -84,12 +87,26 @@ extern volatile uint8_t g_irq_disabled;
 /// \param f - bitmask where 1 indicates bit that should be set, bits with 0 are ignored.
 #define SET_FLAGS(x,f)       ((x) = (x) | (f))
 
-/// Sets bits specified by value in x using mask.
+/// \brief Sets bits specified by value in x using mask.
 /// \param x - value to be modified.
 /// \param mask - bitmask where 1 indicates bit of interest that will be modified as specified by value, bits with 0 are
 ///        ignored.
 /// \param value - value that specifies new bit values.
 #define SET_BIT_FIELD(x, mask, value) (x) = (((x) & (~(mask))) | ((value)&(mask)))
+
+/// \brief Checks if flags specified by mask are set as specified
+/// \param x - value to be inspected
+/// \param mask - a mask that specify bits (flags) of interest
+/// \param flags - expected flags
+/// \return non-zero if flags specified by mask are set as described by flags
+#define CHECK_FLAGS(x, mask, flags) ( ((x) & (mask)) == ((flags) & (mask)) )
+
+/// \brief Checks if flags are not set in the register
+/// \param x - value to be inspected
+/// \param mask - a mask that specify bits (flags) of interest
+/// \param flags - expected flags combinations
+/// \return non-zero if flags specified by mask are NOT set as expected
+#define FLAGS_ARE_NOT_SET(x, mask, flags) ( ((x) & (mask)) != ((flags) & (mask)) )
 
 /// Converts bit in flag into 0 or 1 using bit offset.
 /// \param flag - value with bit of interest.
@@ -127,16 +144,28 @@ extern volatile uint8_t g_irq_disabled;
                                         ((port)==GPIOA && (pin)==(1<<15)))  \
                                         { GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE); }
 
+
+/// \brief Defines GPIO pin.
+/// \param port - GPIO port
+/// \param pin - pin mask (see GPIO_Pin_XX values in CMSIS)
+/// \param mode - pin mode (one of GPIO_Mode_XXX values in CMSIS)
+#define DECLARE_PIN_NO_REMAP(port, pin, mode)   gpio.GPIO_Pin = (pin);						\
+    										    gpio.GPIO_Mode = mode;						\
+    										    gpio.GPIO_Speed = GPIO_DEFAULT_SPEED;		\
+    										    GPIO_Init( port , &gpio);
+
 /// \brief Defines GPIO pin.
 /// \param port - GPIO port
 /// \param pin - pin mask (see GPIO_Pin_XX values in CMSIS)
 /// \param mode - pin mode (one of GPIO_Mode_XXX values in CMSIS)
 #define DECLARE_PIN(port, pin, mode)        REMAP_GPIO_PIN((port), (pin));              \
-                                            gpio.GPIO_Pin = (pin);						\
-    										gpio.GPIO_Mode = mode;						\
-    										gpio.GPIO_Speed = GPIO_DEFAULT_SPEED;		\
-    										GPIO_Init( port , &gpio);
+                                            DECLARE_PIN_NO_REMAP((port), (pin), (mode))
 
+#define PIN_SET_RESET(port, pin)    (port)->BSRR = pin; \
+                                    (port)->BRR = pin;
+
+#define PIN_RESET_SET(port, pin)    (port)->BRR = pin; \
+                                    (port)->BSRR = pin;
 
 #ifndef NDEBUG
 #define ASSERT_IRQ_ENABLED assert_param(g_irq_disabled==0);
@@ -172,12 +201,34 @@ extern volatile uint8_t g_irq_disabled;
 #define IS_ALIGNED(_ptr, _size) \
     assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (_size)) == 0);
 
+
+
+/// \brief Initializes miscellaneous checks made for debug builds.
+void debug_checks_init(void);
+
+
+
+#ifndef ENABLE_SYSTICK
+#error "ENABLE_SYSTICK macro is not defined. It should be defined by customizer in any case. Probably utools.h is included before fw.h"
+#endif
+
+#if ENABLE_SYSTICK!=0
+
 /// \brief Inittializes SysTick interrupt.
 /// \details Main purpose of SysTick interrupt is maintain 64 bit tick counter, which is intensively used by firmware.
 void systick_init(void);
 
-/// \brief Initializes miscellaneous checks made for debug builds.
-void debug_checks_init(void);
+/// \brief Systick interrupt base delay for microsecond delays.
+/// \param us - delay in microsecond(s).
+/// \warning This function uses global #g_usTicks variable. It means it is not concurrently safe. This is why this function
+///          shouldn't be used in context of any IRQ handler.
+void delay_us(uint32_t us);
+
+/// \brief Systick interrupt base delay for millisecond delays.
+/// \param ms - delay in millisecond(s).
+/// \warning This function utilize SysTick interrupt to make a delay. This is why it can't be used in context.
+/// \warning of interrupt handlers.
+void delay_ms(uint32_t ms);
 
 /// \brief Returns number of microseconds passed from the last MCU Reset or Power on.
 /// \return number of microseconds passed  from the last MCU Reset or Power on.
@@ -194,39 +245,44 @@ uint64_t get_us_clock(void);
 /// \return 64 bit value represent absolute (always positive) time offset between two events expressed in microseconds.
 uint64_t get_tick_diff_64(uint64_t ev_1, uint64_t ev_2);
 
-// Don't use this functions in interrupts
-/// \brief Systick interrupt base delay for microsecond delays.
-/// \param us - delay in microsecond(s).
-/// \warning This function uses global #g_usTicks variable. It means it is not concurrently safe. This is why this function
-///          shouldn't be used in context of any IRQ handler.
-void delay_us(uint32_t us);
+#endif
 
-/// \brief Systick interrupt base delay for millisecond delays.
-/// \param ms - delay in millisecond(s).
-/// \warning This function utilize SysTick interrupt to make a delay. This is why it can't be used in context.
-/// \warning of interrupt handlers.
-void delay_ms(uint32_t ms);
+/// \brief Initialize TIMER update event using prescaller and period values.
+/// \param timer - timer to be initialized.
+/// \param prescaller - prescaller value.
+/// \param period - period value.
+/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
+/// \param priority of the interrup.
+void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
 
-/// \brief Initialize TIMER update event.
+/// \brief Initialize TIMER update event using time period in microseconds.
 /// \param timer - timer to be initialized.
 /// \param us - number of microseconds when timer should trigger.
 /// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
 /// \param priority of the interrup.
-void timer_schedule_update_ev(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority);
+void timer_start_us(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority);
 
-/// \brief Reschedule update event timer.
+/// \brief Reschedule update event timer using prescaller and period values.
+/// \param timer - timer to be reinitialized.
+/// \param prescaller - prescaller value.
+/// \param period - period value.
+/// \details Timer should be previously initialized, this function just changes when this timer will be triggered next time.
+/// \details Also, this function may be called in interrupt context. It is designed to be called from very same timer interrupt handler.
+void timer_reschedule(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period);
+
+/// \brief Reschedule update event timer using time period in microseconds.
 /// \param timer - timer to be reinitialized.
 /// \param us - number of microseconds when timer should trigger.
 /// \details Timer should be previously initialized, this function just changes when this timer will be triggered next time.
 /// \details Also, this function may be called in interrupt context. It is designed to be called from very same timer interrupt handler.
-void timer_reschedule_update_ev(TIM_TypeDef* timer, uint32_t us);
+void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us);
 
 /// \brief Disables timer.
 /// \param timer - timer to be reinitialized.
-void timer_disable(TIM_TypeDef* timer);
+void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
 
 /// Define this macro to 1 if you need some help during debugging. It allows counted breaks and debug pins.
-#define EMERGENCY_DEBUG_TOOLS 0
+#define EMERGENCY_DEBUG_TOOLS 1
 
 #if EMERGENCY_DEBUG_TOOLS!=0
 /// \brief Implements breakpoint that triggers on N-th call.
@@ -286,5 +342,11 @@ void timer_get_params(uint32_t us, volatile uint16_t* prescaller, volatile uint1
 #ifdef __cplusplus
 }
 #endif
+#ifndef DISABLE_NOT_TESTABLE_CODE
+DMA_TypeDef* get_dma_from_channel(DMA_Channel_TypeDef* channel);
+uint32_t get_dma_ifcr_it_mask(DMA_Channel_TypeDef* channel);
+void test_deinit();
+
+#endif // DISABLE_NOT_TESTABLE_CODE
 
 /// @}

@@ -25,6 +25,10 @@ def concat_lines(l: list) -> str:
     line_separator = '\n'
     return line_separator.join(l)
 
+def get_project_root() -> str:
+    cur_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.abspath(os.path.join(cur_path, os.pardir, os.pardir))
+
 
 def get_leaf_values(d) -> list:
     res = list()
@@ -90,9 +94,16 @@ def set_to_ordered_list(st: set) -> list:
     l.sort()
     return l
 
-
+class Config_JSON_Encoder(json.JSONEncoder):
+    def default(self, item):
+        if isinstance(item, set):
+            result = list(item)
+            result.sort()
+            return result
+        else:
+            return json.JSONEncoder.default(self, item)
 def hash_dict_as_c_array(d: dict) -> str:
-    s = json.dumps(d, sort_keys=True)
+    s = json.dumps(d, sort_keys=True, cls=Config_JSON_Encoder)
     hsh = hashlib.sha1()
     hsh.update(s.encode('utf-8'))
     digest = hsh.digest()
@@ -250,4 +261,15 @@ def cxx_handle_macro_enum(code: str, name: str, vtype: str, add: bool, newline='
         mlist.append("#define {0} (uint8_t){1}".format(macro, value))
     return newline.join(mlist)+newline
 
+
+def frequency_to_int(f: str) -> int:
+    unit = f[-3:].lower()
+    if unit == "khz":
+        return int(f[:-3])*1000
+    elif unit == "mhz":
+        return int(f[:-3]) * 1000000
+    elif unit == "ghz":
+        return int(f[:-3]) * 1000000000
+    else:
+        return int(f)
 

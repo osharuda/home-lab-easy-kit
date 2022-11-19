@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <stm32f10x.h>
+
 #define GPIO_DEFAULT_SPEED                  GPIO_Speed_50MHz
 
 #define MCU_FREQUENCY_MHZ                   {__MCU_FREQUENCY_MHZ__}
@@ -42,13 +44,19 @@
 #define IRQ_PRIORITY_I2C_EV                0
 #define IRQ_PRIORITY_I2C_ER                1
 #define IRQ_PRIORITY_SYSTICK               2
+
 #define IRQ_PRIORITY_DMA                   3
-#define IRQ_PRIORITY_ADC                   4
-#define IRQ_PRIORITY_ADC_TIMER             5
-#define IRQ_PRIORITY_USART                 6
-#define IRQ_PRIORITY_CAN                   6
-#define IRQ_PRIORITY_EXTI                  7
-#define IRQ_PRIORITY_STEP_MOTOR_TIMER      8
+#define IRQ_PRIORITY_DAC_TIMER             4
+#define IRQ_PRIORITY_ADC                   5
+#define IRQ_PRIORITY_ADC_TIMER             6
+#define IRQ_PRIORITY_USART                 7
+#define IRQ_PRIORITY_CAN                   7
+#define IRQ_PRIORITY_SPI                   7
+#define IRQ_PRIORITY_EXTI                  8
+#define IRQ_PRIORITY_STEP_MOTOR_TIMER      9
+
+#define ENABLE_SYSTICK {__ENABLE_SYSTICK__}
+
 
 # define I2C_BUS_PERIPH                {__I2C_BUS_PERIPH__}
 # define I2C_BUS_CLOCK_SPEED           {__I2C_BUS_CLOCK_SPEED__}

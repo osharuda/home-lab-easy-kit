@@ -19,33 +19,68 @@ import os
 import glob
 from shutil import copy
 
+
 class FirmwareCustomizer(BaseDeviceCustomizer):
-    def __init__(self, mcu_hw, dev_config, required_resources):
-        super().__init__(mcu_hw, dev_config)
+    def __init__(self, mcu_hw, dev_config, common_config, required_resources, required_features):
+        super().__init__(mcu_hw, dev_config, common_config)
         self.device_name = "FIRMWARE"
         self.dev_config = dev_config
         self.fw_header = "fw.h"
-        self.sw_header = "sw.h"
         self.proto_header = "i2c_proto.h"
         self.cmake_script = "CMakeLists.txt"
+        self.example_main_hpp = "main.hpp"
+        self.example_main_cpp = "main.cpp"
         self.fw_dev_headers = []
         self.sw_dev_headers = []
         self.allocated_dev_ids = []
         self.required_resources = required_resources
+        self.required_features = required_features
+        self.hlek_name = "hlek"
+        self.install_path = common_config["global"]["install_path"]
+        self.libhlek_name = "lib" + self.hlek_name
+        self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
 
-        self.add_template(self.fw_inc_templ + self.fw_header, [self.fw_inc_dest + self.fw_header])
-        self.add_template(self.sw_inc_templ + self.sw_header, [self.sw_inc_dest + self.sw_header])
-        self.add_template(self.fw_inc_templ + self.proto_header, [self.fw_inc_dest + self.proto_header,
-                                                                  self.sw_inc_dest + self.proto_header])
-        self.add_template(self.sw_templ + self.cmake_script, [self.sw_dest + self.cmake_script])
-        self.add_template(self.sw_example_templ + self.cmake_script, [self.sw_example_dest + self.cmake_script])
+        self.config_name = common_config["firmware"]["device_name"]
+        self.libconfig_name = "lib" + self.config_name
+        self.libconfig_install_path = os.path.join(self.install_path, self.libconfig_name)
+
+        self.sw_libconfig_name = "libconfig.hpp"
+        self.sw_lib_inc_templ = os.path.join(self.sw_lib_inc_templ_path, self.sw_libconfig_name)
+
+        self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
+                          [os.path.join(self.fw_inc_dest, self.fw_header)])
+        self.add_template(os.path.join(self.fw_templ, self.cmake_script),
+                          [os.path.join(self.fw_dest, self.cmake_script)])
+
+        self.add_copy(os.path.join(self.fw_path, self.build_script),
+                          [os.path.join(self.fw_dest, self.build_script)])
+
+        self.add_template(os.path.join(self.fw_inc_templ, self.proto_header),
+                          [os.path.join(self.fw_inc_dest, self.proto_header),
+                           os.path.join(self.libhlek_inc_dest_path, self.proto_header)])
+        self.add_template(self.sw_lib_inc_templ, [os.path.join(self.sw_lib_inc_dest, self.sw_libconfig_name)])
+        self.add_template(os.path.join(self.sw_lib_templ_path, self.cmake_script),
+                          [os.path.join(self.sw_lib_path, self.cmake_script)])
+        self.add_template(os.path.join(self.sw_templ, self.cmake_script),
+                          [os.path.join(self.sw_monitor_dest, self.cmake_script)])
+        self.add_template(os.path.join(self.libhlek_templ_path, self.cmake_script),
+                          [os.path.join(self.libhlek_dest_path, self.cmake_script)])
+
+        self.add_template(os.path.join(self.sw_example_templ, self.cmake_script),
+                          [os.path.join(self.sw_example_dest, self.cmake_script)])
+        self.add_template(os.path.join(self.sw_example_inc_templ, self.example_main_hpp),
+                          [os.path.join(self.sw_example_inc_dest, self.example_main_hpp)])
+        self.add_template(os.path.join(self.sw_example_src_templ, self.example_main_cpp),
+                          [os.path.join(self.sw_example_src_dest, self.example_main_cpp)])
+
+        self.add_template(os.path.join(self.sw_testtool_templ, self.cmake_script),
+                          [os.path.join(self.sw_testtool_dest, self.cmake_script)])
+
 
     def customize(self):
         buffer_size = self.dev_config["i2c_bus"]["buffer_size"]
         address_0 = self.dev_config["i2c_bus"]["address"]
         clock_speed = self.dev_config["i2c_bus"]["clock_speed"]
-        install_prefix = self.dev_config["install_prefix"]
-        install_path = self.dev_config["install_path"]
         device_name = self.dev_config["device_name"]
 
         extender_requires = self.dev_config["i2c_bus"]["requires"]
@@ -59,6 +94,9 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         er_isr = self.get_isr(extender_requires["er_irq_handler"])
 
         self.required_resources.extend(get_leaf_values(extender_requires))
+
+        # get info uuid length
+        h, hash_len = hash_dict_as_c_array("")
 
         vocabulary = {"__I2C_BUS_PERIPH__": i2c_periph,
                       "__I2C_BUS_CLOCK_SPEED__": clock_speed,
@@ -78,34 +116,39 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
                       "__MCU_FREQUENCY_MHZ__": self.mcu_hw.system_clock // 1000000,
                       "__MCU_FREQUENCY__": self.mcu_hw.system_clock,
-                      "__MCU_MAXIMUM_TIMER_US__":  (0xFFFF+1)*(0xFFFF+1)*1000000//self.mcu_hw.system_clock,
-                      "__INSTALL_PREFIX__": install_prefix,
-                      "__INSTALL_PATH__": install_path,
-                      "__DEVICE_NAME__": device_name
+                      "__MCU_MAXIMUM_TIMER_US__": (0xFFFF + 1) * (0xFFFF + 1) * 1000000 // self.mcu_hw.system_clock,
+                      "__DEVICE_NAME__": device_name,
+                      "__INFO_UUID_LEN__": hash_len,
+                      "__COMM_MAX_DEV_ADDR__": 15,
+                      "__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__HLEK_NAME__": self.hlek_name,
+                      "__LIBHLEK_NAME__": self.libhlek_name,
+                      "__LIBHLEK_INSTALL_PATH__": self.libhlek_install_path,
+                      "__LIBCONFIG_NAME__": self.config_name,
+                      "__LIBCONFIG_INSTALL_PATH__": self.libconfig_install_path
                       }
+
+        vocabulary.update(self.make_feature_macroses())
+        # print(vocabulary)
 
         self.patch_templates(vocabulary)
         self.copy_files_for_tests()
 
-    def add_fw_header(self, header : str):
+    def add_fw_header(self, header: str):
         self.fw_dev_headers.append("#include \"{0}\"".format(header))
         return
 
-    def add_sw_header(self, header : str):
-        self.sw_dev_headers.append("#include \"{0}\"".format(header))
+    def add_sw_header(self, header: str):
+        self.sw_dev_headers.append(f'#include \"{header}\"')
         return
 
-    def clean(self):
-        fl = list()
-        fl.extend(glob.glob(self.fw_inc_dest+"fw*.h"))
-        fl.extend(glob.glob(self.fw_inc_dest + self.proto_header))
-        fl.extend(glob.glob(self.fw_src_dest + "fw*.c"))
-        fl.extend(glob.glob(self.sw_inc_dest+"sw*.h"))
-        fl.extend(glob.glob(self.sw_inc_dest + self.proto_header))
-        fl.extend(glob.glob(self.sw_src_dest + "sw*.c"))
+    def add_libhlek_common_header(self, config: dict, customizer: str):
+        hlek_lib_common_header, shared_header, fw_header, sw_header, shared_token = config["generation"]["shared"][customizer]
+        self.add_template(os.path.join(self.sw_inc_templ, hlek_lib_common_header),
+                          [os.path.join(self.libhlek_inc_dest_path, hlek_lib_common_header)])
 
-        for f in fl:
-            os.remove(f)
+        self.add_shared_code(os.path.join(self.shared_templ, shared_header), shared_token)
+        return
 
     def detect_conflicting_resources(self):
         conflicts = get_duplicates(self.required_resources)
@@ -129,10 +172,24 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                 raise RuntimeError("Malformed dev_id is detected: {0}".format(dev_id))
 
     def copy_files_for_tests(self):
-        file_list = [(self.fw_inc_dest + "circbuffer.h", self.sw_testtool_dest),
-                     (self.fw_src_dest + "circbuffer.c", self.sw_testtool_dest),
-                     (self.fw_inc_dest + "utools.h", self.sw_testtool_dest),
-                     (self.fw_src_dest + "utools.c", self.sw_testtool_dest)]
+        file_list = [(os.path.join(self.fw_inc_source_path, "circbuffer.h"), self.sw_testtool_dest),
+                     (os.path.join(self.fw_src_source_path, "circbuffer.c"), self.sw_testtool_dest),
+                     (os.path.join(self.fw_inc_source_path, "utools.h"), self.sw_testtool_dest),
+                     (os.path.join(self.fw_src_source_path, "utools.c"), self.sw_testtool_dest)]
 
         for src, dst in file_list:
             copy(src, dst)
+
+    def make_feature_macroses(self) -> dict:
+        result = dict()
+        for feature in self.required_features:
+            if feature not in self.mcu_hw.FW_FEATURES:
+                raise RuntimeError(
+                    f"Unknown feature {feature} required by device {self.device_name}. Check FW_FEATURES list...")
+
+        for feature in self.mcu_hw.FW_FEATURES:
+            value = 1 if feature in self.required_features else 0
+            key = f"__ENABLE_{feature}__"
+            result[key] = value
+
+        return result

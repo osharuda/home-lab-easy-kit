@@ -21,9 +21,9 @@
  */
 
 #include <string.h>
+#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "spwm.h"
 
 #ifdef SPWM_DEVICE_ENABLED
@@ -32,27 +32,34 @@
 
 
 volatile uint16_t g_current_pwm_index;
-volatile PWM_ENTRY g_pwm_data[SPWM_MAX_PWM_ENTRIES_COUNT]; // SPWM_MAX_PWM_ENTRIES_COUNT is maximum amount of the entries, it could be less entries
+volatile uint8_t g_pwm_buffer[SPWM_BUFFER_SIZE];
+
+
 volatile uint16_t  g_pwm_entries_count;
 volatile SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
 volatile DeviceContext spwm_ctx __attribute__ ((aligned));
 
 void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
-    if (length<=sizeof(g_pwm_data)) {
-        SET_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION
-
-        memcpy((void*)g_pwm_data, data, length);
-        g_pwm_entries_count = length / sizeof(PWM_ENTRY);
-
-        if (g_current_pwm_index>=g_pwm_entries_count) {
-            g_current_pwm_index = 0;
-        }
-
-        CLEAR_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
+    uint8_t status = 0;
+    if (length>sizeof(SPWM_BUFFER_SIZE)) {
+        status = COMM_STATUS_FAIL;
+        goto done;
     }
 
-    comm_done(0);
+    SET_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION
+
+    memcpy((void*)g_pwm_buffer, data, length);
+    g_pwm_entries_count = length / PWM_ENTRY_SIZE(SPWM_PORT_COUNT);
+
+    if (g_current_pwm_index>=g_pwm_entries_count) {
+        g_current_pwm_index = 0;
+    }
+
+    CLEAR_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
+
+done:
+    comm_done(status);
 }
 
 // possibly this function may be optimized by using 32-bit BSRR
@@ -84,10 +91,11 @@ void spwm_init(void) {
 
     // setup variables into initial state
     g_current_pwm_index = 0;
-    g_pwm_data[0].n_periods = 0xFFFF;
+    volatile PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, 0, PWM_ENTRY_SIZE(SPWM_PORT_COUNT));
+    pwm->n_periods = 0xFFFF;
     g_pwm_entries_count = 1;
     for (int i=0; i<SPWM_PORT_COUNT; i++) {
-        g_pwm_data[0].data[i] = g_spwm_descriptor[i].def_vals;
+        pwm->data[i] = g_spwm_descriptor[i].def_vals;
     }
 
 
@@ -97,7 +105,7 @@ void spwm_init(void) {
     // Prepare timer
     timer.TIM_CounterMode       = TIM_CounterMode_Up;
     timer.TIM_Prescaler         = SPWM_PRESCALE_VALUE;
-    timer.TIM_Period            = g_pwm_data[0].n_periods;
+    timer.TIM_Period            = pwm->n_periods;
     timer.TIM_ClockDivision     = TIM_CKD_DIV1;
     timer.TIM_RepetitionCounter = 0;
 
@@ -127,14 +135,14 @@ MAKE_ISR(SPWM_TIM_IRQ_HANDLER)
         g_current_pwm_index=0;
     }
 
-    volatile PWM_ENTRY* pwm = g_pwm_data+g_current_pwm_index;
+    volatile PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, g_current_pwm_index, PWM_ENTRY_SIZE(SPWM_PORT_COUNT)); // g_pwm_data+g_current_pwm_index;
 
     for (int i=0; i<SPWM_PORT_COUNT; i++) {
         spwm_set_port(g_spwm_descriptor[i].port, g_spwm_descriptor[i].mask, pwm->data[i]);
     }
 
     SET_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS);	// DISABLE UPDATE INTERRUPT GENERATION BECAUSE OF setting EGR->UG
-    SPWM_TIMER->ARR = g_pwm_data[g_current_pwm_index].n_periods;
+    SPWM_TIMER->ARR = pwm->n_periods;
     SPWM_TIMER->PSC = SPWM_PRESCALE_VALUE;
     SPWM_TIMER->CNT=0;
     SPWM_TIMER->EGR = TIM_PSCReloadMode_Immediate;

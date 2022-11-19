@@ -25,19 +25,10 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include "info_dev.hpp"
-#include "gsmmodem.hpp"
-#include "lcd1602a.hpp"
-#include "deskdev.hpp"
-#include "irrc.hpp"
-#include "rtc.hpp"
-#include "gpio_dev.hpp"
-#include "spwm.hpp"
-#include "adcdev.hpp"
-#include "step_motor.hpp"
-#include "uartdev.hpp"
-#include "can.hpp"
-// INCLUDE_HEADER
+
+#include <libhlek/ekit_device.hpp>
+
+#include <libconfig.hpp>
 
 /// \addtogroup group_monitor
 /// @{
@@ -85,6 +76,12 @@ class CommandHandler {
     static double arg_time_to_sec(	double val,
     								const std::string& unit);
 
+    static double arg_frequency_to_hz(	double val,
+                                      const std::string& unit);
+
+    static double arg_angle_to_rad(	double val,
+                                          const std::string& unit);
+
     double      arg_double(	const std::vector<std::string>& args, 
     						const char* name, 
     						double min_val, 
@@ -92,6 +89,11 @@ class CommandHandler {
     						const std::list<std::string>& allowed_units, 
     						std::string& unit, 
     						const char* default_unit);
+
+    double      arg_double( const std::vector<std::string>& args,
+                            const char* name,
+                            double min_val,
+                            double max_val);
 
     int         arg_int(	const std::vector<std::string>& args, 
     						const char* name, 
@@ -129,6 +131,11 @@ class CommandHandler {
     												const std::list<std::string>& allowed_units, 
     												std::string& unit, 
     												const char* default_unit);
+
+    std::vector<uint8_t> arg_hex_buffer(const std::vector<std::string>& args,
+                                   const char* name,
+                                   size_t min_len,
+                                   size_t max_len);
 };
 
 #define DEFINE_HANDLER_CLASS(classname)                                           \
@@ -150,11 +157,8 @@ class CommandHandler {
         return cmd_prefix + device->get_dev_name() + cmd_suffix;                                               \
     }
 
-#ifdef INFO_DEVICE_ENABLED
     DEFINE_HANDLER_CLASS(InfoDevHandler);
-#endif
 
-#ifdef UART_PROXY_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(ATHandler);
 	DEFINE_HANDLER_CLASS(SMSHandler);
 	DEFINE_HANDLER_CLASS(ReadSMSHandler);
@@ -163,55 +167,33 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(DialHandler);
 	DEFINE_HANDLER_CLASS(ActiveCallsHandler);
 	DEFINE_HANDLER_CLASS(AnswerCallHandler);
-
 	DEFINE_HANDLER_CLASS(UartDevInfo);
     DEFINE_HANDLER_CLASS(UartDevRead);
     DEFINE_HANDLER_CLASS(UartDevWrite);
-#endif 
 
-#ifdef LCD1602a_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(LCDPrintHandler);
 	DEFINE_HANDLER_CLASS(LCDLightHandler);
-#endif
 
-
-#ifdef DESKDEV_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(DeskDevStatusHandler);
-#endif
 
-
-#ifdef IRRC_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(IRRCHandler);
-#endif
 
-#ifdef RTC_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(RTCGetHandler);
 	DEFINE_HANDLER_CLASS(RTCSyncRtcHandler);
 	DEFINE_HANDLER_CLASS(RTCSyncHostHandler);
-#endif 
 
-#ifdef GPIODEV_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(GPIOHandler);
-#endif
 
-
-#ifdef SPWM_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(SPWMListHandler);
 	DEFINE_HANDLER_CLASS(SPWMSetHandler);
 	DEFINE_HANDLER_CLASS(SPWMSetFreqHandler);
 	DEFINE_HANDLER_CLASS(SPWMResetHandler);
-#endif
 
-
-#ifdef ADCDEV_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(ADCDevStartHandler);
 	DEFINE_HANDLER_CLASS(ADCDevStopHandler);
 	DEFINE_HANDLER_CLASS(ADCDevReadHandler);
 	DEFINE_HANDLER_CLASS(ADCDevReadMeanHandler);
-#endif
 
-
-#ifdef STEP_MOTOR_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(StepMotorInfoHandler);
 	DEFINE_HANDLER_CLASS(StepMotorEnableHandler);
 	DEFINE_HANDLER_CLASS(StepMotorSleepHandler);
@@ -228,9 +210,7 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(StepMotorMoveNonstopHandler);
     DEFINE_HANDLER_CLASS(StepMotorFeedHandler);
     DEFINE_HANDLER_CLASS(StepMotorSoftwareEndstopHandler);
-#endif
 
-#ifdef CAN_DEVICE_ENABLED
 	DEFINE_HANDLER_CLASS(CanInfoHandler);
 	DEFINE_HANDLER_CLASS(CanStartHandler);
 	DEFINE_HANDLER_CLASS(CanStopHandler);
@@ -238,7 +218,33 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(CanFilterHandler);
 	DEFINE_HANDLER_CLASS(CanStatusHandler);
 	DEFINE_HANDLER_CLASS(CanReadHandler);
-#endif
+
+	DEFINE_HANDLER_CLASS(SPIProxyInfoHandler);
+    DEFINE_HANDLER_CLASS(SPIProxyReadHandler);
+    DEFINE_HANDLER_CLASS(SPIProxyWriteHandler);
+
+    DEFINE_HANDLER_CLASS(MFRC522StatusHandler);
+    DEFINE_HANDLER_CLASS(MFRC522SoftResetHandler);
+    DEFINE_HANDLER_CLASS(MFRC522InitHandler);
+    DEFINE_HANDLER_CLASS(MFRC522VersionHandler);
+    DEFINE_HANDLER_CLASS(MFRC522ReadCardHandler);
+    DEFINE_HANDLER_CLASS(MFRC522SelfTestHandler);
+
+    DEFINE_HANDLER_CLASS(SPIFlashReadHandler);
+    DEFINE_HANDLER_CLASS(SPIFlashWriteHandler);
+
+	DEFINE_HANDLER_CLASS(AD9850DevResetHandler);
+    DEFINE_HANDLER_CLASS(AD9850DevUpdateHandler);
+
+	DEFINE_HANDLER_CLASS(SPIDACStartContinuousHandler);
+    DEFINE_HANDLER_CLASS(SPIDACStartPeriodHandler);
+    DEFINE_HANDLER_CLASS(SPIDACSetDefaultHandler);
+    DEFINE_HANDLER_CLASS(SPIDACStopHandler);
+    DEFINE_HANDLER_CLASS(SPIDACIsRunningHandler);
+    DEFINE_HANDLER_CLASS(SPIDACUploadSinWaveform);
+    DEFINE_HANDLER_CLASS(SPIDACUploadSawWaveform);
+    DEFINE_HANDLER_CLASS(SPIDACUploadTriangleWaveform);
+
 // ADD_DEVICE
 
 /// @}
