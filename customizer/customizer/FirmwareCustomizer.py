@@ -120,7 +120,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__DEVICE_NAME__": device_name,
                       "__INFO_UUID_LEN__": hash_len,
                       "__COMM_MAX_DEV_ADDR__": 15,
-                      "__NAMESPACE_NAME__": self.project_name.lower(),
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__HLEK_NAME__": self.hlek_name,
                       "__LIBHLEK_NAME__": self.libhlek_name,
                       "__LIBHLEK_INSTALL_PATH__": self.libhlek_install_path,

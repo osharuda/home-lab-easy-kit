@@ -1,10 +1,5 @@
 #!/bin/bash
 
-rm -rf /mnt/tmp/INSTALL
-mkdir /mnt/tmp/INSTALL
-
-
-
 set -e
 INITDIR="$(pwd)"
 JOBCOUNT="$(nproc)"
@@ -57,6 +52,7 @@ function build_libhlek {
 		cd libhlek && rm -rf build && mkdir build && cd build
 		cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "CodeBlocks - Unix Makefiles" ../ >> "${LOGFILE}" 2>&1
 		make -j${NCPU} >> "${LOGFILE}" 2>&1
+		echo "Installing LIBHLEK"
 		sudo make install >> "${LOGFILE}" 2>&1
 		cd ../..
 		_BUILD_LIBHLEK=false

@@ -43,7 +43,7 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
         irrc_requires["exti_line_irrc"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(data_pin)}
         data_pin_number = self.mcu_hw.GPIO_to_pin_number(data_pin)
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__IRRC_DEVICE_NAME__": self.device_name,
                       "__IRRC_BUF_LEN__": self.dev_config["buffer_size"],

@@ -52,7 +52,7 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
         wline1, wline2 = self.get_welcome()
 
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__LCD1602a_DEVICE_NAME__": self.device_name,
 

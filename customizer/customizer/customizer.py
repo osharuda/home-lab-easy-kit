@@ -69,8 +69,8 @@ if 'mcu_model' not in firmware_conf_section:
     raise RuntimeError('mcu_model is not specified in "firmware" section')
 
 # Create directories
-libconfig_name = f'lib{devname.lower()}'
-dev_target_path = os.path.join(get_project_root(), devname.lower())
+libconfig_name = f'lib{devname}'
+dev_target_path = os.path.join(get_project_root(), devname)
 libconfig_path = os.path.join(dev_target_path, libconfig_name)
 libconfig_inc_path = os.path.join(libconfig_path, 'inc')
 libconfig_src_path = os.path.join(libconfig_path, 'src')

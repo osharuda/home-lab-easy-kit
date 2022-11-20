@@ -45,7 +45,7 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
         enc_a = self.get_gpio(requires["encoder"]["A"])
         enc_b = self.get_gpio(requires["encoder"]["B"])
 
-        params = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        params = {"__NAMESPACE_NAME__": self.project_name,
                   "__DEVICE_ID__": self.dev_config["dev_id"],
                   "__DESKDEV_DEVICE_NAME__": self.device_name,
 

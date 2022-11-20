@@ -162,7 +162,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
             indx += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__STEP_MOTORS_BUFFERS__": concat_lines(fw_motor_buffers)[:-1],
                       "__STEP_MOTOR_MOTOR_DESCRIPTORS__": concat_lines(fw_motor_descriptors)[:-1],
                       "__STEP_MOTOR_DEVICE_DESCRIPTORS__": concat_lines(fw_device_descriptors)[:-1],

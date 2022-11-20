@@ -90,7 +90,7 @@ class UartProxyCustomizer(DeviceCustomizer):
             indx+=1
 
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__UART_PROXY_BUFFERS__": concat_lines(buffer_defs),
                       "__UART_PROXY_DEVICE_NUMBER__": len(self.dev_configs),
                       "__UART_PROXY_BUFFER_LENGTHS__": concat_lines(fw_buffer_size_defs),

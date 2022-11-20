@@ -244,7 +244,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
 
             index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__SPIPROXY_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__SPIPROXY_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
                       "__SPIPROXY_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),

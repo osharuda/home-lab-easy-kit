@@ -56,7 +56,7 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
             dt, hint, name = self.devices.get(dev_id, ("INFO_DEV_TYPE_NONE", "INFO_DEV_HINT_NONE", ""))
             info_desciption.append('{{ {0}, {1}, (const char*)"{2}" }}'.format(dt, hint, name))
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": 0,
                       "__INFO_UUID__": h,
                       "__INFO_UUID_LEN__": hash_len,

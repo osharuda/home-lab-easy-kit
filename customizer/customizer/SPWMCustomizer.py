@@ -114,7 +114,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
 
             port_index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__SPWM_DEVICE_NAME__": self.device_name,
                       "__SPWM_PORT_COUNT__": len(used_ports),

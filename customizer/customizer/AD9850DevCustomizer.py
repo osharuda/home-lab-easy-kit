@@ -165,7 +165,7 @@ class AD9850DevCustomizer(DeviceCustomizer):
 
             index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__AD9850_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__AD9850_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
                       "__AD9850_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),

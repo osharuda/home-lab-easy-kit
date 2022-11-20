@@ -243,7 +243,7 @@ class ADCDevCustomizer(DeviceCustomizer):
 
             index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name.lower(),
+        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
                       "__ADCDEV_BUFFERS__": concat_lines(buffer_defs),
                       "__ADCDEV_DEVICE_COUNT__": len(fw_device_descrs),
                       "__ADCDEV_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descrs),
