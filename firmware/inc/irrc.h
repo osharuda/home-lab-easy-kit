@@ -35,7 +35,7 @@
 /// \image latex under_construction.eps
 ///
 
-#define IRRC_NEC_ALL_SEQUANCE_MIN 67000
+#define IRRC_NEC_ALL_SEQUANCE_MIN 66000
 #define IRRC_NEC_ALL_SEQUANCE_MAX 68000
 
 #define IRRC_NEC_REPEAT_MAX		  150000
