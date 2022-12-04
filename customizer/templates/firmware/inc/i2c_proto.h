@@ -197,7 +197,9 @@ typedef struct tag_CommResponseHeader{{
 #define COMM_COMMAND_BYTE_OFFSET      0
 
 
+#ifdef HLEK_FIRMWARE
 /// \def I2C_FIRMWARE_ADDRESS
-/// \brief Defines first I2C address for the device
+/// \brief Defines first I2C address for the device. Used with firmware only.
 #define I2C_FIRMWARE_ADDRESS          {__I2C_FIRMWARE_ADDRESS__}
+#endif
 /// @}}

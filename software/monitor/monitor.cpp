@@ -251,7 +251,7 @@ int main(int argc, char* argv[])
     i2cbus->open();
 
     // Create firmware using a bus opened above
-    std::shared_ptr<EKitBus> firmware (new EKitFirmware(i2cbus, I2C_FIRMWARE_ADDRESS));
+    std::shared_ptr<EKitBus> firmware (new EKitFirmware(i2cbus, LIBCONFIG_NAMESPACE::INFO_I2C_ADDRESS));
 
     std::shared_ptr<INFODev> info_dev(new INFODev(firmware, LIBCONFIG_NAMESPACE::info_config_ptr));
     std::shared_ptr<CommandHandler> info_dev_handler(dynamic_cast<CommandHandler*>(new InfoDevHandler(std::dynamic_pointer_cast<EKitDeviceBase>(info_dev), ui)));
