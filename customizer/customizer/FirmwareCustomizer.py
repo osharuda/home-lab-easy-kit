@@ -52,8 +52,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.add_template(os.path.join(self.fw_templ, self.cmake_script),
                           [os.path.join(self.fw_dest, self.cmake_script)])
 
-        self.add_copy(os.path.join(self.fw_path, self.build_script),
-                          [os.path.join(self.fw_dest, self.build_script)])
+        self.add_copy(os.path.join(self.fw_path, self.flash_script),
+                      [os.path.join(self.fw_dest, self.flash_script)])
 
         self.add_template(os.path.join(self.fw_inc_templ, self.proto_header),
                           [os.path.join(self.fw_inc_dest, self.proto_header),

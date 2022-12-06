@@ -60,7 +60,7 @@ class BaseDeviceCustomizer:
         self.sw_lib_templ_path = os.path.abspath("../templates/libconfig/") + os.path.sep
         self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc/") + os.path.sep
         self.sw_lib_src_templ_path = os.path.join(self.sw_lib_templ_path, "src/") + os.path.sep
-        self.build_script = "build.sh"
+        self.flash_script = "flash.sh"
         self.fw_base_header = "fw.h"
         self.fw_header = self.fw_base_header
 
