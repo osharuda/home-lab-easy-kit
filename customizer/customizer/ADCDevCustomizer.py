@@ -194,10 +194,12 @@ class ADCDevCustomizer(DeviceCustomizer):
             scan_complete_irqn = self.mcu_hw.ISRHandler_to_IRQn(irq_handler)
 
             if not check_buffer_size_multiplicity(buffer_size, adc_input_number*2):
-                print("Warning: device {0} has buffer size ({1}) not multiply to the number of inputs ({2}) * sizeof("
-                      "uint16_t)".format(dev_name,
-                                         buffer_size,
-                                         adc_input_number))
+                samples_per_channel = ( buffer_size // (adc_input_number*2) ) + 1
+                new_buffer_size = samples_per_channel * (adc_input_number*2)
+                print(f'Warning: device {dev_name} has buffer size ({buffer_size}) not multiply to the number of inputs ({adc_input_number}) * sizeof('
+                      'uint16_t)')
+                print(f'Buffer size is increased to {new_buffer_size}')
+                buffer_size = new_buffer_size
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             fw_inputs_name = "g_{0}_inputs".format(dev_name)
             fw_device_descrs.append(f"""{{\\
