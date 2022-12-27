@@ -37,7 +37,7 @@ void UARTDev::read(std::vector<uint8_t>& data) {
     static const char* const func_name = "UARTDev::read";
 
     // Lock bus
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Read data
     err = bus->read_all(data);
@@ -50,7 +50,7 @@ void UARTDev::write(const std::vector<uint8_t>& data) {
     EKIT_ERROR err;
     static const char* const func_name = "UARTDev::write";
     // Lock bus
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Send data
     err = bus->write(data);

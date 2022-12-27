@@ -74,7 +74,7 @@ bool SPIDACDev::is_running() {
     const char* func_name = "SPIDACDev::is_running";
     EKIT_ERROR err = EKIT_OK;
     SPIDACStatus status;
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     err = bus->read(&status, sizeof(SPIDACStatus));
     if (err != EKIT_OK) {
@@ -94,7 +94,7 @@ void SPIDACDev::start_signal(double freq, size_t phase_inc, bool continuous) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "phase_inc is out of limits");
     }
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Start
     SPIDAC_COMMAND cmd = continuous ? SPIDAC_COMMAND::START : SPIDAC_COMMAND::START_PERIOD;
@@ -156,7 +156,7 @@ void SPIDACDev::upload(const SPIDAC_CHANNELS channels, bool def_vals) {
 void SPIDACDev::stop() {
     static const char* const func_name = "SPIDACDev::stop";
     EKIT_ERROR err = EKIT_OK;
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Stop
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, SPIDAC_COMMAND::STOP);
@@ -183,7 +183,7 @@ void SPIDACDev::upload_raw(const std::vector<uint8_t>& buffer, bool def_vals) {
         throw EKitException(func_name, EKIT_UNALIGNED, "Passed data doesn't match with device sampling alignment parameters");
     }
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
     SPIDAC_COMMAND cmd = def_vals ? SPIDAC_COMMAND::SETDEFAULT : SPIDAC_COMMAND::DATA;
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd);
     if (err != EKIT_OK) {

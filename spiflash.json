@@ -1,0 +1,28 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C1"}
+    }},
+
+  "devices" : {
+    "SPIProxyCustomizer": {
+      "spiproxy_0" : {
+        "dev_id" : 1,
+        "use_dma" : 1,
+        "bidirectional" : 1,
+        "buffer_size" : 256,
+        "clock_phase" : "first",
+        "clock_polarity" : "idle_low",
+        "clock_speed" : "281KHz",
+        "frame_format" : "msb",
+        "frame_size" : 8,
+        "requires" :  { "SPI" : {"spi": "SPI1"}},
+        "hint": "25lc640"
+      }
+    }
+  }
+}

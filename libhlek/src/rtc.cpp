@@ -53,7 +53,7 @@ uint32_t RTCDev::now_priv() {
 std::time_t RTCDev::now() {
 	static const char* const func_name = "RTCDev::now";
 
-	BusLocker blocker(bus, get_addr());	
+	BusLocker blocker(bus);
 	uint32_t secs = now_priv();
 	return static_cast<std::time_t>(secs);
 }
@@ -61,7 +61,7 @@ std::time_t RTCDev::now() {
 
 std::time_t RTCDev::sync_host() {
 	static const char* const func_name = "RTCDev::sync_host";
-	BusLocker blocker(bus, get_addr());
+	BusLocker blocker(bus);
     uint32_t secs = now_priv();
     const timespec ts{static_cast<time_t>(secs),0};
 
@@ -81,7 +81,7 @@ std::time_t RTCDev::sync_rtc() {
 	RtcData data;
 	data.rtcval = static_cast<uint32_t>(val);	
 
-	BusLocker blocker(bus, get_addr());
+	BusLocker blocker(bus);
 	err = bus->write(&data, sizeof(data));
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");

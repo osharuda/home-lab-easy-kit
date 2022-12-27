@@ -91,6 +91,11 @@ class SPIProxyDev final : public EKitVirtualDevice,
     /// \return Corresponding EKIT_ERROR error code.
     virtual EKIT_ERROR write(const void* ptr, size_t len) override;
 
+    /// \brief Implementation of the EKitBus#lock() virtual function.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note This function has to be overridden to pass correct address into EKitFirmware
+    virtual EKIT_ERROR lock() override;
+
     using EKitBus::read;
 
     /// \brief Read data from a bus (implementation of the EKitBus)..

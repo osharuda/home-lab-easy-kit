@@ -72,6 +72,15 @@ EKIT_ERROR EKitFirmware::status_to_ext_error(uint8_t cs) const{
 
 //------------------------------------------------------------------------------------
 // EKitFirmware::lock
+// Purpose: EKitFirmware requires address during the lock. Override to avoid use of this method.
+// Returns: EKIT_NOT_SUPPORTED
+//------------------------------------------------------------------------------------
+EKIT_ERROR EKitFirmware::lock() {
+    return EKIT_NOT_SUPPORTED;
+}
+
+//------------------------------------------------------------------------------------
+// EKitFirmware::lock
 // Purpose: Instructs active device. If device is acquired, access to other devices will wait
 // on internal lock
 // int vdev : device id to acquire
@@ -102,6 +111,7 @@ EKIT_ERROR EKitFirmware::lock(int vdev){
 	buf.resize(1);
 	buf[0]=vdev;
 
+    // <CHECKIT> Make sure we actually need to communicate firmware here. If not, remove writing to bus
 	do {
 		err = bus->write(buf);
 	} while (err == EKIT_WRITE_FAILED);

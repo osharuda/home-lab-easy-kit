@@ -56,7 +56,7 @@ void GPIODev::read(std::vector<bool>& pins) {
 
 	// Block bus
 	{
-		BusLocker blocker(bus, get_addr());	
+		BusLocker blocker(bus);
 
 		// Instruct controller to updated inputs
 		EKIT_ERROR err = bus->write(nullptr, 0);
@@ -94,7 +94,7 @@ void GPIODev::write(const std::vector<bool>& pins) {
 	}
 
 	// Block bus
-	BusLocker blocker(bus, get_addr());	
+	BusLocker blocker(bus);
 
 	// Write bus
 	EKIT_ERROR err = bus->write(buffer, gpio_buffer_size);

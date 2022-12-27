@@ -36,7 +36,7 @@ void DESKDev::get(bool& up, bool& down, bool& left, bool& right, int8_t& encoder
 	static const char* const func_name = "DESKDev::get";
 	EKIT_ERROR err;
 	DeskDevData data;
-	BusLocker blocker(bus, get_addr());
+	BusLocker blocker(bus);
 
 	err = bus->read(&data, sizeof(data));
     if (err != EKIT_OK) {

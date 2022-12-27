@@ -157,7 +157,7 @@ uint8_t StepMotorDev::status(std::vector<StepMotorStatus>& mstatus) {
     std::vector<uint8_t> data(bufsize);
     StepMotorDevStatus* pstatus = reinterpret_cast<StepMotorDevStatus*>(data.data());
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     err = bus->read(data);
     if (err != EKIT_OK) {
@@ -174,7 +174,7 @@ uint8_t StepMotorDev::status(std::vector<StepMotorStatus>& mstatus) {
 
 void StepMotorDev::start() {
     static const char* const func_name = "StepMotorDev::start";
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_START);
     if (err != EKIT_OK) {
@@ -189,7 +189,7 @@ void StepMotorDev::start() {
 
 void StepMotorDev::stop() {
 	static const char* const func_name = "StepMotorDev::stop";
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_STOP);
     if (err != EKIT_OK) {
@@ -224,7 +224,7 @@ void StepMotorDev::feed() {
     }
 
     // Send data
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_NONE);
     if (err != EKIT_OK) {

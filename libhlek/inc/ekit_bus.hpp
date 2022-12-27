@@ -112,11 +112,15 @@ public:
 	virtual EKIT_ERROR close();
 
     /// \brief Lock a bus.
-    /// \param address - Address of the device connected to the bus to work with. Ignored for buses that may not address
-    ///        several devices.
     /// \return Corresponding EKIT_ERROR error code.
     /// \note Once bus is locked, bus_lock is owned, and just owner thread may work with it.
-	virtual EKIT_ERROR lock(int address);
+	virtual EKIT_ERROR lock();
+
+    /// \brief Lock a bus with address.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note Once bus is locked, bus_lock is owned, and just owner thread may work with it.
+    /// \note Some buses may require address to be set as active and locked as single operation.
+    virtual EKIT_ERROR lock(int addr);
 
     /// \brief Unlock a bus.
     /// \return Corresponding EKIT_ERROR error code.
@@ -190,11 +194,9 @@ class BusLocker final {
 public:
     /// \brief Constructor
     /// \param ebus - reference to shared pointer with EKitBus.
-    /// \param address - Address of the device connected to the bus to work with. Ignored for buses that may not address
-    ///        several devices.
-	BusLocker(std::shared_ptr<EKitBus>& ebus, int address) : sp_ebus(ebus){
+	    BusLocker(std::shared_ptr<EKitBus>& ebus) : sp_ebus(ebus){
 		static const char* const func_name = "BusLocker::BusLocker";
-		EKIT_ERROR err = sp_ebus->lock(address);
+		EKIT_ERROR err = sp_ebus->lock();
 		if (err != EKIT_OK) {
 			throw EKitException(func_name, err, "failed to lock bus.");
 		}

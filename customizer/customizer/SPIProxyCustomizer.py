@@ -40,55 +40,6 @@ class SPIProxyCustomizer(DeviceCustomizer):
         #raise "Not implemented"
         return
 
-    # def get_baud_rate_control(self, spi: str, value : str):
-    #     bus_list = self.mcu_hw.mcu_resources[spi]["bus"]
-    #     bus = next(b for b in bus_list if b.find('Periph_SPI') != -1)
-    #     freq = self.mcu_hw.get_bus_frequency(bus)
-    #     in_val = (str(freq) + "_" + value).lower()
-    #     val_map = {
-    #         # 18MHz bus
-    #         "18000000_9mhz":        0x0000, # prescaller=2
-    #         "18000000_4.5mhz":      0x0008, # prescaller=4
-    #         "18000000_2.25mhz":     0x0010, # prescaller=8
-    #         "18000000_1.125mhz":    0x0018, # prescaller=16
-    #         "18000000_562khz":      0x0020, # prescaller=32
-    #         "18000000_281khz":      0x0028, # prescaller=64
-    #         "18000000_140hz":       0x0030, # prescaller=128
-    #         "18000000_70khz":       0x0038, # prescaller=256
-    #
-    #         # 72MHz bus
-    #         "72000000_36mhz":       0x0000, # prescaller=2
-    #         "72000000_18mhz":       0x0008, # prescaller=4
-    #         "72000000_9mhz":        0x0010, # prescaller=8
-    #         "72000000_4.5mhz":      0x0018, # prescaller=16
-    #         "72000000_2.25mhz":     0x0020, # prescaller=32
-    #         "72000000_1.125mhz":    0x0028, # prescaller=64
-    #         "72000000_562khz":      0x0030, # prescaller=128
-    #         "72000000_281khz":      0x0038  # prescaller=256
-    #     }
-    #
-    #     if in_val not in val_map:
-    #         raise RuntimeError(f'Unsupported clock frequency ({value})for {spi}')
-    #
-    #     brc = val_map.get(in_val)
-    #     return brc, freq // (1 << ((brc >> 3) + 1))
-    #
-    # def get_clock_phase(self, value: str):
-    #     val_map = {"first" : 0, "second": 1}
-    #     return val_map.get(str(value).lower())
-    #
-    # def get_clock_polarity(self, value: str):
-    #     val_map = {"idle_low": 0, "idle_high": 1}
-    #     return val_map.get(str(value).lower())
-    #
-    # def get_frame_format(self, value: str):
-    #     val_map = {"msb": 1, "lsb": 0}
-    #     return val_map.get(str(value).lower())
-    #
-    # def get_frame_size(self, value: str):
-    #     val_map = {8: 0, 16: 1}
-    #     return val_map.get(int(value))
-
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmware side
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side

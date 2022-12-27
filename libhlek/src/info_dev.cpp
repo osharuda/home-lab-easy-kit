@@ -38,7 +38,7 @@ void INFODev::check() {
     EKIT_ERROR err;
     uint8_t uuid[INFO_UUID_LEN];
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     err = bus->read(uuid, INFO_UUID_LEN);
     if (err != EKIT_OK) {

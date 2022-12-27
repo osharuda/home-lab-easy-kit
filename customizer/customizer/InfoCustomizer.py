@@ -72,7 +72,9 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
         for dev_name, dev_cfg in configs_dict.items():
 
             hint_map = {"": ("INFO_DEV_HINT_NONE", None),
-                        "gsmmodem": ("INFO_DEV_HINT_GSM_MODEM", None)}
+                        "gsmmodem": ("INFO_DEV_HINT_GSM_MODEM", None),
+                        "25lc640" : ("INFO_DEV_HINT_25LC640", None),
+                        "adxl350" : ("INFO_DEV_HINT_ADXL350", None)}
             dev_id = dev_cfg["dev_id"]
             hint = dev_cfg.get("hint", "")
 

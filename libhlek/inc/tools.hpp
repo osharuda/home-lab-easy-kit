@@ -42,14 +42,6 @@
 /// \section sect_tools_01 Tools - a set of miscellaneous and useful classes, functions, defines, etc.
 ///
 
-/// \def LOCK
-/// \brief Locks std::mutex (must be non-recursive mutex)
-#define LOCK(x)  			std::unique_lock<std::mutex> _unique_lock(x);
-
-/// \def LOCK_RECURSIVE
-/// \brief Locks std::recursive_mutex (must be recursive mutex)
-#define LOCK_RECURSIVE(x)  	std::unique_lock<std::recursive_mutex> _unique_lock(x);
-
 /// \brief Returns current stack backtrace as a string.
 /// \return String with current stack backtrace.
 /// \details This function uses backtrace() function and abi::__cxa_demangle (GCC specific). This function should be used
@@ -180,10 +172,28 @@ namespace tools {
 		void check_locked();
 	};
 
+    class safe_mutex_locker {
+        safe_mutex* lk;
+    public:
+        /// \brief Constructor
+        safe_mutex_locker(safe_mutex* sm) : lk(sm) {
+            assert(sm != nullptr);
+            lk->lock();
+        }
+
+        /// \brief Destructor
+        ~safe_mutex_locker() {
+            lk->unlock();
+        }
+    };
+
 	/// \def CHECK_SAFE_MUTEX_LOCKED
 	/// \brief Checks if the mutex is owned.
 	#define CHECK_SAFE_MUTEX_LOCKED(m) {m.check_locked();}
 
+    /// \def LOCK
+    /// \brief Locks std::mutex (must be non-recursive mutex)
+    #define LOCK(x) tools::safe_mutex_locker  safe_locker_##x(&(x));
 #else
 	// In release version safe_mutex is a mutex
 	/// \typedef safe_mutex
@@ -193,6 +203,11 @@ namespace tools {
     /// \def CHECK_SAFE_MUTEX_LOCKED
 	/// \brief Does nothing in release builds
 	#define CHECK_SAFE_MUTEX_LOCKED(m) {}
+
+    /// \def LOCK
+    /// \brief Locks std::mutex (must be non-recursive mutex)
+    ///  #define LOCK(x)  			std::unique_lock<std::mutex> _unique_lock(x);
+
 #endif
 
 
@@ -348,6 +363,8 @@ namespace tools {
     /// \return 0 if success, non-zero if input values can't be handled by a timer
     int stm32_timer_params_with_div(uint32_t freq, double delay_s, uint16_t& prescaller, uint16_t& period, double& eff_s, size_t& clock_divider);
 
+    /// \brief Detects if system is little endian
+    /// \return true if little endian, otherwise false.
     bool is_little_endian();
 }
 

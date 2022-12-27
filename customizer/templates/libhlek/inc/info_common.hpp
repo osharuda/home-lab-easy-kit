@@ -43,6 +43,14 @@
 /// \brief This hint specifies that device is a #GSMModem. Valid with #INFO_DEV_TYPE_UART_PROXY only.
 #define INFO_DEV_HINT_GSM_MODEM (uint8_t)1
 
+/// \def INFO_DEV_HINT_25LC640
+/// \brief This hint specifies that device is a #25LC640. Valid with #INFO_DEV_TYPE_SPIPROXY only.
+#define INFO_DEV_HINT_25LC640 (uint8_t)2
+
+/// \def INFO_DEV_HINT_ADXL350
+/// \brief This hint specifies that device is a #ADXL350. Valid with #INFO_DEV_TYPE_SPIPROXY only.
+#define INFO_DEV_HINT_ADXL350 (uint8_t)3
+
 /// @}}
 
 

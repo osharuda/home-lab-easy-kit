@@ -44,7 +44,7 @@ void AD9850Dev::reset() {
     cmd.W0 = 0;
     cmd.power_down = 1;
 
-    BusLocker bl(bus, get_addr());
+    BusLocker bl(bus);
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, AD9850DEV_RESET);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to set reset flag");
@@ -88,7 +88,7 @@ void AD9850Dev::update(double frequency, double phase) {
     assert(p < 0b00100000);
     cmd.phase = p;
 
-    BusLocker bl(bus, get_addr());
+    BusLocker bl(bus);
     err = bus->write(&cmd, sizeof(cmd));
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write bus");

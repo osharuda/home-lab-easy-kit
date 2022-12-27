@@ -6,9 +6,9 @@ JOBCOUNT="$(nproc)"
 BUILDDIR="build"
 NCPU=$(grep -c ^processor /proc/cpuinfo)
 BUILDCONF="Debug"
-_BUILD_LIBHLEK=true
 ROOTDIR=$(pwd)
 LOGFILE="${ROOTDIR}/build.log"
+NULL_JSON="null.json"
 
 ####### Parse arguments
 i=0
@@ -46,17 +46,15 @@ function build_subproject {
 }
 
 function build_libhlek {
-	if [ ${_BUILD_LIBHLEK} != false ]
-	then
 		echo "Building LIBHLEK [${BUILDCONF}]"
+		./customize.sh "${NULL_JSON}" >> "${LOGFILE}" 2>&1
 		cd libhlek && rm -rf build && mkdir build && cd build
 		cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "CodeBlocks - Unix Makefiles" ../ >> "${LOGFILE}" 2>&1
 		make -j${NCPU} >> "${LOGFILE}" 2>&1
 		echo "Installing LIBHLEK"
 		sudo make install >> "${LOGFILE}" 2>&1
 		cd ../..
-		_BUILD_LIBHLEK=false
-	fi
+		rm -rf ./null
 }
 
 function build_firmware {
@@ -71,6 +69,9 @@ function build_firmware {
 ####### Preparing log file
 rm -rf "${LOGFILE}"
 
+# Build & install libhlek
+build_libhlek
+
 ####### Build specified configurations
 for j in ${JSONS[@]}
 do
@@ -80,9 +81,6 @@ do
 	echo "Customizing ${json}"
 	rm -rf ${CONFIGDIR}
 	./customize.sh ${json} >> "${LOGFILE}" 2>&1
-
-	# Build & install libhlek
-	build_libhlek
 
 	# Build & install libconf
 	build_subproject "lib${CONFIGDIR}" true

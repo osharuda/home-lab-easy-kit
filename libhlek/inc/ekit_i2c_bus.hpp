@@ -39,7 +39,7 @@
 ///
 
 /// \class EKitI2CBus
-/// \brief I2C bus implementation
+/// \brief Direct (w/o firmware) I2C bus implementation
 class EKitI2CBus final : public EKitBus {
 
     /// \typedef super

@@ -39,7 +39,7 @@ void IRRCDev::get(std::vector<IR_NEC_Command>& commands, bool& ovf) {
 	size_t cmd_len;
 
 	commands.clear();
-	BusLocker blocker(bus, get_addr());	
+	BusLocker blocker(bus);
 
 	// get amount of data
 	CommResponseHeader hdr;

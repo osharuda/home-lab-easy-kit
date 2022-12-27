@@ -35,9 +35,14 @@ EKitBus::EKitBus() {
 EKitBus::~EKitBus() {
 }
 
-EKIT_ERROR EKitBus::lock(int address) {
+EKIT_ERROR EKitBus::lock() {
 	bus_lock.lock();
 	return EKIT_OK;
+}
+
+EKIT_ERROR EKitBus::lock(int addr) {
+    assert(false);
+    return EKIT_NOT_SUPPORTED;
 }
 
 EKIT_ERROR EKitBus::unlock() {

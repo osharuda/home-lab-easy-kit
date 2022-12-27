@@ -256,10 +256,8 @@ private:
 
     /// \brief Private delegating constructor
     /// \param ebus - reference to shared pointer with EKitBus.
-    /// \param addr - device id of the virtual device to be attached to the instance of this class. Device id must belong
-    ///               to the UARTDev device (with #INFO_DEV_HINT_GSM_MODEM hint specified in JSON configuration file).
     /// \param name - name of the device as specified in JSON configuration file.
-    GSMModem(std::shared_ptr<EKitBus>& ebus, int addr, const char* name);
+    GSMModem(std::shared_ptr<EKitBus>& ebus, const char* name);
 
     /// \brief Convert string returned by modem into modem status code
     /// \param line - Line returned by a modem

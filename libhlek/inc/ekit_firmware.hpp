@@ -113,6 +113,11 @@ public:
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR lock(int address) override;
 
+    /// \brief Lock a bus.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note Overridden here to make it unusable, since firmware requires address to be locked.
+    EKIT_ERROR lock() override;
+
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR unlock() override;

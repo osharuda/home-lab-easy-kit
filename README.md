@@ -21,13 +21,25 @@
     6.9. [ADCDevCustomizer](#ADCDevCustomizer)
     6.10. [StepMotorDevCustomizer](#StepMotorDevCustomizer)
     6.11. [CanCustomizer](#CanCustomizer)
-7. [Building and flashing firmware](#Building-and-flashing-firmware)
-8. [Linking with generated library](#Linking-with-generated-library)
-9. [Example](#Example)
-10. [Contributing](#Contributing)
-11. [License](#License)
-12. [References and literature](#References-and-literature)
-13. [Remarks](#Remarks)
+    6.12. [AD9850DevCustomizer](#AD9850DevCustomizer)
+    6.13. [SPIDACCustomizer](#SPIDACCustomizer)
+    6.14. [SPIProxyCustomizer](#SPIProxyCustomizer)
+    6.15 [STM32F10x errata](#STM32F10x_errata)
+7. [Software architecture](#Software-architecture)
+    7.1. [EKit class hierarchy](#EKit-class-hierarchy)
+        7.1.1. [Busses](#Busses)
+        7.1.2. [Devices](#Devices)
+    7.2. [Firmwareless devices](#Firmwareless-devices)
+        7.2.1. [GSMModem](#GSMModem)
+        7.2.2. [SPIFlash](#SPIFlash)
+        7.2.3. [ADXL350](#ADXL350)
+8. [Building and flashing firmware](#Building-and-flashing-firmware)
+9. [Linking with generated library](#Linking-with-generated-library)
+10. [Example](#Example)
+11. [Contributing](#Contributing)
+12. [License](#License)
+13. [References and literature](#References-and-literature)
+14. [Remarks](#Remarks)
 
 ## Description
 
@@ -670,6 +682,24 @@ Use the
 
 Note: STM32F103x has CAN and USB sharing a dedicated SRAM memory for data transmission and reception, so it is not possible to use CAN and USB at the same time.
 
+### AD9850DevCustomizer
+
+ ![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+### SPIDACCustomizer
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+### SPIProxyCustomizer
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+### STM32F10x errata
+
+ ![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+ Describe here important MCU limitations
+
 ## Customizing project
 
 When JSON configuration file is written and ready, it is time to customize project. To do this execute the following command from project root directory:
@@ -680,6 +710,47 @@ When JSON configuration file is written and ready, it is time to customize proje
 
 Inspect the output for warnings and errors. If successful you may follow to the next [section](#Building-and-flashing-firmware). If JSON configuration file describes configuration that has conflicts, mistakes or can't be implemented than corresponding error will be shown. Errors and warnings may have different nature, for example if JSON configuration file uses the same GPIO pin for different purposes, the error will be thrown. Possibly, you will have to refer to the MCU documentation in order to understand and fix them correctly.
 
+## Software architecture
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+Place software diagram here, brief description of components
+
+### EKit class hierarchy
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+Place diagram with class hierarchy (??? may be to big ???) and brief description for classes
+
+#### Busses
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+More detailed description for busses, the difference between them
+
+#### Devices
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+More detailed description for devices, describe devices that may work via MCU only and via MCU and microcomputer buses like uart and spi
+
+### Firmwareless devices
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+Here is description of the devices which work is supported via MCU (proxies) and general purpose microcomputer buses.
+
+#### GSMModem
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+#### SPIFlash
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
+
+#### ADXL350
+
+![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)
 
 ## Building and flashing firmware
 

@@ -37,7 +37,7 @@ void CanDev::can_start() {
 
     // send command
     {
-        BusLocker blocker(bus, get_addr());
+        BusLocker blocker(bus);
 
         EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_START);
         if (err != EKIT_OK) {
@@ -57,7 +57,7 @@ void CanDev::can_stop() {
 
     // send command
     {
-        BusLocker blocker(bus, get_addr());
+        BusLocker blocker(bus);
 
         EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_STOP);
         if (err != EKIT_OK) {
@@ -76,7 +76,7 @@ void CanDev::can_filter_priv(CanFilterCommand filter) {
     static const char* const func_name = "CanDev::can_filter_priv";
     // send command
     {
-        BusLocker blocker(bus, get_addr());
+        BusLocker blocker(bus);
 
         EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_FILTER);
         if (err != EKIT_OK) {
@@ -195,7 +195,7 @@ void CanDev::can_send(uint32_t id, std::vector<uint8_t>& data, bool remote_frame
 
     // send command
     {
-        BusLocker blocker(bus, get_addr());
+        BusLocker blocker(bus);
 
         EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_SEND);
         if (err != EKIT_OK) {
@@ -345,7 +345,7 @@ std::string CanDev::can_last_err_to_str(uint8_t lec) {
 void CanDev::can_status(CanStatus& status) {
     static const char* const func_name = "CanDev::can_status";
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
     can_status_priv(status);
 }
 
@@ -357,7 +357,7 @@ void CanDev::can_read(CanStatus& status, std::vector<CanRecvMessage>& messages) 
     uint8_t* pdata = nullptr;
 
     {
-        BusLocker blocker(bus, get_addr());
+        BusLocker blocker(bus);
 
         can_status_priv(status);
 

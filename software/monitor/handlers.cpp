@@ -548,7 +548,9 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
 
     std::map<uint8_t, std::string> hint_map = {
             {INFO_DEV_HINT_NONE,      ""},
-            {INFO_DEV_HINT_GSM_MODEM, "GSM MODEM"}};
+            {INFO_DEV_HINT_GSM_MODEM, "GSM MODEM"},
+            {INFO_DEV_HINT_25LC640, "FLASH MEMORY (25LC640)"},
+            {INFO_DEV_HINT_ADXL350, "3AXIS ACCELR. SECNSOR (ADXL350)"}};
 
     std::map<uint8_t, std::string> device_type_map;
     for (size_t i=0; i<INFO_DEVICE_ADDRESSES; i++) {

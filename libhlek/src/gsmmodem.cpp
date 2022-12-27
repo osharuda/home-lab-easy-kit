@@ -83,7 +83,7 @@ bool GSMCallData::is_valid() const {
            mpty <= GSM_CALL_MPTY_MULTI;
 }
 
-GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, int addr, const char* name) : super(ebus, addr, name), modem_name(name) {
+GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, const char* name) : super(ebus, name), modem_name(name) {
     re_ussd = tools::g_unicode_ts.regex_pattern("\\+CUSD:\\s?(\\d+)\\s?,\\s?\\\"([^\\\"]*)\\\"\\s?,\\s?(\\d+)", 0);
     assert(re_ussd);
     re_read_sms = tools::g_unicode_ts.regex_pattern("\\+CMGL:\\s*(\\d+)\\s*,\\s*\\\"([^\\\"\\d]+)\\\"\\s*,\\s*\\\"([a-fA-F\\d]+)\\\"\\s*,\\s*\\\"([^\\\"]*)\\\"\\s*,\\s*\\\"(\\S+)\\\"", 0);
@@ -93,7 +93,7 @@ GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, int addr, const char* name) :
 }
 
 GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* config, int timeout_ms) :
-    GSMModem(ebus, config->dev_id, config->dev_name){
+    GSMModem(ebus, config->dev_name){
     configure(timeout_ms);
 }
 
@@ -103,7 +103,7 @@ GSMModem::~GSMModem(){
 
 void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, int timeout_ms, unsigned int& status_mask) {
     tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
     set_error_mode(cmee, sw, status_mask);
 }
 
@@ -142,7 +142,7 @@ void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, tools::StopWatch<std::chrono::
 void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, int timeout_ms, unsigned int &completion_status_mask) {
     static const char* const func_name = "GSMModem::at";
     tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
     at(cmd, response, sw, completion_status_mask);
     if (completion_status_mask & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, completion_status_mask, "\"" + cmd + "\" command failed");
@@ -162,7 +162,7 @@ void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms
     int dcs = 0;
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     at("AT+CSCS=\"GSM\"", lines, sw, status);
     status_mask |= status;
@@ -234,7 +234,7 @@ void GSMModem::sms(const std::string& number, const std::string& text, int timeo
     at_text+="\x1A";
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     if (ascii!=sms_ascii_mode) {
         status = GSMModem::AT_STATUS_PROMPT | GSMModem::AT_STATUS_ERROR;        
@@ -269,7 +269,7 @@ void GSMModem::read_sms(std::vector<GSMSmsData>& messages, int timeout_ms, unsig
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Configure if required
     if (sms_ascii_mode!=false) {
@@ -323,7 +323,7 @@ void GSMModem::delete_sms(int id, int timeout_ms, unsigned int& status_mask) {
     status_mask = 0;
 
         // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
 
@@ -350,7 +350,7 @@ void GSMModem::active_calls(std::vector<GSMCallData>& active_calls, int timeout_
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
@@ -392,7 +392,7 @@ void GSMModem::dial(const std::string& number, int timeout_ms, unsigned int& sta
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
@@ -412,7 +412,7 @@ void GSMModem::answer(GSM_CALL_ACTION action, int timeout_ms, unsigned int& stat
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
@@ -585,7 +585,7 @@ void GSMModem::configure(int timeout_ms) {
     unsigned int status = 0;
     std::vector<std::string> lines;
 
-    BusLocker blocker(bus, get_addr());
+    BusLocker blocker(bus);
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
 
