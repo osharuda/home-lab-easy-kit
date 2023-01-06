@@ -16,7 +16,7 @@
  */
 
 /*!  \file
- *   \brief ADXL345 accelerometer support.
+ *   \brief ADXL345 3-axis accelerometer support.
  *   \author Oleh Sharuda
  */
 

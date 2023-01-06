@@ -16,7 +16,7 @@
  */
 
 /*!  \file
- *   \brief Some SPI flash chips support.
+ *   \brief ADXL345 3-axis accelerometer support.
  *   \author Oleh Sharuda
  */
 #pragma once
