@@ -45,11 +45,12 @@
 
 /// \class UARTDev
 /// \brief UARTDev implementation.
-class UARTDev final : public EKitVirtualDevice {
+class UARTDev final : public EKitDeviceBase,
+                      public EKitBus {
 
     /// \typedef super
     /// \brief Defines parent class
-    typedef EKitVirtualDevice super;
+    typedef EKitDeviceBase super;
 
 public:
 
@@ -72,6 +73,7 @@ public:
     /// Destructor (virtual)
     ~UARTDev() override;
 
+    /*
     /// \brief Read all the data available in UARTDev circular buffer.
     /// \param data - output vector with read data. (all previous data is discarded)
     void read(std::vector<uint8_t>& data);
@@ -79,6 +81,34 @@ public:
     /// \brief Writes data to the UARTDev
     /// \param data - vector with data to write.
     void write(const std::vector<uint8_t>& data);
+    */
+
+    /// \brief Read data from a bus.
+    /// \param ptr - pointer to the memory block.
+    /// \param len - length of the memory block.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR read(void *ptr, size_t len, EKitTimeout& to) override;
+
+    /// \brief Write data to a bus.
+    /// \param ptr - pointer to the memory block.
+    /// \param len - length of the memory block.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR write(const void *ptr, size_t len, EKitTimeout& to) override;
+
+    /// \brief Read all the data available on a bus.
+    /// \param buffer - Reference to a vector that will receive data from a bus.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note Note every bus may support it. In this case EKIT_NOT_SUPPORTED must be returned.
+    EKIT_ERROR read_all(std::vector<uint8_t> &buffer, EKitTimeout& to) override;
+
+    /// \brief Does write and read by single operation, the first write with subsequent read.
+    /// \param wbuf - memory to write.
+    /// \param wlen - length of the write buffer.
+    /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
+    /// \param rlen - length of the buffer to read data into (amount of data to read).
+    /// \param to - timeout counting object.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 };
 
 /// @}

@@ -94,7 +94,7 @@ class RTCDev final : public EKitVirtualDevice {
 
     /// \brief Returns RTC time in seconds
     /// \return RTC time in seconds
-	uint32_t now_priv();
+	uint32_t now_priv(EKitTimeout& to);
 };
 
 /// @}

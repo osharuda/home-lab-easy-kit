@@ -38,9 +38,10 @@ void INFODev::check() {
     EKIT_ERROR err;
     uint8_t uuid[INFO_UUID_LEN];
 
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    err = bus->read(uuid, INFO_UUID_LEN);
+    err = bus->read(uuid, INFO_UUID_LEN, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }

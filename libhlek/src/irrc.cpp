@@ -39,11 +39,12 @@ void IRRCDev::get(std::vector<IR_NEC_Command>& commands, bool& ovf) {
 	size_t cmd_len;
 
 	commands.clear();
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 
 	// get amount of data
 	CommResponseHeader hdr;
-	err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false);
+	err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false, to);
     if (err != EKIT_OK && err != EKIT_OVERFLOW ) {
         throw EKitException(func_name, err, "get_status() failed");
     }
@@ -57,7 +58,7 @@ void IRRCDev::get(std::vector<IR_NEC_Command>& commands, bool& ovf) {
 
 	if (data_len!=0) {
 		data.resize(data_len);
-		err = bus->read(data);
+		err = bus->read(data.data(), data_len, to);
 
 		if (err != EKIT_OK) {
 		    throw EKitException(func_name, err, "read() failed");

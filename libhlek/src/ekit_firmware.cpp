@@ -31,7 +31,11 @@
 // std::shared_ptr<EKitBus*>& ebus : shared pointer for EKitBus implementation
 // Purpose: EKitFirmware class constructor
 //------------------------------------------------------------------------------------
-EKitFirmware::EKitFirmware(std::shared_ptr<EKitBus>& ebus, int addr) : bus(ebus), firmware_addr(addr) {
+EKitFirmware::EKitFirmware(std::shared_ptr<EKitBus>& ebus, int addr) :
+    super(EKitBusType::BUS_I2C_FIRMWARE),
+    bus(ebus),
+    firmware_addr(addr) {
+    ebus->check_bus(EKitBusType::BUS_I2C);
 }
 
 //------------------------------------------------------------------------------------
@@ -75,7 +79,8 @@ EKIT_ERROR EKitFirmware::status_to_ext_error(uint8_t cs) const{
 // Purpose: EKitFirmware requires address during the lock. Override to avoid use of this method.
 // Returns: EKIT_NOT_SUPPORTED
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::lock() {
+EKIT_ERROR EKitFirmware::lock(EKitTimeout& to) {
+    assert(false);
     return EKIT_NOT_SUPPORTED;
 }
 
@@ -86,19 +91,20 @@ EKIT_ERROR EKitFirmware::lock() {
 // int vdev : device id to acquire
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::lock(int vdev){
+EKIT_ERROR EKitFirmware::lock(int vdev, EKitTimeout& to){
 	std::vector<uint8_t> buf;
+    const size_t buf_len = 1;
 	CommResponseHeader hdr;
     EKIT_ERROR err;
 
 	// Attempt to lock bus first
-	err = bus->lock(firmware_addr);
+	err = bus->lock(firmware_addr, to);
 	if (err != EKIT_OK) {
 		goto done;
 	} 
 
 	// Attempt to lock self
-	err = EKitBus::lock(vdev);
+	err = EKitBus::lock(vdev, to);
 	if (err != EKIT_OK) {
 		bus->unlock();
 		goto done;
@@ -108,16 +114,16 @@ EKIT_ERROR EKitFirmware::lock(int vdev){
 	vdev_addr = vdev;
 
 	// Prepare command byte to send
-	buf.resize(1);
+	buf.resize(buf_len);
 	buf[0]=vdev;
 
     // <CHECKIT> Make sure we actually need to communicate firmware here. If not, remove writing to bus
 	do {
-		err = bus->write(buf);
+		err = bus->write(buf.data(), buf_len, to);
 	} while (err == EKIT_WRITE_FAILED);
 
     if (err == EKIT_OK) {
-		get_status(hdr, true);    	
+		get_status(hdr, true, to);
     } else {
         EKitBus::unlock();
         bus->unlock();
@@ -149,7 +155,7 @@ EKIT_ERROR EKitFirmware::unlock(){
 // bool wait_device: true if read until COMM_STATUS_BUSY is cleared, otherwise false
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device){
+EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to){
 	uint8_t last_op_crc;
 	EKIT_ERROR err;
 
@@ -157,7 +163,7 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device){
 
 	do {
 		// Read header until success
-		err = bus->read(&hdr, sizeof(hdr));
+		err = bus->read(&hdr, sizeof(hdr), to);
 		if (err == EKIT_OK) break;
 		tools::sleep_ms(1);
 	} while (true);
@@ -168,7 +174,7 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device){
 		// Device is busy, wait more
 	    do {
 	    	tools::sleep_ms(1);
-	    	err = bus->read(&hdr, sizeof(hdr));
+	    	err = bus->read(&hdr, sizeof(hdr), to);
 	    } while (err != EKIT_OK || (hdr.comm_status & COMM_STATUS_BUSY) != 0);
 	}
 	err = status_to_ext_error(hdr.comm_status);
@@ -178,7 +184,7 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device){
     return err;	
 }
 
-EKIT_ERROR EKitFirmware::set_opt(int opt, int value) {
+EKIT_ERROR EKitFirmware::set_opt(int opt, int value, EKitTimeout& to) {
     // <CHECKIT> Make sure all the callers change this flag back after sending driver the data. This flag is permanently stored
     // in bus, but sometimes is used as command. If used as command, it should be cleared after command is executed, regardless
     // the result was success of failure.
@@ -193,7 +199,7 @@ EKIT_ERROR EKitFirmware::set_opt(int opt, int value) {
 	}
 }
 
-EKIT_ERROR EKitFirmware::get_opt(int opt, int& value) {
+EKIT_ERROR EKitFirmware::get_opt(int opt, int& value, EKitTimeout& to) {
 	CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 	if (opt == FIRMWARE_OPT_FLAGS) {
 		value = flags;
@@ -203,12 +209,6 @@ EKIT_ERROR EKitFirmware::get_opt(int opt, int& value) {
 	}
 }
 
-int EKitFirmware::bus_props(int& busid) const {
-	busid = BUS_I2C_FIRMWARE;
-	return BUS_PROP_READALL;
-}
-
-
 //------------------------------------------------------------------------------------
 // EKitFirmware::send
 // Purpose: Sends data to firmware
@@ -216,7 +216,7 @@ int EKitFirmware::bus_props(int& busid) const {
 // uint8_t flags: optional flags to send to the device
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len){//(const std::vector<uint8_t>& data, uint8_t flags){
+EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){//(const std::vector<uint8_t>& data, uint8_t flags){
 	std::vector<uint8_t> buf;
 	CommResponseHeader rhdr;
 	size_t buf_len = len + sizeof(CommCommandHeader);
@@ -231,17 +231,19 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len){//(const std::vector
 	assert(vdev_addr>=0 && vdev_addr <= COMM_MAX_DEV_ADDR);
     phdr->command_byte = vdev_addr | flags;
     phdr->length = len;
-    memcpy(pbuf + sizeof(CommCommandHeader), ptr, len);
+    if (len > 0) {
+        memcpy(pbuf + sizeof(CommCommandHeader), ptr, len);
+    }
     phdr->control_crc = tools::calc_contol_sum(pbuf, buf_len, sizeof(CommCommandHeader) - 1);
 
 	do {
-		err = bus->write(pbuf, buf_len);
+		err = bus->write(pbuf, buf_len, to);
 	} while (err == EKIT_WRITE_FAILED);
 
 	if (err == EKIT_OK) {
 		// wait device since command may take a while
 		// Note, don't bother with CRC here because it's firmware responsibility to check it
-		err = get_status(rhdr, true);
+		err = get_status(rhdr, true, to);
 	}	
 
     return err;
@@ -260,7 +262,7 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len){//(const std::vector
 // do not use crc check when there is a chance that device buffer has more data than you
 // expect to read. Use check_crc == true when you know amount of data in the buffer for sure, otherwise false. 
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::read(void* ptr, size_t len){//read_dev(std::vector<uint8_t>& data){
+EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){//read_dev(std::vector<uint8_t>& data){
 	EKIT_ERROR err;
 	std::vector<uint8_t> buf;
 	size_t buf_len = len+sizeof(CommResponseHeader);
@@ -277,7 +279,7 @@ EKIT_ERROR EKitFirmware::read(void* ptr, size_t len){//read_dev(std::vector<uint
 
 	do {
 		// Read header until success
-		err = bus->read(buf); // <CHECKIT> : infinite loop is possible
+		err = bus->read(pbuf, buf_len, to); // <CHECKIT> : infinite loop is possible - Timeout added must be fixed
 	} while (err == EKIT_READ_FAILED);
 
     if (err != EKIT_OK) {
@@ -293,7 +295,7 @@ EKIT_ERROR EKitFirmware::read(void* ptr, size_t len){//read_dev(std::vector<uint
     }
 
     // Check CRC
-    err = get_status(rhdr, false);
+    err = get_status(rhdr, false, to);
 	actual_crc = tools::calc_contol_sum(pbuf, buf_len, -1);
 	if (actual_crc!=rhdr.last_crc) {
     	err = EKIT_CRC_ERROR;
@@ -314,25 +316,31 @@ done:
 //        2) It it possible that device will have unread data after this call, because device may write new data between reading status
 //           and actual read from the device
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::read_all(std::vector<uint8_t>& buffer){
+EKIT_ERROR EKitFirmware::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to){
 	EKIT_ERROR err;
 	CommResponseHeader hdr;
 
 	CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
-	err = get_status(hdr, true);
+	err = get_status(hdr, true, to);
     if (err != EKIT_OK) {
         goto done;
     }
 
     buffer.resize(hdr.length);
-    err = EKitBus::read(buffer);
+    err = bus->read(buffer.data(), hdr.length, to);
 
 done:    
     return err;	
 }
 
-EKIT_ERROR EKitFirmware::open() {
+EKIT_ERROR EKitFirmware::write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to) {
+  static const char* const func_name = "EKitUARTBus::write_read";
+  assert(false); // MUST BE IMPLEMENTED
+  return EKIT_NOT_SUPPORTED;
+}
+
+EKIT_ERROR EKitFirmware::open(EKitTimeout& to) {
 	return EKIT_NOT_SUPPORTED;
 }
 
@@ -340,10 +348,10 @@ EKIT_ERROR EKitFirmware::close() {
 	return EKIT_NOT_SUPPORTED;
 }
 
-EKIT_ERROR EKitFirmware::suspend() {
-	return bus->suspend();
+EKIT_ERROR EKitFirmware::suspend(EKitTimeout& to) {
+	return bus->suspend(to);
 }
 
-EKIT_ERROR EKitFirmware::resume() {
-	return bus->resume();
+EKIT_ERROR EKitFirmware::resume(EKitTimeout& to) {
+	return bus->resume(to);
 }

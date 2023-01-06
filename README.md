@@ -728,6 +728,14 @@ Place diagram with class hierarchy (??? may be to big ???) and brief description
 
 More detailed description for busses, the difference between them
 
+SPI BUS:
+!!!! IMPORT NOTE ON SPI:
+TO ENABLE CS SIGNAL /boot/config.txt should be modified as:
+dtparam=spi=on
+dtoverlay=spi0-hw-cs
+
+raspi-config doesn't set spi0-hw-cs, so CS line won't work if "dtoverlay=spi0-hw-cs" is not spicified.
+
 #### Devices
 
 ![alt text](https://github.com/osharuda/home-lab-easy-kit/blob/main/doxygen/images/under_construction.png?raw=true)

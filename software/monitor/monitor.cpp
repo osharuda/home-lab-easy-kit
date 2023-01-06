@@ -248,7 +248,8 @@ int main(int argc, char* argv[])
         bus_name = argv[1];
     }
     std::shared_ptr<EKitBus> i2cbus(new EKitI2CBus(bus_name));
-    i2cbus->open();
+    EKitTimeout to(0);
+    i2cbus->open(to);
 
     // Create firmware using a bus opened above
     std::shared_ptr<EKitBus> firmware (new EKitFirmware(i2cbus, LIBCONFIG_NAMESPACE::INFO_I2C_ADDRESS));
@@ -265,7 +266,8 @@ int main(int argc, char* argv[])
         if (info_dev->config[config->dev_id].devices[i].hint == INFO_DEV_HINT_GSM_MODEM) {
             // attempt to add GSM modem
             try {
-                std::shared_ptr<GSMModem> modem(new GSMModem(firmware, config, 30000));
+                std::shared_ptr<GSMModem> modem(new GSMModem(firmware, config));
+                modem->set_timeout(30000);
 
                 std::shared_ptr<CommandHandler> at_handler(dynamic_cast<CommandHandler*>(new ATHandler(std::dynamic_pointer_cast<EKitDeviceBase>(modem), ui)));
                 std::shared_ptr<CommandHandler> ussd_handler(dynamic_cast<CommandHandler*>(new USSDHandler(std::dynamic_pointer_cast<EKitDeviceBase>(modem), ui)));

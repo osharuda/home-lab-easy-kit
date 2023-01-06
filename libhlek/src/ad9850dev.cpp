@@ -44,18 +44,19 @@ void AD9850Dev::reset() {
     cmd.W0 = 0;
     cmd.power_down = 1;
 
-    BusLocker bl(bus);
-    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, AD9850DEV_RESET);
+    EKitTimeout to(get_timeout());
+    BusLocker bl(bus, to);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, AD9850DEV_RESET, to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to set reset flag");
     }
 
-    err = bus->write(&cmd, sizeof(cmd));
+    err = bus->write(&cmd, sizeof(cmd), to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write bus");
     }
 
-    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, 0);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, 0, to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to clear reset flag");
     }
@@ -65,7 +66,7 @@ void AD9850Dev::update(double frequency, double phase) {
     static const char* const func_name = "AD9850Dev::update";
     EKIT_ERROR  err;
     AD9850Command cmd;
-    static_assert(sizeof(cmd)==5);  // Check structure size, must be 5
+    static_assert(sizeof(cmd)==5, "AD9850Command size must be 5 bytes, check structure padding and alignment.");  // Check structure size, must be 5
     cmd.W0 = 0;
     double clock_freq = static_cast<double>(config->clock_frequency);
 
@@ -88,8 +89,9 @@ void AD9850Dev::update(double frequency, double phase) {
     assert(p < 0b00100000);
     cmd.phase = p;
 
-    BusLocker bl(bus);
-    err = bus->write(&cmd, sizeof(cmd));
+    EKitTimeout to(get_timeout());
+    BusLocker bl(bus, to);
+    err = bus->write(&cmd, sizeof(cmd), to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write bus");
     }

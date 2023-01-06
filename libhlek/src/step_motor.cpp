@@ -157,9 +157,10 @@ uint8_t StepMotorDev::status(std::vector<StepMotorStatus>& mstatus) {
     std::vector<uint8_t> data(bufsize);
     StepMotorDevStatus* pstatus = reinterpret_cast<StepMotorDevStatus*>(data.data());
 
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    err = bus->read(data);
+    err = bus->read(data.data(), bufsize, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }
@@ -174,14 +175,15 @@ uint8_t StepMotorDev::status(std::vector<StepMotorStatus>& mstatus) {
 
 void StepMotorDev::start() {
     static const char* const func_name = "StepMotorDev::start";
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_START);
+    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_START, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write({});
+    err = bus->write(nullptr, 0, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
@@ -189,14 +191,16 @@ void StepMotorDev::start() {
 
 void StepMotorDev::stop() {
 	static const char* const func_name = "StepMotorDev::stop";
-    BusLocker blocker(bus);
 
-    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_STOP);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
+
+    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_STOP, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write({});
+    err = bus->write(nullptr, 0, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
@@ -224,14 +228,15 @@ void StepMotorDev::feed() {
     }
 
     // Send data
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_NONE);
+    EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, STEP_MOTOR_NONE, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write(data);
+    err = bus->write(data.data(), data.size(), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }

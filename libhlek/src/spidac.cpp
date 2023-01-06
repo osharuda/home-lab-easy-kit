@@ -74,9 +74,10 @@ bool SPIDACDev::is_running() {
     const char* func_name = "SPIDACDev::is_running";
     EKIT_ERROR err = EKIT_OK;
     SPIDACStatus status;
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    err = bus->read(&status, sizeof(SPIDACStatus));
+    err = bus->read(&status, sizeof(SPIDACStatus), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read failed.");
     }
@@ -94,11 +95,12 @@ void SPIDACDev::start_signal(double freq, size_t phase_inc, bool continuous) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "phase_inc is out of limits");
     }
 
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Start
     SPIDAC_COMMAND cmd = continuous ? SPIDAC_COMMAND::START : SPIDAC_COMMAND::START_PERIOD;
-    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
@@ -108,7 +110,7 @@ void SPIDACDev::start_signal(double freq, size_t phase_inc, bool continuous) {
     sampling.phase_increment = phase_inc;
     tools::stm32_timer_params(config->timer_freq, 1.0L/freq, sampling.prescaler, sampling.period, eff_sample_rate);
 
-    err = bus->write(&sampling, sizeof(sampling));
+    err = bus->write(&sampling, sizeof(sampling), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
@@ -156,16 +158,17 @@ void SPIDACDev::upload(const SPIDAC_CHANNELS channels, bool def_vals) {
 void SPIDACDev::stop() {
     static const char* const func_name = "SPIDACDev::stop";
     EKIT_ERROR err = EKIT_OK;
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Stop
-    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, SPIDAC_COMMAND::STOP);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, SPIDAC_COMMAND::STOP, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
     // Write zero-length buffer (just command byte, this will cause sampling stop)
-    err = bus->write(nullptr, 0);
+    err = bus->write(nullptr, 0, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
@@ -183,14 +186,15 @@ void SPIDACDev::upload_raw(const std::vector<uint8_t>& buffer, bool def_vals) {
         throw EKitException(func_name, EKIT_UNALIGNED, "Passed data doesn't match with device sampling alignment parameters");
     }
 
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
     SPIDAC_COMMAND cmd = def_vals ? SPIDAC_COMMAND::SETDEFAULT : SPIDAC_COMMAND::DATA;
-    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write(buffer.data(), buf_len);
+    err = bus->write(buffer.data(), buf_len, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }

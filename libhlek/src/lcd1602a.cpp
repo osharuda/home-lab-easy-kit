@@ -44,14 +44,15 @@ int LCD1602ADev::nchars() const {
 void LCD1602ADev::light(int lmode) {
 	static const char* const func_name = "LCD1602ADev::light";
 	assert(lmode==LCD1602a_LIGHT || lmode==LCD1602a_OFF || lmode==LCD1602a_BLINK);
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 
-	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, lmode);
+	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, lmode, to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "set_opt() failed");
     }	    
 
-    err = bus->write({});
+    err = bus->write(nullptr, 0, to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "write() failed");
     }
@@ -61,7 +62,8 @@ void LCD1602ADev::light(int lmode) {
 
 void LCD1602ADev::write(std::vector<std::string>::const_iterator first, std::vector<std::string>::const_iterator last) {
 	static const char* const func_name = "LCD1602ADev::write(1)";
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 
 	std::vector<uint8_t> buffer;
 	int nl = nlines();
@@ -75,12 +77,12 @@ void LCD1602ADev::write(std::vector<std::string>::const_iterator first, std::vec
 		std::copy(l.begin(), l.end(), std::back_inserter(buffer));
 	}
 
-	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, light_mode);
+	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, light_mode, to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write(buffer);
+    err = bus->write(buffer.data(), buffer.size(), to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "write() failed");
     }	
@@ -93,7 +95,8 @@ void LCD1602ADev::write(const std::vector<std::string>& lines) {
 void LCD1602ADev::writepos(uint8_t line, uint8_t pos, const std::string& s) {
 	static const char* const func_name = "LCD1602ADev::writepos";
 
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 	std::vector<uint8_t> buffer;
 	size_t buflen = s.length() + sizeof(LcdPositionalText);
 	buffer.resize(buflen);
@@ -102,12 +105,12 @@ void LCD1602ADev::writepos(uint8_t line, uint8_t pos, const std::string& s) {
 	hdr->position = pos;
 	strcpy((char*)hdr->text, s.c_str());
 
-	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, light_mode | LCD1602a_POSITION);
+	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, light_mode | LCD1602a_POSITION, to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "set_opt() failed");
     }
 
-    err = bus->write(buffer);
+    err = bus->write(buffer.data(), buflen, to);
     if (err != EKIT_OK) {
     	throw EKitException(func_name, err, "write() failed");
     }

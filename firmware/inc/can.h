@@ -25,7 +25,6 @@
 #ifdef CAN_DEVICE_ENABLED
 
 #include <stm32f10x_can.h>
-#include "fw_can.h"
 
 /// \defgroup group_can Can
 /// \brief Can support

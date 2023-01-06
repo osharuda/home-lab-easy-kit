@@ -43,6 +43,9 @@
 /// \class EKitFirmware
 /// \brief Software to firmware communication protocol implementation.
 class EKitFirmware final : public EKitBus {
+    /// \typedef super
+    /// \brief Defines parent class
+    typedef EKitBus super;
 
 	std::shared_ptr<EKitBus> bus; ///< Shared pointer to a bus that communication is going on with.
 	int vdev_addr = -1;           ///< Virtual device address (-1 means no device is currently locked).
@@ -84,17 +87,26 @@ public:
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR write(const void* ptr, size_t len) override;
+	EKIT_ERROR write(const void* ptr, size_t len, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#read() virtual function.
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-    EKIT_ERROR read(void* ptr, size_t len) override;
+    EKIT_ERROR read(void* ptr, size_t len, EKitTimeout& to) override;
+
+    /// \brief Does write and read by single operation, the first write with subsequent read.
+    /// \param wbuf - memory to write.
+    /// \param wlen - length of the write buffer.
+    /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
+    /// \param rlen - length of the buffer to read data into (amount of data to read).
+    /// \param to - timeout counting object.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 
     /// \brief Implementation of the EKitBus#open() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR open() override;
+	EKIT_ERROR open(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#close() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
@@ -102,21 +114,23 @@ public:
 
     /// \brief Implementation of the EKitBus#suspend() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR suspend() override;
+	EKIT_ERROR suspend(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#resume() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR resume() override;
+	EKIT_ERROR resume(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#lock() virtual function.
     /// \param address - Virtual device id
+    /// \param to - optional time out to be used.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR lock(int address) override;
+	EKIT_ERROR lock(int address, EKitTimeout& to) override;
 
     /// \brief Lock a bus.
+    /// \param to - optional time out to be used.
     /// \return Corresponding EKIT_ERROR error code.
     /// \note Overridden here to make it unusable, since firmware requires address to be locked.
-    EKIT_ERROR lock() override;
+    EKIT_ERROR lock(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
@@ -125,30 +139,25 @@ public:
     /// \brief Implementation of the EKitBus#read_all() virtual function.
     /// \param buffer - Reference to a vector that will receive data from a bus.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR read_all(std::vector<uint8_t>& buffer) override;
+	EKIT_ERROR read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#set_opt() virtual function.
     /// \param opt - bus specific option. Must be one of the #EKitFirmwareOptions values.
     /// \param value - bus specific option value.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR set_opt(int opt, int value) override;
+	EKIT_ERROR set_opt(int opt, int value, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#get_opt() virtual function.
     /// \param opt - bus specific option. Must be one of the #EKitFirmwareOptions values.
     /// \param value - reference to bus specific option value.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR get_opt(int opt, int& value) override;
-
-    /// \brief Implementation of the EKitBus#bus_props() virtual function.
-    /// \param busid - One of the #EKitBusType values.
-    /// \return - a bit mask of #EKitBusProperties flags.
-	int bus_props(int& busid) const override;
+	EKIT_ERROR get_opt(int opt, int& value, EKitTimeout& to) override;
 
 	/// \brief Reads virtual device status
 	/// \param hdr - reference to command response header to be read
 	/// \param wait_device - wait until virtual device will not clear #COMM_STATUS_BUSY.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR get_status(CommResponseHeader& hdr, bool wait_device);
+	EKIT_ERROR get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to);
 };
 
 /// @}

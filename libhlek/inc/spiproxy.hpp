@@ -61,7 +61,7 @@ class SPIProxyDev final : public EKitVirtualDevice,
 
     /// \brief Waits until SPI transaction is finished or either timeout expires or error occurs.
     /// \param sw - current timer used to detect operation timeouts.
-    EKIT_ERROR spi_proxy_wait(tools::StopWatchMs& sw);
+    EKIT_ERROR spi_proxy_wait(EKitTimeout& to);
 
 	public:
 
@@ -89,12 +89,12 @@ class SPIProxyDev final : public EKitVirtualDevice,
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-    virtual EKIT_ERROR write(const void* ptr, size_t len) override;
+    virtual EKIT_ERROR write(const void* ptr, size_t len, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#lock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
     /// \note This function has to be overridden to pass correct address into EKitFirmware
-    virtual EKIT_ERROR lock() override;
+    virtual EKIT_ERROR lock(EKitTimeout& to) override;
 
     using EKitBus::read;
 
@@ -102,30 +102,34 @@ class SPIProxyDev final : public EKitVirtualDevice,
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-    virtual EKIT_ERROR read(void* ptr, size_t len) override;
+    virtual EKIT_ERROR read(void* ptr, size_t len, EKitTimeout& to) override;
 
     /// \brief Read all the data available on a bus (implementation of the EKitBus)..
     /// \param buffer - Reference to a vector that will receive data from a bus.
     /// \return Corresponding EKIT_ERROR error code.
     /// \note Note every bus may support it. In this case EKIT_NOT_SUPPORTED must be returned.
-    virtual EKIT_ERROR read_all(std::vector<uint8_t>& buffer) override;
+    virtual EKIT_ERROR read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) override;
+
+    /// \brief Does write and read by single operation, the first write with subsequent read.
+    /// \param wbuf - memory to write.
+    /// \param wlen - length of the write buffer.
+    /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
+    /// \param rlen - length of the buffer to read data into (amount of data to read).
+    /// \param to - timeout counting object.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 
     /// \brief Set a bus specific option.
     /// \param opt - bus specific option.
     /// \param value - bus specific option value.
     /// \return Corresponding EKIT_ERROR error code.
-    virtual EKIT_ERROR set_opt(int opt, int value) override;
+    virtual EKIT_ERROR set_opt(int opt, int value, EKitTimeout& to) override;
 
     /// \brief Reads a bus specific option.
     /// \param opt - bus specific option.
     /// \param value - reference to bus specific option value.
     /// \return Corresponding EKIT_ERROR error code.
-    virtual EKIT_ERROR get_opt(int opt, int& value) override;
-
-    /// \brief Returns information about implemented bus.
-    /// \param busid - One of the #EKitBusType values.
-    /// \return - a bit mask of #EKitBusProperties flags.
-    virtual int bus_props(int& busid) const override;
+    virtual EKIT_ERROR get_opt(int opt, int& value, EKitTimeout& to) override;
 };
 
 /// @}

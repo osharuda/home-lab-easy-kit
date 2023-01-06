@@ -36,9 +36,10 @@ void DESKDev::get(bool& up, bool& down, bool& left, bool& right, int8_t& encoder
 	static const char* const func_name = "DESKDev::get";
 	EKIT_ERROR err;
 	DeskDevData data;
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 
-	err = bus->read(&data, sizeof(data));
+	err = bus->read(&data, sizeof(data), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }

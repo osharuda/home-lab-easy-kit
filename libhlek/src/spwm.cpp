@@ -59,7 +59,8 @@ void SPWMDev::set(SPWM_STATE& state) {
 
 	// Block bus and fill data
 	{
-		BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+		BusLocker blocker(bus, to);
 
 		// state may specify some of the channels configured. Fill the reset of the channels.
 		for (size_t i=0; i<config->channel_count; i++) {
@@ -119,7 +120,7 @@ void SPWMDev::set(SPWM_STATE& state) {
 		}
 
 		// Write data
-		EKIT_ERROR err = bus->write(data_ptr, data_len);
+		EKIT_ERROR err = bus->write(data_ptr, data_len, to);
 	    if (err != EKIT_OK) {
 	        throw EKitException(func_name, err, "write() failed");
 	    }

@@ -72,17 +72,18 @@ void ADCDev::start(uint16_t sample_count, double delay_sec){
 	}
 
 
-	// issue a command
+	// Do I/O operation
 	{
-		BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+		BusLocker blocker(bus, to);
 
-		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f);
+		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
 	    if (err != EKIT_OK) {
 	    	throw EKitException(func_name, err, "set_opt() failed");
 	    }
 
 		// Write data
-		err = bus->write((uint8_t*)&data, sizeof(ADCDevCommand));
+		err = bus->write((uint8_t*)&data, sizeof(ADCDevCommand), to);
 	    if (err != EKIT_OK) {
 	        throw EKitException(func_name, err, "write() failed");
 	    }
@@ -97,16 +98,18 @@ void ADCDev::stop(bool reset_buffer){
 		f |= ADCDEV_RESET_DATA;
 	}
 
+    // Do I/O operation
 	{
-		BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+		BusLocker blocker(bus, to);
 
-		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f);
+		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
 	    if (err != EKIT_OK) {
 	    	throw EKitException(func_name, err, "set_opt() failed");
 	    }
 
 		// Write zero-length buffer (just command byte, this will cause sampling stop)
-		err = bus->write(nullptr, 0);
+		err = bus->write(nullptr, 0, to);
 	    if (err != EKIT_OK) {
 	        throw EKitException(func_name, err, "write() failed");
 	    }
@@ -117,11 +120,12 @@ void ADCDev::get(std::vector<uint16_t>& data, bool& ovf){
 	static const char* const func_name = "ADCDev::get(1)";
 	// issue a command
 	{
-		BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+		BusLocker blocker(bus, to);
 
 		// get amount of data
 		CommResponseHeader hdr;
-		EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false);
+		EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false, to);
 	    if (err != EKIT_OK && err != EKIT_OVERFLOW ) {
 	        throw EKitException(func_name, err, "get_status() failed");
 	    }
@@ -142,7 +146,7 @@ void ADCDev::get(std::vector<uint16_t>& data, bool& ovf){
 	    data.resize(hdr.length / sizeof(uint16_t));
 
 		// read data
-		err = bus->read((uint8_t*)data.data(), hdr.length);
+		err = bus->read((uint8_t*)data.data(), hdr.length, to);
 		if (err != EKIT_OK) {
 		    throw EKitException(func_name, err, "read() failed");
 		}

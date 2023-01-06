@@ -290,9 +290,6 @@ namespace tools {
 		}
 	};
 
-    using StopWatchMs = StopWatch<std::chrono::milliseconds>;
-
-
     /// \brief Concatenates and return two vectors appended.
     /// \tparam T - Type of the element.
     /// \param v1 - The first vector (goes first in resulting vector).

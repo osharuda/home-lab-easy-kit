@@ -288,17 +288,17 @@ private:
     /// \brief Internal implementation of at command
     /// \param cmd - std::string with an AT command
     /// \param response - vector of strings with response
-    /// \param sw - stop watch timer
+    /// \param to - timeout counting object.
     /// \param completion_status_mask - One or several #GSMModemStatus status mask that indicates command is completed.
     /// \note  Call will not return until timeout is expired or one of completion_status_mask statuses are received from
     ///        device
-    void at(const std::string& cmd, std::vector<std::string>& response, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int &completion_status_mask);
+    void at(const std::string& cmd, std::vector<std::string>& response, EKitTimeout& to, unsigned int &completion_status_mask);
 
     /// \brief Sets CMEE error mode
-    /// \param cmee - #GSM_CMEE_MODE error mode
-    /// \param sw - stop watch timer
+    /// \param cmee - #GSM_CMEE_MODE error mode.
+    /// \param to - timeout counting object.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void set_error_mode(GSM_CMEE_MODE cmee, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask);
+    void set_error_mode(GSM_CMEE_MODE cmee, EKitTimeout& to, unsigned int& status_mask);
 
     /// \brief Configures modem with default configuration
     /// \param timeout_ms - timeout in milliseconds.
@@ -306,32 +306,32 @@ private:
 
     /// \brief Configures sms
     /// \param ascii - true if ascii mode is required.
-    /// \param sw - stop watch timer
+    /// \param to - timeout counting object.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask);
+    void configure_sms(bool ascii, EKitTimeout& to, unsigned int& status_mask);
 
     /// \brief Reads some strings with line breaks (or lines) from modem
     /// \param result - vector of lines read during call
-    /// \param sw - stop watch timer
+    /// \param to - timeout counting object.
     /// \return Corresponding #EKIT_ERROR
-    EKIT_ERROR read_lines(std::vector<std::string>& result, tools::StopWatch<std::chrono::milliseconds>& sw);
+    EKIT_ERROR read_lines(std::vector<std::string>& result, EKitTimeout& to);
 
     /// \brief Wait until completion AT status is returned
     /// \param result - vector of lines read during call
-    /// \param sw - stop watch timer
+    /// \param to - timeout counting object.
     /// \param completion_status_mask - One or several #GSMModemStatus status mask that indicates command is completed.
     /// \return Corresponding #EKIT_ERROR
     /// \note  Call will not return until timeout is expired or one of completion_status_mask statuses are received from
     ///        device
-    EKIT_ERROR wait_at_status(std::vector<std::string>& result, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& completion_status_mask);
+    EKIT_ERROR wait_at_status(std::vector<std::string>& result, EKitTimeout& to, unsigned int& completion_status_mask);
 
     /// \brief Wait until command returned line with a prefix
     /// \param prefix - expected prefix
     /// \param result - vector of lines read during call
-    /// \param sw - stop watch timer
+    /// \param to - timeout counting object.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
     /// \return Corresponding #EKIT_ERROR
-    EKIT_ERROR wait_at_response(const std::string& prefix, std::vector<std::string>& result, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask);
+    EKIT_ERROR wait_at_response(const std::string& prefix, std::vector<std::string>& result, EKitTimeout& to, unsigned int& status_mask);
 
     GSM_CMEE_MODE cmee_mode = GSM_CMEE_MODE::GSM_CMEE_TEXT;
     std::string last_cmee_error;
@@ -350,8 +350,7 @@ public:
     /// \brief Constructor to be used
     /// \param ebus - reference to shared pointer with EKitBus.
     /// \param config - actual configuration of the device taken from generated configuration library.
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
-    GSMModem(std::shared_ptr<EKitBus>& ebus,  const UARTProxyConfig* config, int timeout_ms);
+    GSMModem(std::shared_ptr<EKitBus>& ebus,  const UARTProxyConfig* config);
 
     /// \brief Destructor (virtual)
 	~GSMModem() override;
@@ -359,61 +358,52 @@ public:
     /// \brief Execute an AT command
     /// \param cmd - command to be executed
     /// \param response - Response with text
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param completion_status_mask - One or several #GSMModemStatus status mask that indicates command is completed.
     /// \note  Call will not return until timeout is expired or one of completion_status_mask statuses are received from
     ///        device
-    void at(const std::string& cmd, std::vector<std::string>& response, int timeout_ms, unsigned int &completion_status_mask);
+    void at(const std::string& cmd, std::vector<std::string>& response, unsigned int &completion_status_mask);
 
     /// \brief Execute USSD request
     /// \param ussd - USSD request
     /// \param result - result
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void ussd(const std::string& ussd, std::string& result, int timeout_ms, unsigned int& status_mask);
+    void ussd(const std::string& ussd, std::string& result, unsigned int& status_mask);
 
     /// \brief Send an SMS
     /// \param number - telephone number
     /// \param text - text
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void sms(const std::string& number, const std::string& text, int timeout_ms, unsigned int& status_mask);
+    void sms(const std::string& number, const std::string& text, unsigned int& status_mask);
 
     /// \brief Read sms
     /// \param messages - vector of #GSMSmsData describing messages available
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void read_sms(std::vector<GSMSmsData>& messages, int timeout_ms, unsigned int& status_mask);
+    void read_sms(std::vector<GSMSmsData>& messages, unsigned int& status_mask);
 
     /// \brief Delete sms
     /// \param id - id of the message to be deleted. Negative values will remove all messages.
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout_ms.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void delete_sms(int id, int timeout_ms, unsigned int& status_mask);
+    void delete_sms(int id, unsigned int& status_mask);
 
     /// \brief Set CMEE error mode
     /// \param cmee - CMEE error mode
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void set_error_mode(GSM_CMEE_MODE cmee, int timeout_ms, unsigned int& status_mask);
+    void set_error_mode(GSM_CMEE_MODE cmee, unsigned int& status_mask);
 
     /// \brief Lists active calls
     /// \param active_calls - vector of #GSMCallData structures describing active calls.
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void active_calls(std::vector<GSMCallData>& active_calls, int timeout_ms, unsigned int& status_mask);
+    void active_calls(std::vector<GSMCallData>& active_calls, unsigned int& status_mask);
 
     /// \brief Dial a number
     /// \param number - telephone number
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void dial(const std::string& number, int timeout_ms, unsigned int& status_mask);
+    void dial(const std::string& number, unsigned int& status_mask);
 
     /// \brief Answer a call
     /// \param action - action to be made
-    /// \param timeout_ms - Timeout in milliseconds. Zero or negative means infinite timeout.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.
-    void answer(GSM_CALL_ACTION action, int timeout_ms, unsigned int& status_mask);
+    void answer(GSM_CALL_ACTION action, unsigned int& status_mask);
 
     /// \brief Formats status_mask description from status_mask value returned by one of the calls above.
     /// \param status_mask - One or several #GSMModemStatus status mask that indicates status of operation.

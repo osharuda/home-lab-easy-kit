@@ -52,11 +52,11 @@ class EKitI2CBus final : public EKitBus {
 
 	/// \brief  Helper function for opening i2c bus descriptor.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR open_internal();
+	EKIT_ERROR open_internal(EKitTimeout& to);
 
 	/// \brief Performs I2C read/write operation
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR i2c_read_write(uint8_t addr, bool readop, void* buffer, size_t len);
+	EKIT_ERROR i2c_read_write(uint8_t addr, bool readop, void* buffer, size_t len, EKitTimeout& to);
 
 
 public:
@@ -76,11 +76,14 @@ public:
 	explicit EKitI2CBus(const std::string& file_name);
 
 	/// \brief Destructor (virtual)
+        /// \note Important note: Destructor may need to lock bus to terminate communication;
+        ///       in this case override destructor must lock bus, close method also require protection from
+        ///       race conditions. (#BusLocker may be used)
 	~EKitI2CBus() override;
 
 	/// \brief Implementation of the EKitBus#open() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR open() override;
+	EKIT_ERROR open(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#close() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
@@ -88,43 +91,49 @@ public:
 
     /// \brief Implementation of the EKitBus#suspend() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR suspend() override;
+	EKIT_ERROR suspend(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#resume() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR resume() override;
+	EKIT_ERROR resume(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#read() virtual function.
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR read(void* ptr, size_t len) override;
+	EKIT_ERROR read(void* ptr, size_t len, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#read_all() virtual function.
     /// \param buffer - Reference to a vector that will receive data from a bus.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR read_all(std::vector<uint8_t>& buffer) override;
+	EKIT_ERROR read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#write() virtual function.
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR write(const void* ptr, size_t len) override;
+	EKIT_ERROR write(const void* ptr, size_t len, EKitTimeout& to) override;
+
+        /// \brief Does write and read by single operation, the first write with subsequent read.
+        /// \param wbuf - memory to write.
+        /// \param wlen - length of the write buffer.
+        /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
+        /// \param rlen - length of the buffer to read data into (amount of data to read).
+        /// \param to - timeout counting object.
+        /// \return Corresponding EKIT_ERROR error code.
+        EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 
     /// \brief Implementation of the EKitBus#lock() virtual function.
     /// \param addr - Address of the device connected to the bus to work with. Ignored for buses that may not address
     ///        several devices.
+    /// \param to - optional time out to be used.
     /// \return Corresponding EKIT_ERROR error code.
-	EKIT_ERROR lock(int addr) override;
+	EKIT_ERROR lock(int addr, EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR unlock() override;
 
-    /// \brief Implementation of the EKitBus#bus_props() virtual function.
-    /// \param busid - One of the #EKitBusType values.
-    /// \return - a bit mask of #EKitBusProperties flags.
-	int bus_props(int& busid) const override;
 };
 
 /// @}

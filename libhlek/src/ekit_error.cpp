@@ -23,10 +23,13 @@
 #include <errno.h>
 #include <sstream>
 #include <string>
+#include <string.h>
 #include "ekit_error.hpp"
+#include <texttools.hpp>
 
 #define CASE_ERROR_NAME(_name) case (_name): return #_name; break;
-
+constexpr size_t EKIT_MAX_ERROR_DESCR_NAME = 256;
+thread_local char last_error_descr[EKIT_MAX_ERROR_DESCR_NAME];
 const char* errname(const EKIT_ERROR err) {
     switch (err) {
         CASE_ERROR_NAME(EKIT_OK);
@@ -61,33 +64,39 @@ const char* errname(const EKIT_ERROR err) {
         CASE_ERROR_NAME(EKIT_UNALIGNED);
 
         default:
-            return "UNKNOWN";
+            if (err < 0) {
+                // Errno is used instead of EKIT_ERROR codes
+                int errn = err * -1;
+#if (_POSIX_C_SOURCE >= 200112L) && !  _GNU_SOURCE
+                if (strerror_r(errn, last_error_descr, EKIT_MAX_ERROR_DESCR_NAME)!=0) {
+                    std::string err_str = tools::str_format("errno=%i)", errn);
+                    strncpy(last_error_descr, err_str.c_str(), EKIT_MAX_ERROR_DESCR_NAME);
+                }
+#else
+                const char* resbuf = strerror_r(errn, last_error_descr, EKIT_MAX_ERROR_DESCR_NAME);
+                if (resbuf != last_error_descr) {
+                    return resbuf;
+                }
+#endif
+                return last_error_descr;
+            } else {
+                return "UNKNOWN";
+            }
     }
 }
 
 EKitException::EKitException(const std::string& func_info, EKIT_ERROR e) :
-    std::runtime_error(format_exception(func_info, e, "EKitException", false)),
+    std::runtime_error(format_exception(func_info, e, "EKitException")),
     ekit_error(e) {}
 
-EKitException::EKitException(const std::string& func_info, const std::string& descr) :
-    std::runtime_error(format_exception(func_info, 0, descr, true)),
-    ekit_error(EKIT_FAIL) {}
-
 EKitException::EKitException(const std::string& func_info, EKIT_ERROR e, const std::string& descr) :
-    std::runtime_error(format_exception(func_info, e, descr, false)),
+    std::runtime_error(format_exception(func_info, e, descr)),
     ekit_error(e) {}
 
 EKitException::~EKitException() {}
 
-std::string EKitException::format_exception(const std::string& func_info, EKIT_ERROR e, const std::string& description, bool use_errno) {
+std::string EKitException::format_exception(const std::string& func_info, EKIT_ERROR e, const std::string& description) {
 	std::stringstream ss;
-
-	ss << description << "; ";
-	if (use_errno) {
-		ss << "errno=" << errno;
-	} else {
-		ss << "errcode=" << e;
-	}
-	ss << "; thrown from: " << func_info;
+	ss << description << "; (" <<  errname(e) << "); errcode=" << e << "; thrown from: " << func_info;
 	return ss.str();
 }

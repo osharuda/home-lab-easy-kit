@@ -54,18 +54,19 @@ void GPIODev::read(std::vector<bool>& pins) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "Number of elements in input argument doesn't match to pin number.");
     }
 
-	// Block bus
+	// I/O operation
 	{
-		BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+		BusLocker blocker(bus, to);
 
 		// Instruct controller to updated inputs
-		EKIT_ERROR err = bus->write(nullptr, 0);
+		EKIT_ERROR err = bus->write(nullptr, 0, to);
 	    if (err != EKIT_OK) {
 	        throw EKitException(func_name, err, "write() failed");
 	    }		
 
 		// Read bus
-		err = bus->read(buffer, gpio_buffer_size);
+		err = bus->read(buffer, gpio_buffer_size, to);
 	    if (err != EKIT_OK) {
 	        throw EKitException(func_name, err, "read() failed");
 	    }
@@ -94,10 +95,11 @@ void GPIODev::write(const std::vector<bool>& pins) {
 	}
 
 	// Block bus
-	BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
 
 	// Write bus
-	EKIT_ERROR err = bus->write(buffer, gpio_buffer_size);
+	EKIT_ERROR err = bus->write(buffer, gpio_buffer_size, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }		

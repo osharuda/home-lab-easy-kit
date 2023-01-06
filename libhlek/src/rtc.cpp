@@ -30,19 +30,19 @@ RTCDev::RTCDev(std::shared_ptr<EKitBus>& ebus, const RTCConfig* config)  : super
 
 RTCDev::~RTCDev() {}
 
-uint32_t RTCDev::now_priv() {
+uint32_t RTCDev::now_priv(EKitTimeout& to) {
 	static const char* const func_name = "RTCDev::now_priv";
 	EKIT_ERROR err;
 	RtcData data;
 
 	// write nothing to update rtc value in MCU
-	err = bus->write(nullptr, 0);
+	err = bus->write(nullptr, 0, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
 
 	// read updated value
-	err = bus->read(&data, sizeof(data));
+	err = bus->read(&data, sizeof(data), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }
@@ -53,22 +53,24 @@ uint32_t RTCDev::now_priv() {
 std::time_t RTCDev::now() {
 	static const char* const func_name = "RTCDev::now";
 
-	BusLocker blocker(bus);
-	uint32_t secs = now_priv();
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
+	uint32_t secs = now_priv(to);
 	return static_cast<std::time_t>(secs);
 }
 
 
 std::time_t RTCDev::sync_host() {
 	static const char* const func_name = "RTCDev::sync_host";
-	BusLocker blocker(bus);
-    uint32_t secs = now_priv();
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
+    uint32_t secs = now_priv(to);
     const timespec ts{static_cast<time_t>(secs),0};
 
 
     int res = clock_settime(CLOCK_REALTIME, &ts);
 	if (res!=0) {
-		throw EKitException(func_name, strerror(errno));
+		throw EKitException(func_name, ERRNO_TO_EKIT_ERROR(errno));
 	}
 
 	return static_cast<std::time_t>(secs);
@@ -79,10 +81,11 @@ std::time_t RTCDev::sync_rtc() {
 	EKIT_ERROR err;
 	std::time_t val = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());	
 	RtcData data;
-	data.rtcval = static_cast<uint32_t>(val);	
+	data.rtcval = static_cast<uint32_t>(val);
 
-	BusLocker blocker(bus);
-	err = bus->write(&data, sizeof(data));
+    EKitTimeout to(get_timeout());
+	BusLocker blocker(bus, to);
+	err = bus->write(&data, sizeof(data), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }

@@ -171,7 +171,7 @@ private:
     /// \brief Returns CAN device status
     /// \param status - device status represented by #CanStatus structure.
     /// \note Doesn't lock a bus; It is callers responsibility to lock a bus.
-    void can_status_priv(CanStatus& status);
+    void can_status_priv(CanStatus& status, EKitTimeout& to);
 };
 
 /// @}

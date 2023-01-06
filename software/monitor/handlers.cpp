@@ -609,7 +609,8 @@ void UartDevRead::handle(const std::vector<std::string>& args) {
     auto uart = dynamic_cast<UARTDev*>(device.get());
 
     std::vector<uint8_t> data;
-    uart->read(data);
+    EKitTimeout to(EKIT_STD_TIMEOUT);
+    uart->read_all(data, to);
 
     std::string s = tools::format_buffer(16, data.data(), data.size(), " ", " | ");
     ui->log(s);
@@ -638,7 +639,8 @@ void UartDevWrite::handle(const std::vector<std::string>& args) {
         data = tools::buffer_from_hex(in);
     }
 
-    uart->write(data);
+    EKitTimeout to(EKIT_STD_TIMEOUT);
+    uart->write(data.data(), data.size(), to);
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -656,7 +658,7 @@ void ATHandler::handle(const std::vector<std::string>& args) {
     std::vector<std::string> response;
     check_arg_count_min(args, 1);
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->at(args.at(0), response, 30000, status);
+    modem->at(args.at(0), response, status);
 
     for (const auto& i : response) {
         ui->log(i);
@@ -681,7 +683,7 @@ void SMSHandler::handle(const std::vector<std::string>& args) {
     size_t arg_c = args.size();
     check_arg_count(args, 2);
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->sms(arg_get(args, "number"), arg_get(args, "text"), 0, status);
+    modem->sms(arg_get(args, "number"), arg_get(args, "text"), status);
     ui->log("[status=" + GSMModem::status_description(status) + "]");
 }
 
@@ -700,7 +702,7 @@ void USSDHandler::handle(const std::vector<std::string>& args) {
     unsigned int status = 0;
     check_arg_count_min(args, 1);
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->ussd(args.at(0), result, 0, status);
+    modem->ussd(args.at(0), result, status);
     ui->log(result);
     ui->log("[status=" + GSMModem::status_description(status) + "]");
 }
@@ -718,7 +720,7 @@ void ReadSMSHandler::handle(const std::vector<std::string>& args){
     std::vector<GSMSmsData> messages;
     check_arg_count(args, 0);
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->read_sms(messages, 30000, status);
+    modem->read_sms(messages, status);
     size_t n_msg = messages.size();
     for (size_t i=0; i<n_msg; ) {
         const GSMSmsData& sms = messages.at(i);
@@ -751,10 +753,10 @@ void DeleteSMSHandler::handle(const std::vector<std::string>& args) {
     std::string unit;
 
     if (args.at(0)=="*") {
-        modem->delete_sms(-1, 30000, status);
+        modem->delete_sms(-1, status);
     } else {
         unsigned int id = arg_unsigned_int(args, "id", 0, UINT_MAX, {""}, unit, "");
-        modem->delete_sms(static_cast<int>(id), 30000, status);
+        modem->delete_sms(static_cast<int>(id), status);
     }
 
     ui->log("[status=" + GSMModem::status_description(status) + "]");
@@ -774,7 +776,7 @@ void DialHandler::handle(const std::vector<std::string>& args){
     unsigned int status = 0;
     check_arg_count(args, 1);
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->dial(arg_get(args, "phone"), 30000, status);
+    modem->dial(arg_get(args, "phone"), status);
     ui->log("[status=" + GSMModem::status_description(status) + "]");
 }
 
@@ -793,7 +795,7 @@ void ActiveCallsHandler::handle(const std::vector<std::string>& args){
     std::vector<GSMCallData> act_calls;
     std::list<std::string> act_calls_descr;
     auto modem = dynamic_cast<GSMModem*>(device.get());
-    modem->active_calls(act_calls, 30000, status);
+    modem->active_calls(act_calls, status);
 
     for (auto c = act_calls.begin(); c!=act_calls.end(); ++c) {
         act_calls_descr.push_back(c->to_string());
@@ -827,13 +829,13 @@ std::string AnswerCallHandler::help() const {
         tools::g_unicode_ts.to_case(arg, true);
 
         if (arg=="answer") {
-            modem->answer(GSM_CALL_ACTION_ANSWER, 30000, status);
+            modem->answer(GSM_CALL_ACTION_ANSWER, status);
         } else if (arg=="hang") {
-            modem->answer(GSM_CALL_ACTION_HANG, 30000, status);
+            modem->answer(GSM_CALL_ACTION_HANG, status);
         } else if (arg=="hold") {
-            modem->answer(GSM_CALL_ACTION_HOLD, 30000, status);
+            modem->answer(GSM_CALL_ACTION_HOLD, status);
         } else if (arg=="release") {
-            modem->answer(GSM_CALL_ACTION_RELEASE, 30000, status);
+            modem->answer(GSM_CALL_ACTION_RELEASE, status);
         } else {
             throw CommandHandlerException("Invalid argument specified for action (valid values are: answer, hang, hold, release)");
         }
@@ -1988,7 +1990,8 @@ void SPIProxyReadHandler::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIProxyDev*>(device.get());
 
     std::vector<uint8_t> data;
-    EKIT_ERROR err = d->read_all(data);
+    EKitTimeout to(EKIT_STD_TIMEOUT);
+    EKIT_ERROR err = d->read_all(data, to);
 
     if (err!=EKIT_OK) {
         ui->log(tools::format_string("Error occured: %s", errname(err)));
@@ -2016,7 +2019,8 @@ void SPIProxyWriteHandler::handle(const std::vector<std::string>& args) {
     check_arg_count_min(args, 1);
     std::vector<uint8_t> data = arg_hex_buffer(args, "buffer", 0, std::numeric_limits<uint16_t>::max());
 
-    EKIT_ERROR err = d->write(data.data(), data.size());
+    EKitTimeout to(EKIT_STD_TIMEOUT);
+    EKIT_ERROR err = d->write(data.data(), data.size(), to);
     if (err != EKIT_OK) {
         ui->log(tools::str_format("Failed with: %d", err));
     } else {

@@ -29,7 +29,7 @@ constexpr char* GSMModem::at_status_name[];
 const char* gsm_call_direction_name(GSM_CALL_DIRECTION v) {
     static const char* const func_name = "gsm_call_direction_name";
     static const char* const names[] = {"OUTGOING", "INCOMING"};
-    if (v>=sizeof(names)) {
+    if ((size_t)v>=sizeof(names)/sizeof(const char*)) {
         throw EKitException(func_name, EKIT_BAD_PARAM);
     }
 
@@ -39,7 +39,7 @@ const char* gsm_call_direction_name(GSM_CALL_DIRECTION v) {
 const char* gsm_call_state_name(GSM_CALL_STATE v) {
     static const char* const func_name = "gsm_call_state_name";
     static const char* const names[] = {"ACTIVE", "HELD", "DIALING", "ALERTING", "INCOMING", "WAITING", "DISCONNECT"};
-    if (v>=sizeof(names)) {
+    if (v>=sizeof(names)/sizeof(const char*)) {
         throw EKitException(func_name, EKIT_BAD_PARAM);
     }
 
@@ -92,33 +92,35 @@ GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, const char* name) : super(ebu
     assert(re_list_call);
 }
 
-GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* config, int timeout_ms) :
+GSMModem::GSMModem(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* config) :
     GSMModem(ebus, config->dev_name){
-    configure(timeout_ms);
+    static const char* const func_name = "GSMModem::GSMModem";
+    ebus->check_bus(BUS_UART);
+    configure(0);
 }
 
 GSMModem::~GSMModem(){
 
 }
 
-void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, int timeout_ms, unsigned int& status_mask) {
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
-    BusLocker blocker(bus);
-    set_error_mode(cmee, sw, status_mask);
+void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, unsigned int& status_mask) {
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
+    set_error_mode(cmee, to, status_mask);
 }
 
-void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask) {
+void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, EKitTimeout& to, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::set_error_mode";
-    if (cmee < GSM_CMEE_DISABLE || cmee > GSM_CMEE_TEXT) {
-        throw EKitException(func_name, "Invalid cmee value");
-    }
+  if (cmee < GSM_CMEE_DISABLE || cmee > GSM_CMEE_TEXT) {
+    throw EKitException(func_name, EKIT_BAD_PARAM, "Invalid cmee value");
+  }
 
-    std::string command = std::string("AT+CMEE=") + std::to_string(cmee);
+  std::string command = std::string("AT+CMEE=") + std::to_string(cmee);
     std::vector<std::string> lines;
     unsigned int status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     status_mask = 0;
 
-    at(command, lines, sw, status);
+    at(command, lines, to, status);
     status_mask |= status;
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status_mask, "AT+CMEE didn't return successfully");
@@ -132,27 +134,24 @@ void GSMModem::set_error_mode(GSM_CMEE_MODE cmee, tools::StopWatch<std::chrono::
 // Purpose: Executes arbitrary AT command
 // const std::string& cmd : [in] command, terminator is not required
 // std::vector<std::string>& response: [out] vector of lines returned by modem
-// int timeout_ms: [in] specifies timeout handling: timeout <=0  : wait indefinitely, otherwise
-//              wait specified amount of milliseconds
 // unsigned int& completion_status_mask: [in/out] on input specifies a bitmask of statuses (1 << AT_STATUS_XXXX) that should terminate command,
 //                            on out specifies actuall statuses read in the input
 // Notes: 1. Statuses are excluded from the response, this information put into completion_status_mask
 //        2. All commands should be represented in ASCII, including those in UCS2 format
 //------------------------------------------------------------------------------------
-void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, int timeout_ms, unsigned int &completion_status_mask) {
+void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, unsigned int &completion_status_mask) {
     static const char* const func_name = "GSMModem::at";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
-    BusLocker blocker(bus);
-    at(cmd, response, sw, completion_status_mask);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
+    at(cmd, response, to, completion_status_mask);
     if (completion_status_mask & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, completion_status_mask, "\"" + cmd + "\" command failed");
     }
 }
 
-void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms, unsigned int& status_mask) {
+void GSMModem::ussd(const std::string& ussd, std::string& result, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::ussd";
     EKIT_ERROR err;
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     std::string command = std::string("AT+CUSD=1,\"") + ussd + std::string("\"");
     std::vector<std::string> lines;
     unsigned int status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
@@ -162,9 +161,10 @@ void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms
     int dcs = 0;
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
-    at("AT+CSCS=\"GSM\"", lines, sw, status);
+    at("AT+CSCS=\"GSM\"", lines, to, status);
     status_mask |= status;
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status_mask, "AT+CSCS=\"GSM\" didn't return successfully");
@@ -172,7 +172,7 @@ void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms
 
     lines.clear();
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at(command, lines, sw, status);
+    at(command, lines, to, status);
     status_mask |= status;
     if (status_mask & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status_mask, "AT+CUSD didn't return successfully");
@@ -182,7 +182,7 @@ void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms
     lines.clear();
     status = 0;
     unsigned int response_status = 0;
-    err = wait_at_response("+CUSD:", lines, sw, status);
+    err = wait_at_response("+CUSD:", lines, to, status);
     status_mask |= status;
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "wait_at_response() failed");
@@ -193,27 +193,26 @@ void GSMModem::ussd(const std::string& ussd, std::string& result, int timeout_ms
 
         std::vector<std::string> groups;
         if (!tools::g_unicode_ts.regex_groups(*re_ussd, *l, groups)) {
-            throw EKitException(func_name, "unsupported output of +CUSD");
+            throw EKitException(func_name, EKIT_NOT_SUPPORTED, "unsupported output of +CUSD");
         }
 
         size_t dcs = std::atol(groups[3].c_str());
         if (dcs==15) {
             result = groups[2];
-        } else 
+        } else
         if (dcs==72) {
             result = UCS2_to_string(groups[2]);
         } else {
-            throw EKitException(func_name, "bad response format: wrong <dcs> value");
+            throw EKitException(func_name, EKIT_FAIL, "bad response format: wrong <dcs> value");
         }
 
         break;
     }
 }
-void GSMModem::sms(const std::string& number, const std::string& text, int timeout_ms, unsigned int& status_mask) {
+void GSMModem::sms(const std::string& number, const std::string& text, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::sms";
 
     bool ascii = tools::g_unicode_ts.is_ascii(text);
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     std::vector<std::string> lines;
     unsigned int status=0;
     status_mask = 0;
@@ -234,19 +233,20 @@ void GSMModem::sms(const std::string& number, const std::string& text, int timeo
     at_text+="\x1A";
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     if (ascii!=sms_ascii_mode) {
-        status = GSMModem::AT_STATUS_PROMPT | GSMModem::AT_STATUS_ERROR;        
-        configure_sms(ascii, sw, status);
+        status = GSMModem::AT_STATUS_PROMPT | GSMModem::AT_STATUS_ERROR;
+        configure_sms(ascii, to, status);
         if (status & GSMModem::AT_STATUS_ERROR) {
             throw_at_error(func_name, status, "configure_sms() failed");
         }
-    }    
+    }
 
     status = GSMModem::AT_STATUS_PROMPT | GSMModem::AT_STATUS_ERROR;
     lines.clear();
-    at(at_cmgs, lines, sw, status);
+    at(at_cmgs, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CMGS number failed");
     }
@@ -254,27 +254,27 @@ void GSMModem::sms(const std::string& number, const std::string& text, int timeo
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     lines.clear();
-    at(at_text, lines, sw, status);
+    at(at_text, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CMGS text failed");
     }
     status_mask |= status;
 }
 
-void GSMModem::read_sms(std::vector<GSMSmsData>& messages, int timeout_ms, unsigned int& status_mask) {
+void GSMModem::read_sms(std::vector<GSMSmsData>& messages, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::read_sms";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     unsigned int status = 0;
     std::vector<std::string> lines;
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Configure if required
     if (sms_ascii_mode!=false) {
         status = GSMModem::AT_STATUS_PROMPT | GSMModem::AT_STATUS_ERROR;
-        configure_sms(false, sw, status);
+        configure_sms(false, to, status);
         if (status & GSMModem::AT_STATUS_ERROR) {
             throw_at_error(func_name, status, "configure_sms() failed");
         }
@@ -283,7 +283,7 @@ void GSMModem::read_sms(std::vector<GSMSmsData>& messages, int timeout_ms, unsig
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at("AT+CMGL=\"ALL\"", lines, sw, status);
+    at("AT+CMGL=\"ALL\"", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CMGL failed");
     }
@@ -315,46 +315,46 @@ void GSMModem::read_sms(std::vector<GSMSmsData>& messages, int timeout_ms, unsig
     }
 }
 
-void GSMModem::delete_sms(int id, int timeout_ms, unsigned int& status_mask) {
+void GSMModem::delete_sms(int id, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::read_sms";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
-    unsigned int status = 0;
-    std::vector<std::string> lines;
-    status_mask = 0;
-
-        // acquire device
-    BusLocker blocker(bus);
-
-    status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-
-    if (id < 0) {
-        at("AT+CMGDA=\"DEL ALL\"", lines, sw, status);
-        if (status & GSMModem::AT_STATUS_ERROR) {
-            throw_at_error(func_name, status, "AT+CMGDA=\"DEL ALL\" failed");
-        }
-    } else {
-        std::string del_msg = tools::format_string("AT+CMGD=%d,0", id);
-        at(del_msg, lines, sw, status);
-        if (status & GSMModem::AT_STATUS_ERROR) {
-            throw_at_error(func_name, status, "AT+CMGD failed");
-        }        
-    }
-    status_mask |= status;
-}
-
-void GSMModem::active_calls(std::vector<GSMCallData>& active_calls, int timeout_ms, unsigned int& status_mask){
-    static const char* const func_name = "GSMModem::active_calls";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     unsigned int status = 0;
     std::vector<std::string> lines;
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
+
+    status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
+
+    if (id < 0) {
+        at("AT+CMGDA=\"DEL ALL\"", lines, to, status);
+        if (status & GSMModem::AT_STATUS_ERROR) {
+            throw_at_error(func_name, status, "AT+CMGDA=\"DEL ALL\" failed");
+        }
+    } else {
+        std::string del_msg = tools::format_string("AT+CMGD=%d,0", id);
+        at(del_msg, lines, to, status);
+        if (status & GSMModem::AT_STATUS_ERROR) {
+            throw_at_error(func_name, status, "AT+CMGD failed");
+        }
+    }
+    status_mask |= status;
+}
+
+void GSMModem::active_calls(std::vector<GSMCallData>& active_calls, unsigned int& status_mask){
+    static const char* const func_name = "GSMModem::active_calls";
+    unsigned int status = 0;
+    std::vector<std::string> lines;
+    status_mask = 0;
+
+    // acquire device
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at("AT+CLCC", lines, sw, status);
+    at("AT+CLCC", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CLCC failed");
     }
@@ -384,35 +384,35 @@ void GSMModem::active_calls(std::vector<GSMCallData>& active_calls, int timeout_
         active_calls.push_back(act_call);
     }
 }
-void GSMModem::dial(const std::string& number, int timeout_ms, unsigned int& status_mask){
+void GSMModem::dial(const std::string& number, unsigned int& status_mask){
     static const char* const func_name = "GSMModem::dial";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     unsigned int status = 0;
     std::vector<std::string> lines;
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     std::string atd = tools::format_string("ATD %s;", number);
-    at(atd, lines, sw, status);
+    at(atd, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "ATD failed");
     }
     status_mask |= status;
 
 }
-void GSMModem::answer(GSM_CALL_ACTION action, int timeout_ms, unsigned int& status_mask) {
+void GSMModem::answer(GSM_CALL_ACTION action, unsigned int& status_mask) {
     static const char* const func_name = "GSMModem::answer";
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms);
     unsigned int status = 0;
     std::vector<std::string> lines;
     status_mask = 0;
 
     // acquire device
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Read all messages
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
@@ -438,7 +438,7 @@ void GSMModem::answer(GSM_CALL_ACTION action, int timeout_ms, unsigned int& stat
             throw EKitException(func_name, status, "wrong action passed");
     }
 
-    at(at_cmd, lines, sw, status);
+    at(at_cmd, lines, to, status);
     status_mask |= status;
 }
 
@@ -471,7 +471,7 @@ std::string GSMModem::UCS2_to_string(const std::string& hex) const {
     std::vector<uint8_t> buffer = tools::buffer_from_hex(hex);
     std::basic_string<char16_t> utf16((const char16_t*)buffer.data(), buffer.size()/sizeof(char16_t));
     if (!tools::g_unicode_ts.utf16_to_utf8(utf16, result, false)) {
-        throw EKitException(func_name, "unicode conversion failed");
+        throw EKitException(func_name, EKIT_FAIL, "unicode conversion failed");
     }
     return result;
 }
@@ -488,7 +488,7 @@ std::string GSMModem::string_to_UCS2(const std::string& s) const {
     std::basic_string<char16_t> utf16;
 
     if (!tools::g_unicode_ts.utf8_to_utf16(s, utf16, false)) {
-        throw EKitException(func_name, "unicode conversion failed");
+        throw EKitException(func_name, EKIT_FAIL, "unicode conversion failed");
     }
 
     result = tools::buffer_to_hex((const uint8_t*)utf16.c_str(), utf16.length()*sizeof(char16_t), false, "");
@@ -506,7 +506,7 @@ std::string GSMModem::string_to_UCS2(const std::string& s) const {
 // Notes: 1. Statuses are excluded from the response, this information put into completion_status_mask
 //        2. All commands should be represented in ASCII, including those in UCS2 format
 //------------------------------------------------------------------------------------
-void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int &completion_status_mask) {
+void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, EKitTimeout& to, unsigned int &completion_status_mask) {
     static const char* const func_name = "GSMModem::at";
     EKIT_ERROR err;
 
@@ -518,19 +518,19 @@ void GSMModem::at(const std::string& cmd, std::vector<std::string>& response, to
     response.clear();
 
     // Send command
-    err = bus->write(buffer);
+    err = bus->write(buffer.data(), buffer.size(), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
 
     // Read output until status found
-    err = wait_at_status(response, sw, completion_status_mask);
+    err = wait_at_status(response, to, completion_status_mask);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "wait_at_status() failed");
     }
 }
 
-void GSMModem::configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask) {
+void GSMModem::configure_sms(bool ascii, EKitTimeout& to, unsigned int& status_mask) {
     // Configure SMS messages sent/receive
     static const char* const func_name = "GSMModem::configure_sms";
 
@@ -553,7 +553,7 @@ void GSMModem::configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseco
     }
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at(at_cmgf, lines, sw, status);
+    at(at_cmgf, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CMGF failed" );
     }
@@ -561,7 +561,7 @@ void GSMModem::configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseco
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     lines.clear();
-    at(at_csmp, lines, sw, status);
+    at(at_csmp, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CSMP failed");
     }
@@ -569,7 +569,7 @@ void GSMModem::configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseco
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     lines.clear();
-    at(at_cscs, lines, sw, status);
+    at(at_cscs, lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "AT+CSCS failed");
     }
@@ -580,41 +580,41 @@ void GSMModem::configure_sms(bool ascii, tools::StopWatch<std::chrono::milliseco
 }
 
 void GSMModem::configure(int timeout_ms) {
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout_ms); // Do not use timeout
     static const char* const func_name = "GSMModem::configure";
     unsigned int status = 0;
     std::vector<std::string> lines;
-
-    BusLocker blocker(bus);
+    set_timeout(timeout_ms);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
 
     // Issue AT command until success
     do {
         status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-        at("AT", lines, sw, status);
+        at("AT", lines, to, status);
     } while ((status & GSMModem::AT_STATUS_OK)==0);
 
     // setup line terminator
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at("ATS3=13", lines, sw, status);
+    at("ATS3=13", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "ATS3=13 failed");
     }
 
     // setup default echo mode
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
-    at("ATE0", lines, sw, status);
+    at("ATE0", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "ATE0 failed");
     }
 
-    set_error_mode(cmee_mode, sw, status);
+    set_error_mode(cmee_mode, to, status);
 
-    configure_sms(false, sw, status);
+    configure_sms(false, to, status);
 }
 
-EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, tools::StopWatch<std::chrono::milliseconds>& sw) {
+EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, EKitTimeout& to) {
     const size_t pooling_wait_ms = 10;
     EKIT_ERROR err;
     std::vector<uint8_t> data;
@@ -628,7 +628,7 @@ EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, tools::StopWatc
     // Phase one: read at least something by line separator
     do {
         buffer.clear();
-        err = bus->read_all(buffer);
+        err = bus->read_all(buffer, to);
         if (err != EKIT_OK &&
             err != EKIT_READ_FAILED &&
             err != EKIT_WRITE_FAILED &&
@@ -641,8 +641,8 @@ EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, tools::StopWatc
         // Did we get any non-null terminator?
         size = buffer.size();
         if (!non_terminator) {
-            non_terminator = std::find_if_not(  buffer.begin(), 
-                                        buffer.end(), 
+            non_terminator = std::find_if_not(  buffer.begin(),
+                                        buffer.end(),
                                         is_terminator)!=buffer.end();
         }
 
@@ -664,7 +664,7 @@ EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, tools::StopWatc
             }
         }
 
-        if (sw.expired()) {
+        if (to.expired()) {
             err = EKIT_TIMEOUT;
             break;
         }
@@ -674,26 +674,26 @@ EKIT_ERROR GSMModem::read_lines(std::vector<std::string>& lines, tools::StopWatc
 
     // Phase two: split data and trim lines
     std::string text( (const char*)data.data(), datalen);
-    lines = tools::split_and_trim(  text, 
+    lines = tools::split_and_trim(  text,
                                     [](char c){return is_terminator((uint8_t)c);},
                                     [](char c){return is_terminator((uint8_t)c);});
 
     return err;
 }
 
-EKIT_ERROR GSMModem::wait_at_status(std::vector<std::string>& result, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& completion_status_mask) {
+EKIT_ERROR GSMModem::wait_at_status(std::vector<std::string>& result, EKitTimeout& to, unsigned int& completion_status_mask) {
     EKIT_ERROR err = EKIT_OK;
     unsigned int stop_status = completion_status_mask;
     completion_status_mask = 0;
     std::vector<std::string> lines;
 
     do {
-        if (sw.expired()) {
+        if (to.expired()) {
             err = EKIT_TIMEOUT;
             break;
         }
 
-        err = read_lines(lines, sw);
+        err = read_lines(lines, to);
         if (err != EKIT_OK) {
             break;
         }
@@ -712,19 +712,22 @@ EKIT_ERROR GSMModem::wait_at_status(std::vector<std::string>& result, tools::Sto
     return err;
 }
 
-EKIT_ERROR GSMModem::wait_at_response(const std::string& prefix, std::vector<std::string>& result, tools::StopWatch<std::chrono::milliseconds>& sw, unsigned int& status_mask) {
+EKIT_ERROR GSMModem::wait_at_response(const std::string& prefix,
+                                      std::vector<std::string>& result,
+                                      EKitTimeout& to,
+                                      unsigned int& status_mask) {
     EKIT_ERROR err = EKIT_OK;
     status_mask = 0;
     std::vector<std::string> lines;
     bool done = false;
 
     do {
-        if (sw.expired()) {
+        if (to.expired()) {
             err = EKIT_TIMEOUT;
             break;
         }
 
-        err = read_lines(lines, sw);
+        err = read_lines(lines, to);
         if (err != EKIT_OK) {
             break;
         }

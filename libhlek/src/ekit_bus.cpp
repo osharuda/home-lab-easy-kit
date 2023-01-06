@@ -22,25 +22,19 @@
 
 #include "ekit_bus.hpp"
 
-EKIT_ERROR EKitBus::read(std::vector<uint8_t>& buffer) {
-	return read(buffer.data(), buffer.size());
-}
-EKIT_ERROR EKitBus::write(const std::vector<uint8_t>& buffer) {
-	return write(buffer.data(), buffer.size());
-}
-
-EKitBus::EKitBus() {
+EKitBus::EKitBus(const EKitBusType bt) :
+    bus_type(bt){
 }
 
 EKitBus::~EKitBus() {
 }
 
-EKIT_ERROR EKitBus::lock() {
+EKIT_ERROR EKitBus::lock(EKitTimeout& to) {
 	bus_lock.lock();
 	return EKIT_OK;
 }
 
-EKIT_ERROR EKitBus::lock(int addr) {
+EKIT_ERROR EKitBus::lock(int addr, EKitTimeout& to) {
     assert(false);
     return EKIT_NOT_SUPPORTED;
 }
@@ -50,8 +44,8 @@ EKIT_ERROR EKitBus::unlock() {
 	return EKIT_OK;
 }
 
-EKIT_ERROR EKitBus::open() {
-	LOCK(bus_lock);
+EKIT_ERROR EKitBus::open(EKitTimeout& to) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 	if (state!=BUS_CLOSED) {
 		return EKIT_ALREADY_CONNECTED;
 	} else {
@@ -61,17 +55,17 @@ EKIT_ERROR EKitBus::open() {
 }
 
 EKIT_ERROR EKitBus::close() {
-	LOCK(bus_lock);
-	if (state==BUS_CLOSED) {
-		return EKIT_DISCONNECTED;
-	} else {
-		state = BUS_CLOSED;
-		return EKIT_OK;
-	}
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+    if (state==BUS_CLOSED) {
+            return EKIT_DISCONNECTED;
+    } else {
+            state = BUS_CLOSED;
+            return EKIT_OK;
+    }
 }
 
-EKIT_ERROR EKitBus::suspend() {
-	LOCK(bus_lock);
+EKIT_ERROR EKitBus::suspend(EKitTimeout& to) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
 	if (state==BUS_CLOSED) {
 		return EKIT_DISCONNECTED;
@@ -86,8 +80,8 @@ EKIT_ERROR EKitBus::suspend() {
 	return EKIT_OK;
 }
 
-EKIT_ERROR EKitBus::resume() {
-	LOCK(bus_lock);
+EKIT_ERROR EKitBus::resume(EKitTimeout& to) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
 	if (state==BUS_CLOSED) {
 		return EKIT_DISCONNECTED;
@@ -102,10 +96,17 @@ EKIT_ERROR EKitBus::resume() {
 	return EKIT_OK;
 }
 
-EKIT_ERROR EKitBus::set_opt(int opt, int value) {
+EKIT_ERROR EKitBus::set_opt(int opt, int value, EKitTimeout& to) {
 	return EKIT_NOT_SUPPORTED;
 }
 
-EKIT_ERROR EKitBus::get_opt(int opt, int& value) {
+EKIT_ERROR EKitBus::get_opt(int opt, int& value, EKitTimeout& to) {
 	return EKIT_NOT_SUPPORTED;
+}
+
+void EKitBus::check_bus(const EKitBusType busid) const {
+    static const char* const func_name = "EKitBus::check_bus";
+    if (busid != bus_type) {
+        throw EKitException(func_name, EKIT_WRONG_DEVICE, "Wrong busid is specified. This bus is not the requested bus type.");
+    }
 }

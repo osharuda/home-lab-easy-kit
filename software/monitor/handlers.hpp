@@ -33,6 +33,9 @@
 /// \addtogroup group_monitor
 /// @{
 
+#define EKIT_STD_TIMEOUT 1000
+#define EKIT_LONG_TIMEOUT 60000
+
 class CommandHandlerException : public std::runtime_error {
 public:
 

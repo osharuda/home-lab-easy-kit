@@ -42,7 +42,8 @@ int main(int argc, char* argv[]) {{
         // Open I2C bus
         const char* i2c_dev = argv[1];
         std::shared_ptr<EKitBus> i2cbus(new EKitI2CBus(i2c_dev));
-        EKIT_ERROR err = i2cbus->open();
+        EKitTimeout time_out(0);
+        EKIT_ERROR err = i2cbus->open(time_out);
         if (err != EKIT_OK) {{
             throw EKitException(__FUNCTION__, tools::format_string("Failed to open %s", i2c_dev));
         }}

@@ -43,6 +43,10 @@
 /// \brief Allias for error codes.
 typedef int EKIT_ERROR;
 
+#define ERRNO_TO_EKIT_ERROR(x) ((x)*-1)
+
+extern thread_local char last_error_descr[];
+
 #define EKIT_OK                   0 ///< OK.
 #define EKIT_FAIL                 1 ///< Failure.
 #define EKIT_CANT_CONNECT         2 ///< Can not connect.
@@ -87,8 +91,7 @@ class EKitException : public std::runtime_error {
 	/// \param func_info - name of the function where message is thrown from.
 	/// \param e - error code
 	/// \param description - text description
-	/// \param use_errno true to use errno instead of e, otherwise false.
-    std::string format_exception(const std::string& func_info, EKIT_ERROR e, const std::string& description, bool use_errno);
+    std::string format_exception(const std::string& func_info, EKIT_ERROR e, const std::string& description);
 public:
 
     /// \brief Assignment is forbidden
@@ -99,10 +102,6 @@ public:
     /// \param e - error code.
 	EKitException(const std::string& func_info, EKIT_ERROR e);
 
-    /// \brief Constructor to create exception by name of the function and description.
-    /// \param func_info - name of the function exception is being thrown from.
-    /// \param description - error text description.
-	EKitException(const std::string& func_info, const std::string& description);
 
     /// \brief Constructor to create exception by name of the function, error code and description.
     /// \param func_info - name of the function exception is being thrown from.

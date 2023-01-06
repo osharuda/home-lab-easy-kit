@@ -37,15 +37,16 @@ void CanDev::can_start() {
 
     // send command
     {
-        BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+        BusLocker blocker(bus, to);
 
-        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_START);
+        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_START, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "set_opt() failed");
         }
 
         // Write data
-        err = bus->write({});
+        err = bus->write(nullptr, 0, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "write() failed");
         }
@@ -57,15 +58,16 @@ void CanDev::can_stop() {
 
     // send command
     {
-        BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+        BusLocker blocker(bus, to);
 
-        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_STOP);
+        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_STOP, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "set_opt() failed");
         }
 
         // Write data
-        err = bus->write({});
+        err = bus->write(nullptr, 0, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "write() failed");
         }
@@ -76,15 +78,16 @@ void CanDev::can_filter_priv(CanFilterCommand filter) {
     static const char* const func_name = "CanDev::can_filter_priv";
     // send command
     {
-        BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+        BusLocker blocker(bus, to);
 
-        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_FILTER);
+        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_FILTER, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "set_opt() failed");
         }
 
         // Write data
-        err = bus->write((uint8_t*)(&filter), sizeof(CanFilterCommand));
+        err = bus->write((uint8_t*)(&filter), sizeof(CanFilterCommand), to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "write() failed");
         }
@@ -195,9 +198,10 @@ void CanDev::can_send(uint32_t id, std::vector<uint8_t>& data, bool remote_frame
 
     // send command
     {
-        BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+        BusLocker blocker(bus, to);
 
-        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_SEND);
+        EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, CAN_SEND, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "set_opt() failed");
         }
@@ -227,17 +231,17 @@ void CanDev::can_send(uint32_t id, std::vector<uint8_t>& data, bool remote_frame
         }
 
         // Write data
-        err = bus->write((uint8_t*)(message), message_len);
+        err = bus->write((uint8_t*)(message), message_len, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "write() failed");
         }
     }
 }
 
-void CanDev::can_status_priv(CanStatus& status) {
+void CanDev::can_status_priv(CanStatus& status, EKitTimeout& to) {
     static const char* const func_name = "CanDev::can_status_priv";
 
-    EKIT_ERROR err = bus->read((uint8_t*)(&status), sizeof(CanStatus));
+    EKIT_ERROR err = bus->read((uint8_t*)(&status), sizeof(CanStatus), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }
@@ -344,9 +348,9 @@ std::string CanDev::can_last_err_to_str(uint8_t lec) {
 
 void CanDev::can_status(CanStatus& status) {
     static const char* const func_name = "CanDev::can_status";
-
-    BusLocker blocker(bus);
-    can_status_priv(status);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
+    can_status_priv(status, to);
 }
 
 void CanDev::can_read(CanStatus& status, std::vector<CanRecvMessage>& messages) {
@@ -357,16 +361,17 @@ void CanDev::can_read(CanStatus& status, std::vector<CanRecvMessage>& messages) 
     uint8_t* pdata = nullptr;
 
     {
-        BusLocker blocker(bus);
+        EKitTimeout to(get_timeout());
+        BusLocker blocker(bus, to);
 
-        can_status_priv(status);
+        can_status_priv(status, to);
 
         assert(status.data_len >= sizeof(CanStatus));
         assert(((status.data_len - sizeof(CanStatus)) % sizeof(CanRecvMessage))==0);
         msg_count = (status.data_len - sizeof(CanStatus)) / sizeof(CanRecvMessage);
 
         data.resize(status.data_len);
-        EKIT_ERROR err = bus->read(data);
+        EKIT_ERROR err = bus->read(data.data(), status.data_len, to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "read() failed");
         }

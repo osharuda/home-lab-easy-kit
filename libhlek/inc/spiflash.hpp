@@ -60,8 +60,8 @@ class SPIFlash final : public EKitDeviceBase {
     const uint8_t flash_kind;
     int timeout;
 
-    uint8_t status();
-    void read_spi(std::vector<uint8_t>& spi_data, size_t length, int data_offset = -1);
+    uint8_t status(EKitTimeout& to);
+    void read_spi(std::vector<uint8_t>& spi_data, size_t length, EKitTimeout& to, int data_offset = -1);
 
     static const SpiFlashDescriptorMap flash_map;
     SPIFLASHDescriptor flash_descriptor;
@@ -84,10 +84,6 @@ public:
 
     /// \brief Destructor (virtual)
 	~SPIFlash() override;
-
-    /// \brief Returns device name
-    /// \return string with name
-    std::string get_dev_name() const override;
 
     void read(uint16_t address, uint16_t len, std::vector<uint8_t>& data);
     void write(uint16_t address, const std::vector<uint8_t>& data);

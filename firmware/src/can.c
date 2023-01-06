@@ -34,9 +34,7 @@
 /// \addtogroup group_can
 /// @{
 
-#if CAN_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
 CAN_FW_BUFFERS
-#endif
 
 /// \brief Global array that stores all virtual Can devices configurations.
 volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;

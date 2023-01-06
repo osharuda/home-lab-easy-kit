@@ -47,35 +47,29 @@ SPIFlash::SPIFlash(std::shared_ptr<EKitBus>& ebus, int timeout_ms, const char* n
     flash_kind(hint){
     static const char* const func_name = "SPIFlash::SPIFlash";
 
-    int busid = 0;
-    int flags = ebus->bus_props(busid);
+    ebus->check_bus(EKitBusType::BUS_SPI);
 
     SpiFlashDescriptorMap::const_iterator idscr = flash_map.find(hint);
     if (idscr==flash_map.end()) {
-        throw EKitException(func_name, "Not supported device.");
+        throw EKitException(func_name, EKIT_BAD_PARAM, "Not supported device.");
     }
     flash_descriptor = idscr->second;
 
-    if (busid != EKitBusType::BUS_SPI) {
-        throw EKitException(func_name, "Not compatible bus passed: EKitBusType::BUS_SPI is required");
-    }
-
     // Set the same timeout for underlying bus
-    BusLocker blocker(ebus);
-    ebus->set_opt(EKitBusOptions::EKITBUS_TIMEOUT, timeout);
+    set_timeout(timeout_ms);
 }
 
 SPIFlash::~SPIFlash(){
 }
 
-void SPIFlash::read_spi(std::vector<uint8_t>& spi_data, size_t length, int data_offset) {
+void SPIFlash::read_spi(std::vector<uint8_t>& spi_data, size_t length, EKitTimeout& to, int data_offset) {
     static const char* const func_name = "SPIFlash::read_spi";
     size_t data_received = 0;
     EKIT_ERROR err = EKIT_OK;
     spi_data.resize(length);
 
     // Send command
-    err = bus->read(spi_data.data(), length);
+    err = bus->read(spi_data.data(), length, to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write SPI");
     }
@@ -86,31 +80,26 @@ void SPIFlash::read_spi(std::vector<uint8_t>& spi_data, size_t length, int data_
     }
 }
 
-uint8_t SPIFlash::status() {
+uint8_t SPIFlash::status(EKitTimeout& to) {
     static const char* const func_name = "SPIFlash::status";
     EKIT_ERROR err = EKIT_OK;
     std::vector<uint8_t> spi_cmd {flash_descriptor.status_cmd, 0};
     std::vector<uint8_t> spi_data;
 
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout);
     bool to_expired = false;
 
     // Lock bus
     auto bus = super::get_bus();
-    BusLocker blocker(bus);
+    BusLocker blocker(bus, to);
 
     // Send command
-    err = bus->write(spi_cmd);
+    err = bus->write(spi_cmd.data(), spi_cmd.size(), to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write SPI");
     }
 
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Failed to get status: timeout expired");
-    }
-
     // Read from SPI
-    read_spi(spi_data, spi_cmd.size(), 1);
+    read_spi(spi_data, spi_cmd.size(), to, 1);
 
     return spi_data[0];
 }
@@ -118,34 +107,27 @@ uint8_t SPIFlash::status() {
 void SPIFlash::read(uint16_t address, uint16_t len, std::vector<uint8_t>& data) {
     static const char* const func_name = "SPIFlash::read";
     EKIT_ERROR err = EKIT_OK;
-    data.resize(3 + len);
+    size_t data_len = 3 + len;
+    data.resize(data_len);
     address += flash_descriptor.start_address;
     data[0] = flash_descriptor.read_cmd;
     data[1] = (uint8_t)(address >> 8);
     data[2] = (uint8_t)(address);
 
-    tools::StopWatch<std::chrono::milliseconds> sw(timeout);
+    EKitTimeout to(get_timeout());
 
     // Lock bus
     auto bus = super::get_bus();
-    BusLocker blocker(bus);
+    BusLocker blocker(bus, to);
 
     // Send command
-    err = bus->write(data);
+    err = bus->write(data.data(), data_len, to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to write SPI");
     }
 
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Failed to read flash: timeout expired");
-    }
-
     // Read from SPI
-    read_spi(data, data.size(), 3);
-
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Failed to read flash: timeout expired");
-    }
+    read_spi(data, data.size(), to, 3);
 }
 
 void SPIFlash::write(uint16_t address, const std::vector<uint8_t>& data) {
@@ -168,25 +150,17 @@ void SPIFlash::write(uint16_t address, const std::vector<uint8_t>& data) {
     tools::StopWatch<std::chrono::milliseconds> sw(timeout);
 
     // Lock bus
-    auto bus = super::get_bus();
-    BusLocker blocker(bus);
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, to);
 
     // Enable write
-    err = bus->write(cmd);
+    err = bus->write(cmd.data(), cmd.size(), to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to enable write on flash");
     }
 
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Timeout expired");
-    }
-
     // Read from SPI
-    read_spi(cmd, cmd.size(), 0);
-
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Timeout expired");
-    }
+    read_spi(cmd, cmd.size(), to, 0);
 
     // Do actual write (page by page)
     uint16_t bytes_wrote = 0;
@@ -207,20 +181,16 @@ void SPIFlash::write(uint16_t address, const std::vector<uint8_t>& data) {
         uint8_t* ptr = cmd.data();
         std::memcpy(ptr + 3, data.data()+bytes_wrote, bytes_to_write);
 
-        err = bus->write(cmd);
+        err = bus->write(cmd.data(), cmd.size(), to);
         if (err != EKIT_OK) {
             throw EKitException(func_name, err, "Failed to write on flash");
-        }
-
-        if (sw.expired()) {
-            throw EKitException(func_name, EKIT_TIMEOUT, "Timeout expired");
         }
 
         // Wait internal write cycle
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
         // Read from SPI
-        read_spi(cmd, cmd.size(), 0);
+        read_spi(cmd, cmd.size(), to, 0);
 
         bytes_wrote += bytes_to_write;
     } while (bytes_wrote < length);
@@ -228,19 +198,11 @@ void SPIFlash::write(uint16_t address, const std::vector<uint8_t>& data) {
     // Disable write
     cmd.resize(1);
     cmd[0] = flash_descriptor.write_disable_cmd;
-    err = bus->write(cmd);
+    err = bus->write(cmd.data(), cmd.size(), to);
     if (err!=EKIT_OK) {
         throw EKitException(func_name, err, "Failed to disable write on flash");
     }
 
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Timeout expired");
-    }
-
     // Read from SPI
-    read_spi(cmd, cmd.size(), 0);
-
-    if (sw.expired()) {
-        throw EKitException(func_name, EKIT_TIMEOUT, "Timeout expired");
-    }
+    read_spi(cmd, cmd.size(), to, 0);
 }

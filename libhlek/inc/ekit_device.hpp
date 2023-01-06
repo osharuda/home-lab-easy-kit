@@ -51,8 +51,8 @@
 /// \class EKitDeviceBase
 /// \brief Abstraction of the device
 class EKitDeviceBase {
-	const std::string dev_name;     ///< Device name
-
+	const std::string dev_name;     ///< Device name.
+        int dev_timeout;                    ///< Device timeout.
 protected:
 	std::shared_ptr<EKitBus> bus;   ///< Shared pointer to the bus this device use for communication.
 
@@ -67,18 +67,28 @@ public:
     /// \brief Constructor
     /// \param ebus - reference to shared pointer with EKitBus.
     /// \param name - device name.
-	EKitDeviceBase(std::shared_ptr<EKitBus>& ebus, const char* name) : bus(ebus), dev_name(name) {
-	}
+    EKitDeviceBase(std::shared_ptr<EKitBus>& ebus, const char* name) :
+    bus(ebus),
+    dev_name(name),
+    dev_timeout(0) {
+    }
 
-	/// \brief Destructor (virtual)
-	virtual ~EKitDeviceBase() {
-	}
+    /// \brief Destructor (virtual)
+    virtual ~EKitDeviceBase() {
+    }
 
     /// \brief Returns device name.
     /// \return String with name.
 	virtual std::string get_dev_name() const { // <CHECKIT> Do we need virtual function here???
 		return dev_name;
 	}
+
+    virtual void set_timeout(int to) final { dev_timeout = to;
+    }
+
+    virtual int get_timeout() final {
+        return dev_timeout;
+    }
 
     /// \brief Returns underlying bus
     /// \return reference to shared pointer for underlying bus.
@@ -112,11 +122,7 @@ public:
     /// \param name - name of the device.
 	EKitVirtualDevice(std::shared_ptr<EKitBus>& ebus, int addr, const char* name) : EKitDeviceBase(ebus, name), dev_addr(addr) {
 		static const char* const func_name = "EKitVirtualDevice::EKitVirtualDevice";
-		int busid = 0;
-		bus->bus_props(busid);
-		if (busid != EKitBusType::BUS_I2C_FIRMWARE) {
-			throw EKitException(func_name, "Not compatible bus passed: EKitBusType::BUS_I2C_FIRMWARE is required");
-		}
+                bus->check_bus(EKitBusType::BUS_I2C_FIRMWARE);
 	}
 
     /// \brief Returns device address.

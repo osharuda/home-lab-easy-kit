@@ -21,20 +21,24 @@
  */
 
 #include "ekit_spi_bus.hpp"
-#include <unistd.h>
+
 #include <fcntl.h>
 #include <linux/spi/spidev.h>
 #include <sys/ioctl.h>
-#include "tools.hpp"
+#include <unistd.h>
+
 #include "ekit_helper.hpp"
+#include "tools.hpp"
 
 //------------------------------------------------------------------------------------
 // EKitSPIBus::EKitSPIBus
 // Purpose: EKitSPIBus class constructor
 //------------------------------------------------------------------------------------
-EKitSPIBus::EKitSPIBus(const std::string& file_name) : bus_name(file_name){
+EKitSPIBus::EKitSPIBus(const std::string& file_name) :
+     super(EKitBusType::BUS_SPI),
+      bus_name(file_name) {
     spi_descriptor = 0;
-	state = BUS_CLOSED;
+    state = BUS_CLOSED;
     mode = 0;
 }
 
@@ -43,7 +47,9 @@ EKitSPIBus::EKitSPIBus(const std::string& file_name) : bus_name(file_name){
 // Purpose: EKitSPIBus class destructor
 //------------------------------------------------------------------------------------
 EKitSPIBus::~EKitSPIBus() {
-	close();
+    EKitTimeout to(0);
+    BusLocker blocker(this, to);
+    close();
 }
 
 //------------------------------------------------------------------------------------
@@ -51,25 +57,26 @@ EKitSPIBus::~EKitSPIBus() {
 // Purpose: opens bus handle internally. Private, for internal use only
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::open_internal() {
+EKIT_ERROR EKitSPIBus::open_internal(EKitTimeout& to) {
     EKIT_ERROR res = EKIT_FAIL;
-    if (state==BUS_OPENED) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+    if (state == BUS_OPENED) {
         res = EKIT_ALREADY_CONNECTED;
-        goto done;
-	}
-
-    if ((spi_descriptor = ::open(bus_name.c_str(), O_RDWR)) < 0) {
-        res = EKIT_OPEN_FAILED;
         goto done;
     }
 
-    res = spi_update_mode();
+    if ((spi_descriptor = ::open(bus_name.c_str(), O_RDWR)) < 0) {
+        res = ERRNO_TO_EKIT_ERROR(errno);
+        goto done;
+    }
+
+    res = spi_update_mode(to);
     if (res != EKIT_OK) goto done;
 
-    res = spi_update_word_size();
+    res = spi_update_word_size(to);
     if (res != EKIT_OK) goto done;
 
-    res = spi_update_frequency();
+    res = spi_update_frequency(to);
     if (res != EKIT_OK) goto done;
 
 done:
@@ -81,19 +88,19 @@ done:
 // Purpose: opens bus
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::open() {
-	EKIT_ERROR err;
-	LOCK(bus_lock);
+EKIT_ERROR EKitSPIBus::open(EKitTimeout& to) {
+    EKIT_ERROR err;
 
-	if (state!=BUS_CLOSED) {
-		return EKIT_ALREADY_CONNECTED;
-	}
-	err = open_internal();
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
-	if (err == EKIT_OK)
-		state = BUS_OPENED;
+    if (state != BUS_CLOSED) {
+        return EKIT_ALREADY_CONNECTED;
+    }
+    err = open_internal(to);
 
-	return err;
+    if (err == EKIT_OK) state = BUS_OPENED;
+
+    return err;
 }
 
 //------------------------------------------------------------------------------------
@@ -102,115 +109,31 @@ EKIT_ERROR EKitSPIBus::open() {
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
 EKIT_ERROR EKitSPIBus::close() {
-	LOCK(bus_lock);
-
-	if (state==BUS_CLOSED)
-		return EKIT_DISCONNECTED;
-
-	if (state==BUS_OPENED) {
-		::close(spi_descriptor);
-	}
-
-	state = BUS_CLOSED;
-
-	return EKIT_OK;
-}
-
-//------------------------------------------------------------------------------------
-// EKitSPIBus::lock
-// Purpose: locks bus for some purposes operation that may require several reads/writes
-// Returns: corresponding EKIT_ERROR code
-//------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::lock() {
-	super::lock();
-	return EKIT_OK;
-}
-
-//------------------------------------------------------------------------------------
-// EKitSPIBus::unlock
-// Purpose: unlocks bus when some operation is completed
-// Returns: corresponding EKIT_ERROR code
-//------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::unlock() {
-	super::unlock();
-	return EKIT_OK;
-}
-
-//------------------------------------------------------------------------------------
-// EKitSPIBus::spi_read_write
-// Purpose: Master SPI read/write operation. Private, for internal use only
-// uint8_t addr: i2c address
-// bool readop: true to send data to slave, false to receive data from slave
-// uint8_t* buffer: pointer to the buffer. If len==0 buffer is not accessed
-// size_t len : amount of bytes for operation
-// Returns: corresponding EKIT_ERROR code
-//------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::spi_read_write(void* buffer, size_t len) {
-    EKIT_ERROR err;
-    int res;
-    int ern;
-
-    struct spi_ioc_transfer xfr;
-    memset(&xfr, 0, sizeof(xfr));
-
-    // This assert should fail if there is an attempt to use read/write without locking bus first
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
-    if (state==BUS_CLOSED) {
-        err = EKIT_NOT_OPENED;
-        goto done;
+    if (state == BUS_CLOSED) return EKIT_DISCONNECTED;
+
+    if (state == BUS_OPENED) {
+        ::close(spi_descriptor);
     }
 
-    if (state==BUS_PAUSED) {
-        err = EKIT_SUSPENDED;
-        goto done;
-    }
+    state = BUS_CLOSED;
 
-    if (len==0) {
-        err = EKIT_OK; // Nothing to send, just success
-        goto done;
-    }
-
-    if ( len>miso_data.size() ) {
-        miso_data.resize(len);
-    }
-
-    // Fill msgs structure
-    xfr.tx_buf = reinterpret_cast<std::uintptr_t>(buffer);
-    xfr.rx_buf = reinterpret_cast<std::uintptr_t>(miso_data.data());
-    xfr.len = len;
-    xfr.cs_change = cs_change;
-
-    do {
-        res = ioctl(spi_descriptor, SPI_IOC_MESSAGE(1), &xfr);
-        ern = errno;
-    } while(res<0 && (ern==EINTR || ern==EAGAIN || ern==EWOULDBLOCK));
-
-    if (res >= 1) {
-        // just sent something
-        assert(res == len);
-        miso_read_offset = 0;
-        miso_data_size = len;
-        err = EKIT_OK;
-    } else {
-        err = EKIT_FAIL;
-    }
-
-done:
-    return err;
+    return EKIT_OK;
 }
 
 //------------------------------------------------------------------------------------
 // EKitSPIBus::read
 // Purpose: Bus read operation
 // uint8_t addr: bus address
-// void* ptr: buffer to read data into. Buffer should be resized to appropriate amount of bytes to read
-// Returns: corresponding EKIT_ERROR code
+// void* ptr: buffer to read data into. Buffer should be resized to appropriate
+// amount of bytes to read Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::read(void* ptr, size_t len) {
+EKIT_ERROR EKitSPIBus::read(void* ptr, size_t len, EKitTimeout& to) {
     EKIT_ERROR res = EKIT_OK;
 
-    // This asert should fail if there is an attempt to use read/write without locking bus first
+    // This asert should fail if there is an attempt to use read/write
+    // without locking bus first
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     if (len + miso_read_offset > miso_data_size) {
@@ -221,31 +144,43 @@ EKIT_ERROR EKitSPIBus::read(void* ptr, size_t len) {
     memcpy(ptr, miso_data.data() + miso_read_offset, len);
 
 done:
-	return res;
+    return res;
 }
-
 
 //------------------------------------------------------------------------------------
 // EKitSPIBus::read_all
 // Purpose: Bus read operation
 // uint8_t addr: bus address
-// std::vector<uint8_t>& buffer: buffer to read data into. Buffer should be resized to appropriate amount of bytes to read
-// Returns: corresponding EKIT_ERROR code
+// std::vector<uint8_t>& buffer: buffer to read data into. Buffer should be
+// resized to appropriate amount of bytes to read Returns: corresponding
+// EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::read_all(std::vector<uint8_t>& buffer){
+EKIT_ERROR EKitSPIBus::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) {
     buffer.resize(miso_data_size);
-    return read(buffer.data(), miso_data_size - miso_read_offset);
+    return read(buffer.data(), miso_data_size - miso_read_offset, to);
 }
 
 //------------------------------------------------------------------------------------
 // EKitSPIBus::write
 // Purpose: Bus write operation
 // uint8_t addr: bus address
-// const void* ptr: buffer to write data from. Function writes all bytes allocated in buffer
-// Returns: corresponding EKIT_ERROR code
+// const void* ptr: buffer to write data from. Function writes all bytes
+// allocated in buffer Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::write(const void* ptr, size_t len) {
-	return spi_read_write(const_cast<void*>(ptr), len);
+EKIT_ERROR EKitSPIBus::write(const void* ptr, size_t len, EKitTimeout& to) {
+
+    miso_data.resize(len);
+    EKIT_ERROR err = write_read(reinterpret_cast<const uint8_t*>(ptr),
+                                len,
+                                miso_data.data(),
+                                len,
+                                to);
+    if (err == EKIT_OK) {
+        miso_data_size = len;
+        miso_read_offset = 0;
+    }
+
+    return err;
 }
 
 //------------------------------------------------------------------------------------
@@ -254,18 +189,16 @@ EKIT_ERROR EKitSPIBus::write(const void* ptr, size_t len) {
 // Returns: corresponding EKIT_ERROR code
 // Note: This is done by closing bus and reopening it later by resume() call
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::suspend() {
-	LOCK(bus_lock);
-	if (state==BUS_CLOSED)
-		return EKIT_DISCONNECTED;
+EKIT_ERROR EKitSPIBus::suspend(EKitTimeout& to) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+    if (state == BUS_CLOSED) return EKIT_DISCONNECTED;
 
-	if (state==BUS_PAUSED)
-		return EKIT_SUSPENDED;
+    if (state == BUS_PAUSED) return EKIT_SUSPENDED;
 
-	::close(spi_descriptor);
-	state = BUS_PAUSED;
+    ::close(spi_descriptor);
+    state = BUS_PAUSED;
 
-	return EKIT_OK;
+    return EKIT_OK;
 }
 
 //------------------------------------------------------------------------------------
@@ -274,85 +207,81 @@ EKIT_ERROR EKitSPIBus::suspend() {
 // Returns: corresponding EKIT_ERROR code
 // Note: This is done by reopening it after suspend() call
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitSPIBus::resume() {
-	EKIT_ERROR err = EKIT_OK;
+EKIT_ERROR EKitSPIBus::resume(EKitTimeout& to) {
+    EKIT_ERROR err = EKIT_OK;
 
-	LOCK(bus_lock);
-	if (state==BUS_CLOSED)
-		return EKIT_DISCONNECTED;
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+    if (state == BUS_CLOSED) return EKIT_DISCONNECTED;
 
-	if (state==BUS_OPENED)
-		return EKIT_SUSPENDED;
+    if (state == BUS_OPENED) return EKIT_SUSPENDED;
 
-	err = open_internal();
-	if (err == EKIT_OK) {
-		state = BUS_OPENED;
-	}
+    err = open_internal(to);
+    if (err == EKIT_OK) {
+        state = BUS_OPENED;
+    }
 
-	return err;
+    return err;
 }
 
-int EKitSPIBus::bus_props(int& busid) const {
-	busid = BUS_SPI;
-	return BUS_PROP_READALL;
-}
-
-EKIT_ERROR EKitSPIBus::spi_update_mode() {
+EKIT_ERROR EKitSPIBus::spi_update_mode(EKitTimeout& to) {
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
     return EkitHelper::ioctl_request(spi_descriptor, SPI_IOC_WR_MODE32, &mode);
 }
 
-EKIT_ERROR EKitSPIBus::spi_update_frequency() {
+EKIT_ERROR EKitSPIBus::spi_update_frequency(EKitTimeout& to) {
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
-    return EkitHelper::ioctl_request(spi_descriptor, SPI_IOC_WR_MAX_SPEED_HZ, &frequency);
+    return EkitHelper::ioctl_request(
+        spi_descriptor, SPI_IOC_WR_MAX_SPEED_HZ, &frequency);
 }
 
-EKIT_ERROR EKitSPIBus::spi_update_word_size() {
+EKIT_ERROR EKitSPIBus::spi_update_word_size(EKitTimeout& to) {
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
-    return EkitHelper::ioctl_request(spi_descriptor, SPI_IOC_WR_BITS_PER_WORD, &word_size);
+    return EkitHelper::ioctl_request(
+        spi_descriptor, SPI_IOC_WR_BITS_PER_WORD, &word_size);
 }
 
-EKIT_ERROR EKitSPIBus::set_opt(int opt, int value) {
+EKIT_ERROR EKitSPIBus::set_opt(int opt, int value, EKitTimeout& to) {
     EKIT_ERROR res = EKIT_NOT_SUPPORTED;
 
-    uint32_t non_zero_mask = 0 - (value!=0);
+    uint32_t non_zero_mask = 0 - (value != 0);
 
-    // <CHECKIT> Make sure all the callers change this flag back after sending driver the data. This flag is permanently stored
-    // in bus, but sometimes is used as command. If used as command, it should be cleared after command is executed, regardless
-    // the result was success of failure.
+    // <CHECKIT> Make sure all the callers change this flag back after
+    // sending driver the data. This flag is permanently stored in bus, but
+    // sometimes is used as command. If used as command, it should be
+    // cleared after command is executed, regardless the result was success
+    // of failure.
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
-
 
     switch (opt) {
         case SPI_OPT_CLOCK_PHASE:
             mode = (mode & (~SPI_CPHA)) | (non_zero_mask & SPI_CPHA);
-            res = spi_update_mode();
+            res = spi_update_mode(to);
             break;
 
         case SPI_OPT_CLOCK_POLARITY:
             mode = (mode & (~SPI_CPOL)) | (non_zero_mask & SPI_CPOL);
-            res = spi_update_mode();
+            res = spi_update_mode(to);
             break;
 
         case SPI_OPT_CS_HIGH:
             mode = (mode & (~SPI_CS_HIGH)) | (non_zero_mask & SPI_CS_HIGH);
-            res = spi_update_mode();
+            res = spi_update_mode(to);
             break;
 
         case SPI_OPT_LSB_FIRST:
             mode = (mode & (~SPI_LSB_FIRST)) | (non_zero_mask & SPI_LSB_FIRST);
-            res = spi_update_mode();
+            res = spi_update_mode(to);
             break;
 
         case SPI_OPT_NO_CS:
             mode = (mode & (~SPI_NO_CS)) | (non_zero_mask & SPI_NO_CS);
-            res = spi_update_mode();
+            res = spi_update_mode(to);
             break;
 
         case SPI_OPT_CLOCK_FREQUENCY:
             if (value > 0) {
                 frequency = static_cast<uint32_t>(value);
-                res = spi_update_frequency();
+                res = spi_update_frequency(to);
             } else {
                 res = EKIT_BAD_PARAM;
             }
@@ -360,9 +289,9 @@ EKIT_ERROR EKitSPIBus::set_opt(int opt, int value) {
 
         case SPI_OPT_WORD_SIZE:
             // Correct value must be multiple 8
-            if ( (value>=0) && ((value & 7) == 0) ) {
+            if ((value >= 0) && ((value & 7) == 0)) {
                 word_size = value;
-                res = spi_update_word_size();
+                res = spi_update_word_size(to);
             } else {
                 res = EKIT_BAD_PARAM;
             }
@@ -371,56 +300,119 @@ EKIT_ERROR EKitSPIBus::set_opt(int opt, int value) {
         case SPI_OPT_CS_CHANGE:
             cs_change = value;
             res = EKIT_OK;
-        break;
-
-        default:
-            goto done;
+            break;
     }
 
-done:
     return res;
 }
 
-EKIT_ERROR EKitSPIBus::get_opt(int opt, int& value) {
+EKIT_ERROR EKitSPIBus::get_opt(int opt, int& value, EKitTimeout& to) {
     EKIT_ERROR res = EKIT_OK;
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     switch (opt) {
         case SPI_OPT_CLOCK_PHASE:
             value = (mode & SPI_CPHA) != 0;
-        break;
+            break;
 
         case SPI_OPT_CLOCK_POLARITY:
             value = (mode & SPI_CPOL) != 0;
-        break;
+            break;
 
         case SPI_OPT_CS_HIGH:
             value = (mode & SPI_CS_HIGH) != 0;
-        break;
+            break;
 
         case SPI_OPT_LSB_FIRST:
             value = (mode & SPI_LSB_FIRST) != 0;
-        break;
+            break;
 
         case SPI_OPT_NO_CS:
             value = (mode & SPI_NO_CS) != 0;
-        break;
+            break;
 
         case SPI_OPT_CLOCK_FREQUENCY:
             value = static_cast<int>(frequency);
-        break;
+            break;
 
         case SPI_OPT_WORD_SIZE:
             value = static_cast<int>(word_size);
-        break;
+            break;
 
         case SPI_OPT_CS_CHANGE:
             value = static_cast<int>(cs_change);
-        break;
+            break;
 
         default:
             res = EKIT_NOT_SUPPORTED;
     }
 
     return res;
+}
+
+EKIT_ERROR EKitSPIBus::write_read(const uint8_t* wbuf,
+                                 size_t wlen,
+                                 uint8_t* rbuf,
+                                 size_t rlen,
+                                 EKitTimeout& to) {
+    EKIT_ERROR err;
+    int res;
+    int ern;
+    struct spi_ioc_transfer xfr;
+
+    // Special handling for write only operation
+    if ( ( rbuf == nullptr ) && ( rlen == 0 ) ) {
+        rlen = wlen;
+    }
+
+    if (wlen != rlen) {
+        err = EKIT_BAD_PARAM;
+        goto done;
+    }
+
+    if (wlen == 0) {
+        miso_read_offset = 0;
+        miso_data_size = 0;
+        err = EKIT_OK;  // Nothing to send, just success
+        goto done;
+    }
+
+    memset(&xfr, 0, sizeof(xfr));
+
+    // This statement checks if there were an attempt to use IO operation without locking bus first.
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+
+    if (state == BUS_CLOSED) {
+        err = EKIT_NOT_OPENED;
+        goto done;
+    }
+
+    if (state == BUS_PAUSED) {
+        err = EKIT_SUSPENDED;
+        goto done;
+    }
+
+    // Fill msgs structure
+    xfr.tx_buf = reinterpret_cast<std::uintptr_t>(wbuf);
+    xfr.rx_buf = reinterpret_cast<std::uintptr_t>(rbuf);
+    xfr.len = wlen;
+    xfr.cs_change = cs_change;
+
+    do {
+        res = ioctl(spi_descriptor, SPI_IOC_MESSAGE(1), &xfr);
+        ern = errno;
+    } while (res < 0 && (ern == EINTR || ern == EAGAIN || ern == EWOULDBLOCK));
+
+    if (res >= 1) {
+        // just sent something
+        assert(res == wlen);
+        miso_read_offset = 0;
+        miso_data_size = 0;
+        err = EKIT_OK;
+    } else {
+        err = EKIT_FAIL;
+    }
+
+done:
+    return err;
 }
