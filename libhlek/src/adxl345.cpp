@@ -404,7 +404,7 @@ void ADXL345::configure(uint8_t rate,
     adxl_config.three_wire_spi = false;
     adxl_config.int_invert     = false;
     adxl_config.full_res       = true;
-    adxl_config.justify_msb    = !tools::is_little_endian();
+    adxl_config.justify_msb    = true;
     adxl_config.range          = range;
     adxl_config.low_power      = false;
     adxl_config.rate           = rate;

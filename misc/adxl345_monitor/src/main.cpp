@@ -28,9 +28,103 @@
 #include <libhlek/adxl345.hpp>
 #include <thread>
 #include <chrono>
+#include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
+
 
 void help() {
     std::cout << "Usage: example </dev/spidevX.Y>" << std::endl;
+}
+
+bool is_key_pressed(bool consume = true) {
+    struct termios termios_bak, termios_new;
+
+    tcgetattr(STDIN_FILENO,&termios_bak);
+    termios_new=termios_bak;
+    termios_new.c_lflag &=(~ICANON & ~ECHO);
+    tcsetattr(STDIN_FILENO,TCSANOW,&termios_new);
+
+    int char_count = 0;
+    ioctl(STDIN_FILENO, FIONREAD, &char_count);
+
+    if (char_count && consume) {
+        getchar();
+    }
+
+    /* restore the former settings */
+    tcsetattr(STDIN_FILENO,TCSANOW,&termios_bak);
+    return char_count;
+}
+
+void wait_a_key() {
+    while(!is_key_pressed()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+size_t
+adxl_345_calibrate(std::shared_ptr<ADXL345> adxl,
+                   ADXL345Data &max_vals,
+                   ADXL345Data &min_vals,
+                   uint32_t &mod_max,
+                   uint32_t &mod_min) {
+    ADXL345Sample sample;
+    mod_min = UINT_MAX;
+    mod_max = 0;
+    size_t count = 0;
+
+    max_vals.x = INT16_MIN;
+    max_vals.y = INT16_MIN;
+    max_vals.z = INT16_MIN;
+
+    min_vals.x = INT16_MAX;
+    min_vals.y = INT16_MAX;
+    min_vals.z = INT16_MAX;
+
+    std::cout << "Calibration: Rotate sensor along all three axis to capture all possible positions." << std::endl <<
+              "Press ANY KEY when ready." << std::endl;
+    wait_a_key();
+    std::cout << "Press ANY KEY again when done..." << std::endl;
+
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        uint8_t events = adxl->get_events();
+
+        while (events & ADXL345::ADXLEvents::ADXL_EV_DATA_READY) {
+            adxl->get_data(&sample);
+            events = adxl->get_events();
+
+            // Calculate min and max
+            max_vals.x = std::max(max_vals.x, sample.data.x);
+            max_vals.y = std::max(max_vals.y, sample.data.y);
+            max_vals.z = std::max(max_vals.z, sample.data.z);
+
+            min_vals.x = std::min(min_vals.x, sample.data.x);
+            min_vals.y = std::min(min_vals.y, sample.data.y);
+            min_vals.z = std::min(min_vals.z, sample.data.z);
+
+            uint32_t module = (sample.data.x * sample.data.x) +
+                              (sample.data.y * sample.data.y) +
+                              (sample.data.z * sample.data.z);
+
+            mod_max = std::max(mod_max, module);
+            mod_min = std::min(mod_max, module);
+
+            count++;
+
+            if (is_key_pressed()) {
+                goto done;
+            }
+        }
+    }
+
+done:
+    return count;
 }
 
 void adxl345_monitor(std::shared_ptr<ADXL345> adxl, std::shared_ptr<EKitBus> spi) {
@@ -43,16 +137,35 @@ void adxl345_monitor(std::shared_ptr<ADXL345> adxl, std::shared_ptr<EKitBus> spi
     adxl->enable(true);
     adxl->clear_fifo();
 
+    // ------------------- CALIBRATION -------------------
+    ADXL345Data data_max,data_min;
+    uint32_t mod_max, mod_min;
+    while (true) {
+        size_t count = adxl_345_calibrate(adxl, data_max, data_min, mod_max, mod_min);
+
+        std::cout << "[SAMPLES=" << count << "]" << std::endl;
+        std::cout << "[MAX. VALUES] x=" << data_max.x << " y=" << data_max.y << " z=" << data_max.z << " mod^2="
+                  << mod_max << std::endl;
+        std::cout << "[MIN. VALUES] y=" << data_min.x << " y=" << data_min.y << " z=" << data_min.z << " mod^2="
+                  << mod_min << std::endl;
+        std::cout << "--------------------------------------------------------------" << std::endl;
+
+    }
+
     ADXL345OffsetData offset;
     adxl->get_offset_data(offset);
-    std::cout << "OFSX=" << (int)(offset.ofs_x) << " OFSY=" << (int)(offset.ofs_y) << " OFSZ=" << (int)(offset.ofs_z) << std::endl;
+    std::cout << "OFSX=" << (int) (offset.ofs_x) << " OFSY=" << (int) (offset.ofs_y) << " OFSZ="
+              << (int) (offset.ofs_z)
+              << std::endl;
 
+
+    /*
     while (true) {
-        std::this_thread::sleep_for(std::chrono::milliseconds (100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         uint8_t events = adxl->get_events();
         while (events & ADXL345::ADXLEvents::ADXL_EV_DATA_READY) {
             adxl->get_data(&data);
-            adxl->to_double_data(data.data,  dbl_data);
+            adxl->to_double_data(data.data, dbl_data);
 
             std::cout << "Ax = " << dbl_data.x << " m/s^2 ; "
                       << "Ay = " << dbl_data.y << " m/s^2 ; "
@@ -63,6 +176,7 @@ void adxl345_monitor(std::shared_ptr<ADXL345> adxl, std::shared_ptr<EKitBus> spi
             events = adxl->get_events();
         }
     }
+     */
 }
 
 int main(int argc, char *argv[]) {
