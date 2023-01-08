@@ -67,29 +67,23 @@ void wait_a_key() {
     }
 }
 
-size_t
+constexpr int16_t x_off = -571;
+constexpr int16_t y_off = -944;
+constexpr int16_t z_off = 1852;
+
+void
 adxl_345_calibrate(std::shared_ptr<ADXL345> adxl,
-                   ADXL345Data &max_vals,
-                   ADXL345Data &min_vals,
-                   uint32_t &mod_max,
-                   uint32_t &mod_min) {
+                   ADXL345Data &avg_vals) {
+    constexpr int32_t n_samples = 1000;
     ADXL345Sample sample;
-    mod_min = UINT_MAX;
-    mod_max = 0;
-    size_t count = 0;
+    int32_t count = 0;
 
-    max_vals.x = INT16_MIN;
-    max_vals.y = INT16_MIN;
-    max_vals.z = INT16_MIN;
-
-    min_vals.x = INT16_MAX;
-    min_vals.y = INT16_MAX;
-    min_vals.z = INT16_MAX;
+    int32_t x=0,y=0,z=0;
 
     std::cout << "Calibration: Rotate sensor along all three axis to capture all possible positions." << std::endl <<
               "Press ANY KEY when ready." << std::endl;
     wait_a_key();
-    std::cout << "Press ANY KEY again when done..." << std::endl;
+    adxl->clear_fifo();
 
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -98,85 +92,93 @@ adxl_345_calibrate(std::shared_ptr<ADXL345> adxl,
         while (events & ADXL345::ADXLEvents::ADXL_EV_DATA_READY) {
             adxl->get_data(&sample);
             events = adxl->get_events();
-
-            // Calculate min and max
-            max_vals.x = std::max(max_vals.x, sample.data.x);
-            max_vals.y = std::max(max_vals.y, sample.data.y);
-            max_vals.z = std::max(max_vals.z, sample.data.z);
-
-            min_vals.x = std::min(min_vals.x, sample.data.x);
-            min_vals.y = std::min(min_vals.y, sample.data.y);
-            min_vals.z = std::min(min_vals.z, sample.data.z);
-
-            uint32_t module = (sample.data.x * sample.data.x) +
-                              (sample.data.y * sample.data.y) +
-                              (sample.data.z * sample.data.z);
-
-            mod_max = std::max(mod_max, module);
-            mod_min = std::min(mod_max, module);
+            x +=  sample.data.x;
+            y +=  sample.data.y;
+            z +=  sample.data.z;
 
             count++;
 
-            if (is_key_pressed()) {
+            if (count >= n_samples) {
                 goto done;
             }
         }
     }
 
 done:
-    return count;
+
+    avg_vals.x = static_cast<int16_t>(x / count);
+    avg_vals.y = static_cast<int16_t>(y / count);
+    avg_vals.z = static_cast<int16_t>(z / count);
 }
 
 void adxl345_monitor(std::shared_ptr<ADXL345> adxl, std::shared_ptr<EKitBus> spi) {
     ADXL345Sample data;
     ADXL345DataDbl dbl_data;
     const size_t conf_fifo_len = ADXL345::ADXL345Constants::FIFO_CTL_SAMPLES_DEFAULT;
-    adxl->configure(ADXL345::ADXL345Constants::BW_RATE_3_13HZ,
+    adxl->configure(ADXL345::ADXL345Constants::BW_RATE_100HZ,
                     conf_fifo_len,
                     ADXL345::ADXL345Constants::DATA_FORMAT_RANGE_16g);
     adxl->enable(true);
     adxl->clear_fifo();
 
-    // ------------------- CALIBRATION -------------------
-    ADXL345Data data_max,data_min;
-    uint32_t mod_max, mod_min;
-    while (true) {
-        size_t count = adxl_345_calibrate(adxl, data_max, data_min, mod_max, mod_min);
 
-        std::cout << "[SAMPLES=" << count << "]" << std::endl;
-        std::cout << "[MAX. VALUES] x=" << data_max.x << " y=" << data_max.y << " z=" << data_max.z << " mod^2="
-                  << mod_max << std::endl;
-        std::cout << "[MIN. VALUES] y=" << data_min.x << " y=" << data_min.y << " z=" << data_min.z << " mod^2="
-                  << mod_min << std::endl;
+
+
+    // ------------------- CALIBRATION -------------------
+#ifdef CALIBRATION
+    ADXL345Data data_avg;
+    while (true) {
+        adxl_345_calibrate(adxl, data_avg);
+
+        data_avg.x -= x_off;
+        data_avg.y -= y_off;
+        data_avg.z -= z_off;
+
+        std::cout << "Ax=" << data_avg.x << "\t\tAy=" << data_avg.y << "\t\tAz=" << data_avg.z << std::endl;
         std::cout << "--------------------------------------------------------------" << std::endl;
 
     }
+#else
 
-    ADXL345OffsetData offset;
-    adxl->get_offset_data(offset);
-    std::cout << "OFSX=" << (int) (offset.ofs_x) << " OFSY=" << (int) (offset.ofs_y) << " OFSZ="
-              << (int) (offset.ofs_z)
-              << std::endl;
+    int32_t x=0,y=0,z=0;
+    const int32_t n_samples = 32;
+    int32_t count = 0;
 
-
-    /*
     while (true) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         uint8_t events = adxl->get_events();
         while (events & ADXL345::ADXLEvents::ADXL_EV_DATA_READY) {
             adxl->get_data(&data);
-            adxl->to_double_data(data.data, dbl_data);
 
-            std::cout << "Ax = " << dbl_data.x << " m/s^2 ; "
-                      << "Ay = " << dbl_data.y << " m/s^2 ; "
-                      << "Az = " << dbl_data.z << " m/s^2 ; "
-                      << "T = " << data.timestamp.tv_sec << " s. " << data.timestamp.tv_nsec << " ns."
-                      << std::endl;
+            x += (data.data.x - x_off);
+            y += (data.data.y - y_off);
+            z += (data.data.z - z_off);
+
+            count++;
+
+            if (count>=n_samples) {
+                data.data.x = static_cast<int16_t>(x/count);
+                data.data.y = static_cast<int16_t>(y/count);
+                data.data.z = static_cast<int16_t>(z/count);
+
+                adxl->to_double_data(data.data, dbl_data);
+
+                std::cout << "Ax = " << dbl_data.x << " m/s^2 ; "
+                          << "Ay = " << dbl_data.y << " m/s^2 ; "
+                          << "Az = " << dbl_data.z << " m/s^2 ; "
+                          << "T = " << data.timestamp.tv_sec << " s. " << data.timestamp.tv_nsec << " ns."
+                          << std::endl;
+
+                count = 0;
+                x=0;
+                y=0;
+                z=0;
+            }
 
             events = adxl->get_events();
         }
     }
-     */
+#endif
 }
 
 int main(int argc, char *argv[]) {

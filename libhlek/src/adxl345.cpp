@@ -348,24 +348,21 @@ void ADXL345::configure(uint8_t rate,
     static const char* const func_name = "ADXL345::configure";
 
     // Set maximum range
+    res_scale = 1.0L / static_cast<double>(INT16_MAX);
     switch (range) {
         case ADXL345Constants::DATA_FORMAT_RANGE_2g:
-            res_scale = 1.0L / static_cast<double>(1024);
             max_val   = grav_accel * 2.0L;
             break;
 
         case ADXL345Constants::DATA_FORMAT_RANGE_4g:
-            res_scale = 1.0L / static_cast<double>(2048);
             max_val   = grav_accel * 4.0L;
             break;
 
         case ADXL345Constants::DATA_FORMAT_RANGE_8g:
-            res_scale = 1.0L / static_cast<double>(4096);
             max_val   = grav_accel * 8.0L;
             break;
 
         case ADXL345Constants::DATA_FORMAT_RANGE_16g:
-            res_scale = 1.0L / static_cast<double>(8192);
             max_val   = grav_accel * 16.0L;
             break;
 
