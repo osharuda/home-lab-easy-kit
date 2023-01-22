@@ -39,7 +39,7 @@ void INFODev::check() {
     uint8_t uuid[INFO_UUID_LEN];
 
     EKitTimeout to(get_timeout());
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     err = bus->read(uuid, INFO_UUID_LEN, to);
     if (err != EKIT_OK) {

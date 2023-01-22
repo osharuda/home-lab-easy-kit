@@ -37,7 +37,7 @@ void DESKDev::get(bool& up, bool& down, bool& left, bool& right, int8_t& encoder
 	EKIT_ERROR err;
 	DeskDevData data;
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
 	err = bus->read(&data, sizeof(data), to);
     if (err != EKIT_OK) {

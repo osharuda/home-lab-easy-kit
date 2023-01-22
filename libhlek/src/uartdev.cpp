@@ -22,10 +22,11 @@
 
 #include "uartdev.hpp"
 #include "ekit_error.hpp"
+#include "ekit_firmware.hpp"
 
 UARTDev::UARTDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* cfg) :
     EKitBus(EKitBusType::BUS_UART),
-    super(ebus, cfg->dev_name),
+    super(ebus, cfg->dev_id, cfg->dev_name),
     config(cfg) {
     static const char* const func_name = "UARTDev::UARTDev";
     ebus->check_bus(EKitBusType::BUS_I2C_FIRMWARE);
@@ -92,4 +93,8 @@ EKIT_ERROR UARTDev::write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, 
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
     assert(false); // MUST BE IMPLEMENTED
     return EKIT_NOT_SUPPORTED;
+}
+
+EKIT_ERROR UARTDev::lock(EKitTimeout& to) {
+    return std::dynamic_pointer_cast<EKitFirmware>(bus)->lock(get_addr(), to);
 }

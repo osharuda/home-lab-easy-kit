@@ -60,7 +60,7 @@ void SPWMDev::set(SPWM_STATE& state) {
 	// Block bus and fill data
 	{
         EKitTimeout to(get_timeout());
-		BusLocker blocker(bus, to);
+        BusLocker blocker(bus, get_addr(), to);
 
 		// state may specify some of the channels configured. Fill the reset of the channels.
 		for (size_t i=0; i<config->channel_count; i++) {

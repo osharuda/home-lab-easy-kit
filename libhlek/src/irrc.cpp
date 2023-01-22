@@ -40,7 +40,7 @@ void IRRCDev::get(std::vector<IR_NEC_Command>& commands, bool& ovf) {
 
 	commands.clear();
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
 	// get amount of data
 	CommResponseHeader hdr;

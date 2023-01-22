@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {{
         EKitTimeout time_out(0);
         EKIT_ERROR err = i2cbus->open(time_out);
         if (err != EKIT_OK) {{
-            throw EKitException(__FUNCTION__, tools::format_string("Failed to open %s", i2c_dev));
+            throw EKitException(__FUNCTION__, EKIT_FAIL, tools::format_string("Failed to open %s", i2c_dev));
         }}
 
         // Open firmware (via I2C)

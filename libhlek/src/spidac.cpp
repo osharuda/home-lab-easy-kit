@@ -75,7 +75,7 @@ bool SPIDACDev::is_running() {
     EKIT_ERROR err = EKIT_OK;
     SPIDACStatus status;
     EKitTimeout to(get_timeout());
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     err = bus->read(&status, sizeof(SPIDACStatus), to);
     if (err != EKIT_OK) {
@@ -96,7 +96,7 @@ void SPIDACDev::start_signal(double freq, size_t phase_inc, bool continuous) {
     }
 
     EKitTimeout to(get_timeout());
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     // Start
     SPIDAC_COMMAND cmd = continuous ? SPIDAC_COMMAND::START : SPIDAC_COMMAND::START_PERIOD;
@@ -159,7 +159,7 @@ void SPIDACDev::stop() {
     static const char* const func_name = "SPIDACDev::stop";
     EKIT_ERROR err = EKIT_OK;
     EKitTimeout to(get_timeout());
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     // Stop
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, SPIDAC_COMMAND::STOP, to);
@@ -187,7 +187,7 @@ void SPIDACDev::upload_raw(const std::vector<uint8_t>& buffer, bool def_vals) {
     }
 
     EKitTimeout to(get_timeout());
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
     SPIDAC_COMMAND cmd = def_vals ? SPIDAC_COMMAND::SETDEFAULT : SPIDAC_COMMAND::DATA;
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd, to);
     if (err != EKIT_OK) {

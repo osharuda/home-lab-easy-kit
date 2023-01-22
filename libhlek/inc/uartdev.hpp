@@ -45,12 +45,12 @@
 
 /// \class UARTDev
 /// \brief UARTDev implementation.
-class UARTDev final : public EKitDeviceBase,
+class UARTDev final : public EKitVirtualDevice,
                       public EKitBus {
 
     /// \typedef super
     /// \brief Defines parent class
-    typedef EKitDeviceBase super;
+    typedef EKitVirtualDevice super;
 
 public:
 
@@ -73,15 +73,10 @@ public:
     /// Destructor (virtual)
     ~UARTDev() override;
 
-    /*
-    /// \brief Read all the data available in UARTDev circular buffer.
-    /// \param data - output vector with read data. (all previous data is discarded)
-    void read(std::vector<uint8_t>& data);
-
-    /// \brief Writes data to the UARTDev
-    /// \param data - vector with data to write.
-    void write(const std::vector<uint8_t>& data);
-    */
+    /// \brief Implementation of the EKitBus#lock() virtual function.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note This function is overridden to pass correct address into EKitFirmware
+    EKIT_ERROR lock(EKitTimeout& to) override;
 
     /// \brief Read data from a bus.
     /// \param ptr - pointer to the memory block.

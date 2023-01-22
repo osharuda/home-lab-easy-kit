@@ -75,7 +75,7 @@ void ADCDev::start(uint16_t sample_count, double delay_sec){
 	// Do I/O operation
 	{
         EKitTimeout to(get_timeout());
-		BusLocker blocker(bus, to);
+        BusLocker blocker(bus, get_addr(), to);
 
 		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
 	    if (err != EKIT_OK) {
@@ -101,7 +101,7 @@ void ADCDev::stop(bool reset_buffer){
     // Do I/O operation
 	{
         EKitTimeout to(get_timeout());
-		BusLocker blocker(bus, to);
+        BusLocker blocker(bus, get_addr(), to);
 
 		EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
 	    if (err != EKIT_OK) {
@@ -121,7 +121,7 @@ void ADCDev::get(std::vector<uint16_t>& data, bool& ovf){
 	// issue a command
 	{
         EKitTimeout to(get_timeout());
-		BusLocker blocker(bus, to);
+        BusLocker blocker(bus, get_addr(), to);
 
 		// get amount of data
 		CommResponseHeader hdr;

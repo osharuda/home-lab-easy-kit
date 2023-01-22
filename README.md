@@ -100,6 +100,14 @@ The following packages are used by Home Lab Easy Kit project:
 - `ncurses` : This library is used for minimal terminal interface used by Home Lab Easy Kit monitor. Install `libncurses-dev` package.
 - `python3`: Required to run Customizer, which is written using Python3. Python3 should be a part of the operational system.
 
+The following command might be used to install everything at once:
+
+```
+apt update && apt install vim git mc cmake libicu-dev binutils-arm-none-eabi gcc-arm-none-eabi gdb-multiarch openocd stlink-tools i2c-tools doxygen libncurses-dev
+```
+
+I use command above to initialize my fresh Raspberry Pi installation. Therefore there might be some unrelated packages.
+
 ## Usage instructions
 
 List below describes sequential actions required to start:

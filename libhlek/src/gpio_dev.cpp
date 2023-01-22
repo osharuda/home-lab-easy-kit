@@ -57,7 +57,7 @@ void GPIODev::read(std::vector<bool>& pins) {
 	// I/O operation
 	{
         EKitTimeout to(get_timeout());
-		BusLocker blocker(bus, to);
+        BusLocker blocker(bus, get_addr(), to);
 
 		// Instruct controller to updated inputs
 		EKIT_ERROR err = bus->write(nullptr, 0, to);
@@ -96,7 +96,7 @@ void GPIODev::write(const std::vector<bool>& pins) {
 
 	// Block bus
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
 	// Write bus
 	EKIT_ERROR err = bus->write(buffer, gpio_buffer_size, to);

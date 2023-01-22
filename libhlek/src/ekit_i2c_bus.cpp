@@ -119,6 +119,12 @@ EKIT_ERROR EKitI2CBus::close() {
 
 bool EKitI2CBus::check_address(int addr) { return addr >= 0 && addr <= 255; }
 
+
+EKIT_ERROR EKitI2CBus::lock(EKitTimeout& to) {
+    assert(false); // This method shouldn't be used because this bus require address
+    return EKIT_NOT_SUPPORTED;
+}
+
 //------------------------------------------------------------------------------------
 // EKitI2CBus::lock
 // Purpose: locks bus for some purposes operation that may require several
@@ -134,7 +140,7 @@ EKIT_ERROR EKitI2CBus::lock(int addr, EKitTimeout& to) {
         goto done;
     }
 
-    super::lock(addr, to);
+    super::lock(to);
 
     // <CHECKIT> It seems like EKIT_LOCKED is not required. Get rid of it if
     // true.

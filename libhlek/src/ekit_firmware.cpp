@@ -104,7 +104,7 @@ EKIT_ERROR EKitFirmware::lock(int vdev, EKitTimeout& to){
 	} 
 
 	// Attempt to lock self
-	err = EKitBus::lock(vdev, to);
+	err = super::lock(to);
 	if (err != EKIT_OK) {
 		bus->unlock();
 		goto done;

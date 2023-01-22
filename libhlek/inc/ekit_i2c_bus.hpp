@@ -130,6 +130,12 @@ public:
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR lock(int addr, EKitTimeout& to) override;
 
+        /// \brief Implementation of the EKitBus#lock() virtual function.
+        /// \param to - optional time out to be used.
+        /// \return EKIT_NOT_SUPPORTED.
+        /// \note This function is not supported and causes failed assertion since i2c bus is addressable.
+        EKIT_ERROR lock(EKitTimeout& to) override;
+
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR unlock() override;

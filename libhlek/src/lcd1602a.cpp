@@ -45,7 +45,7 @@ void LCD1602ADev::light(int lmode) {
 	static const char* const func_name = "LCD1602ADev::light";
 	assert(lmode==LCD1602a_LIGHT || lmode==LCD1602a_OFF || lmode==LCD1602a_BLINK);
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
 	EKIT_ERROR err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, lmode, to);
     if (err != EKIT_OK) {
@@ -63,7 +63,7 @@ void LCD1602ADev::light(int lmode) {
 void LCD1602ADev::write(std::vector<std::string>::const_iterator first, std::vector<std::string>::const_iterator last) {
 	static const char* const func_name = "LCD1602ADev::write(1)";
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
 	std::vector<uint8_t> buffer;
 	int nl = nlines();
@@ -96,7 +96,7 @@ void LCD1602ADev::writepos(uint8_t line, uint8_t pos, const std::string& s) {
 	static const char* const func_name = "LCD1602ADev::writepos";
 
     EKitTimeout to(get_timeout());
-	BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 	std::vector<uint8_t> buffer;
 	size_t buflen = s.length() + sizeof(LcdPositionalText);
 	buffer.resize(buflen);

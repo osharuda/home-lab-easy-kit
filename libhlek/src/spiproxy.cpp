@@ -47,7 +47,7 @@ EKIT_ERROR SPIProxyDev::write(const void* ptr, size_t len, EKitTimeout& to) {
     static const char* const func_name = "SPIProxyDev::write";
 
     // Lock bus
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     EKIT_ERROR err = spi_proxy_wait(to);
     if (err==EKIT_OK) {
@@ -69,7 +69,7 @@ EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) { // <CHECK
     PSPIProxyStatus status = (PSPIProxyStatus)data.data();
 
     // Lock bus
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     res = spi_proxy_wait(to);
     if (res != EKIT_OK) {
@@ -108,7 +108,7 @@ EKIT_ERROR SPIProxyDev::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) 
     PSPIProxyStatus status;
 
     // Lock bus
-    BusLocker blocker(bus, to);
+    BusLocker blocker(bus, get_addr(), to);
 
     res = spi_proxy_wait(to);
     if (res != EKIT_OK) {

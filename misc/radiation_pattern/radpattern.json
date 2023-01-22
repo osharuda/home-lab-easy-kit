@@ -1,14 +1,12 @@
 {
   "firmware" : {
     "mcu_model" : "stm32f103",
-    "device_name" : "radpattern",
-    "install_prefix" : "radpattern",
-    "install_path" : "/opt",
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,
       "address" : 37,
-      "requires" :  {"i2c" : "I2C1"}}},
+      "requires" :  {"i2c" : "I2C1"}
+    }},
 
   "devices" : {
     "ADCDevCustomizer": {

@@ -189,21 +189,37 @@ class BusLocker final {
 
 public:
      /// \brief Constructor
+     /// \param ebus - reference to shared pointer with EKitBus.
+     BusLocker(std::shared_ptr<EKitBus> &ebus, EKitTimeout& to) :
+          BusLocker(ebus.get(), to) {
+     }
+
+     /// \brief Constructor
      /// \param ebus - Raw pointer to EKitBus.
      BusLocker(EKitBus* ebus, EKitTimeout& to) :
      sp_ebus(ebus),
      locked(true) {
-         static const char *const func_name = "BusLocker::BusLocker";
+         static const char *const func_name = "BusLocker::BusLocker(no addr)";
          EKIT_ERROR err = sp_ebus->lock(to);
          if (err != EKIT_OK) {
              throw EKitException(func_name, err, "failed to lock bus.");
          }
      }
 
-    /// \brief Constructor
-    /// \param ebus - reference to shared pointer with EKitBus.
-    BusLocker(std::shared_ptr<EKitBus> &ebus, EKitTimeout& to) :
-    BusLocker(ebus.get(), to) {
+
+     /// \brief Constructor
+     /// \param ebus - reference to shared pointer with EKitBus.
+     BusLocker(std::shared_ptr<EKitBus> &ebus, int addr, EKitTimeout& to) :
+        BusLocker(ebus.get(), addr, to) {}
+
+    BusLocker(EKitBus* ebus, int addr, EKitTimeout& to) :
+            sp_ebus(ebus),
+            locked(true) {
+        static const char *const func_name = "BusLocker::BusLocker(addr)";
+        EKIT_ERROR err = sp_ebus->lock(addr, to);
+        if (err != EKIT_OK) {
+            throw EKitException(func_name, err, "failed to lock bus.");
+        }
     }
 
     /// \brief Destructor
