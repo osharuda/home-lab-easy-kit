@@ -142,8 +142,6 @@ EKIT_ERROR EKitI2CBus::lock(int addr, EKitTimeout& to) {
 
     super::lock(to);
 
-    // <CHECKIT> It seems like EKIT_LOCKED is not required. Get rid of it if
-    // true.
     if (address >= 0) {
         res = EKIT_LOCKED;
         assert(false);
@@ -164,9 +162,8 @@ done:
 EKIT_ERROR EKitI2CBus::unlock() {
     EKIT_ERROR err = EKIT_OK;
 
-    // <CHECKIT> It seems like EKIT_LOCKED is not required. Get rid of it if
-    // true.
     if (address < 0) {
+        assert(false);
         err = EKIT_UNLOCKED;
     }
     address = -1;

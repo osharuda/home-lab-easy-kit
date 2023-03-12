@@ -185,9 +185,6 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device, E
 }
 
 EKIT_ERROR EKitFirmware::set_opt(int opt, int value, EKitTimeout& to) {
-    // <CHECKIT> Make sure all the callers change this flag back after sending driver the data. This flag is permanently stored
-    // in bus, but sometimes is used as command. If used as command, it should be cleared after command is executed, regardless
-    // the result was success of failure.
 	CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 	if (opt == FIRMWARE_OPT_FLAGS) {
 		assert(value>=0 && value<256);
@@ -279,15 +276,21 @@ EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){//read_dev
 
 	do {
 		// Read header until success
-		err = bus->read(pbuf, buf_len, to); // <CHECKIT> : infinite loop is possible - Timeout added must be fixed
+		err = bus->read(pbuf, buf_len, to);
 	} while (err == EKIT_READ_FAILED);
 
     if (err != EKIT_OK) {
         goto done;
     }
 
+
+    // It is possible to request more data the available in device buffer.
+    // This check is made to make this situation visible, because it is a logical error:
+    // software must be sure device has required amount of data before read it.
+    assert(len <= phdr->length);
+
     // Copy data back
-    memcpy(ptr, pdata, len); // <CHECKIT> : it is possble to read less data than requested, garbage may be read
+    memcpy(ptr, pdata, len);
 
     err = status_to_ext_error(phdr->comm_status);
     if (err != EKIT_OK) {

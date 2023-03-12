@@ -225,14 +225,14 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(SPIProxyInfoHandler);
     DEFINE_HANDLER_CLASS(SPIProxyReadHandler);
     DEFINE_HANDLER_CLASS(SPIProxyWriteHandler);
-
+/*
     DEFINE_HANDLER_CLASS(MFRC522StatusHandler);
     DEFINE_HANDLER_CLASS(MFRC522SoftResetHandler);
     DEFINE_HANDLER_CLASS(MFRC522InitHandler);
     DEFINE_HANDLER_CLASS(MFRC522VersionHandler);
     DEFINE_HANDLER_CLASS(MFRC522ReadCardHandler);
     DEFINE_HANDLER_CLASS(MFRC522SelfTestHandler);
-
+*/
     DEFINE_HANDLER_CLASS(SPIFlashReadHandler);
     DEFINE_HANDLER_CLASS(SPIFlashWriteHandler);
 

@@ -626,6 +626,7 @@ static inline uint16_t step_motor_fetch_cmd(volatile PCircBuffer circ, volatile 
     return bytes_remain;
 }
 
+// <CHECKIT> Inline this function
 void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t is_irq_handler) {
     uint32_t w = MCU_MAXIMUM_TIMER_US;
     volatile PStepMotorDevPrivData priv_data = MOTOR_DEV_PRIV_DATA(dev);
@@ -697,6 +698,7 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
     if (all_done==0) {
         priv_data->last_event_timestamp = now;
 
+        //<CHECKIT> - it is very likely it is possible to avoid this if statement
         if (is_irq_handler) {
             timer_reschedule_us(dev->timer, w);
         } else {
@@ -729,7 +731,7 @@ uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdesc
 
     // Note: if CW direction==STEP_MOTOR_SET_DIR_CW==1, if CCW direction==STEP_MOTOR_SET_DIR_CCW==0
     // Thus the following optimization is valid: CW -> +1, CCW -> -1
-    int8_t d = (int8_t) (direction << 1) - 1;
+    int8_t d = (int8_t) (direction << 1) - (int8_t)(1);
     mcontext->pos_change_by_step = d * STEP_MOTOR_MICROSTEP_DELTA(bitshift);
 
     return res;

@@ -245,11 +245,6 @@ EKIT_ERROR EKitSPIBus::set_opt(int opt, int value, EKitTimeout& to) {
 
     uint32_t non_zero_mask = 0 - (value != 0);
 
-    // <CHECKIT> Make sure all the callers change this flag back after
-    // sending driver the data. This flag is permanently stored in bus, but
-    // sometimes is used as command. If used as command, it should be
-    // cleared after command is executed, regardless the result was success
-    // of failure.
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     switch (opt) {

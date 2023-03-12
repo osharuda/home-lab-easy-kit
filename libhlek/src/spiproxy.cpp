@@ -57,7 +57,7 @@ EKIT_ERROR SPIProxyDev::write(const void* ptr, size_t len, EKitTimeout& to) {
     return err;
 }
 
-EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) { // <CHECKIT>: Consider to use this kind of style with timeout and polling data size for other buses
+EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) {
     static const char* const func_name = "SPIProxyDev::read";
 
     static_assert(sizeof(SPIProxyStatus)==1, "SPIProxyStatus size must be 1 byte, check structure padding and alignment.");

@@ -660,7 +660,7 @@ DRV8825 is different to A4998. It has "Fault" line that may be used to detect fa
 | `"active_level"` | Active logical level that indicates fault. | "low" or "high" | Yes |
 | `"action"` | Action to be taken if `FAULT` becomes active.  It is possible to "ignore" it, "stop" the motor or "stop_all" motors. | "ignore", "stop", "stop_all" | Yes |
 
-Note, `"fault"` object is optional, however, if specified all values should be also specified.
+Note, `"fault"` object is optional, however, if specified all values should be also specified. Also, DRV8825 active `"fault"` signal is `low` (grounded).
 
 ### CanCustomizer
 

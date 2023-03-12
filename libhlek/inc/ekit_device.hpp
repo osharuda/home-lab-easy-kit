@@ -79,14 +79,14 @@ public:
 
     /// \brief Returns device name.
     /// \return String with name.
-	virtual std::string get_dev_name() const { // <CHECKIT> Do we need virtual function here???
-		return dev_name;
-	}
-
-    virtual void set_timeout(int to) final { dev_timeout = to;
+    std::string get_dev_name() const {
+        return dev_name;
     }
 
-    virtual int get_timeout() final {
+    void set_timeout(int to) { dev_timeout = to;
+    }
+
+    int get_timeout() {
         return dev_timeout;
     }
 
