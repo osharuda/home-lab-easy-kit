@@ -50,7 +50,7 @@ EKitI2CBus::EKitI2CBus(const std::string& file_name)
 //------------------------------------------------------------------------------------
 EKitI2CBus::~EKitI2CBus() {
     EKitTimeout to(0);
-    BusLocker blocker(this, to);
+    BusLocker blocker(this, 0, to);
     close();
 }
 
@@ -60,6 +60,8 @@ EKitI2CBus::~EKitI2CBus() {
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
 EKIT_ERROR EKitI2CBus::open_internal(EKitTimeout& to) {
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+
     if (state == BUS_OPENED) {
         return EKIT_ALREADY_CONNECTED;
     }
@@ -85,7 +87,7 @@ EKIT_ERROR EKitI2CBus::open_internal(EKitTimeout& to) {
 //------------------------------------------------------------------------------------
 EKIT_ERROR EKitI2CBus::open(EKitTimeout& to) {
     EKIT_ERROR err;
-    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+    BusLocker blocker(this, 0, to);
 
     if (state != BUS_CLOSED) {
         return EKIT_ALREADY_CONNECTED;

@@ -120,12 +120,12 @@ void ADCDev::get(std::vector<uint16_t>& data, bool& ovf){
 	static const char* const func_name = "ADCDev::get(1)";
 	// issue a command
 	{
-        EKitTimeout to(get_timeout());
-        BusLocker blocker(bus, get_addr(), to);
+            EKitTimeout to(get_timeout());
+            BusLocker blocker(bus, get_addr(), to);
 
-		// get amount of data
-		CommResponseHeader hdr;
-		EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false, to);
+            // get amount of data
+            CommResponseHeader hdr;
+            EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(hdr, false, to);
 	    if (err != EKIT_OK && err != EKIT_OVERFLOW ) {
 	        throw EKitException(func_name, err, "get_status() failed");
 	    }
@@ -145,11 +145,11 @@ void ADCDev::get(std::vector<uint16_t>& data, bool& ovf){
 	    // resize buffer
 	    data.resize(hdr.length / sizeof(uint16_t));
 
-		// read data
-		err = bus->read((uint8_t*)data.data(), hdr.length, to);
-		if (err != EKIT_OK) {
-		    throw EKitException(func_name, err, "read() failed");
-		}
+            // read data
+            err = bus->read((uint8_t*)data.data(), hdr.length, to);
+            if (err != EKIT_OK) {
+                throw EKitException(func_name, err, "read() failed");
+            }
 	}
 
 done:

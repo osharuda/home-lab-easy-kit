@@ -68,12 +68,12 @@ class ADCDev final : public EKitVirtualDevice {
 
     /// \typedef super
     /// \brief Defines parent class
-	typedef EKitVirtualDevice super;
+    typedef EKitVirtualDevice super;
 
-	/// \brief
-	double vref_cur;
+    /// \brief Current vref value
+    double vref_cur;
 
-	public:
+    public:
 
     /// \brief Pointer to the #tag_PADCConfig structure that describes ADCDev virtual device represented by this class.
     const ADCConfig* config;
@@ -93,54 +93,54 @@ class ADCDev final : public EKitVirtualDevice {
 	ADCDev(std::shared_ptr<EKitBus>& ebus, const ADCConfig* config);
 
     /// \brief Destructor (virtual)
-	~ADCDev() override;
+    ~ADCDev() override;
 
-	/// \brief Start sampling
-	/// \param sample_count - amount of samples required. If zero - number of samples is unlimited.
-	/// \param delay_sec - number of micro seconds between samples. If 0 is passed conversion will follow each other without
-	///        delay.
-	void start(uint16_t sample_count, double delay_sec);
+    /// \brief Start sampling
+    /// \param sample_count - amount of samples required. If zero - number of samples is unlimited.
+    /// \param delay_sec - number of micro seconds between samples. If 0 is passed conversion will follow each other without
+    ///        delay.
+    void start(uint16_t sample_count, double delay_sec);
 
-	/// \brief Stops sampling
-	/// \param reset_buffer - true to discard all the data accumulated in ADCDev circular buffer
-	void stop(bool reset_buffer);
+    /// \brief Stops sampling
+    /// \param reset_buffer - true to discard all the data accumulated in ADCDev circular buffer
+    void stop(bool reset_buffer);
 
-	/// \brief Read samples accumulated in circular buffer as uint16_t.
-	/// \param data - reference to std::vector to be filled with samples. Samples will appear as two-dimensional array
-	///        data[s][c], where inner index c is for channels, s for sample. Return array may be empty, if no data available.
-	///        Length of the data (in elements) is multiple to amount of channels.
-	/// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-	void get(std::vector<uint16_t>& data, bool& ovf);
-
-	/// \brief Read samples accumulated in circular buffer as double, normalized by vref JSON configuration parameter.
-	/// \param values - measured data represented by vector (samples) of vector (channels). Values are doubles, represent
-	///        calculated with vref.
+    /// \brief Read samples accumulated in circular buffer as uint16_t.
+    /// \param data - reference to std::vector to be filled with samples. Samples will appear as two-dimensional array
+    ///        data[s][c], where inner index c is for channels, s for sample. Return array may be empty, if no data available.
+    ///        Length of the data (in elements) is multiple to amount of channels.
     /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-	void get(std::vector<std::vector<double>>& values, bool& ovf);
+    void get(std::vector<uint16_t>& data, bool& ovf);
 
-	/// \brief Read samples and return average value for all samples
-	/// \param values - measured data represented by array of values (channels).
+    /// \brief Read samples accumulated in circular buffer as double, normalized by vref JSON configuration parameter.
+    /// \param values - measured data represented by vector (samples) of vector (channels). Values are doubles, represent
+    ///        calculated with vref.
     /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-	void get(std::vector<double>& values, bool& ovf);
+    void get(std::vector<std::vector<double>>& values, bool& ovf);
 
-	/// \brief Returns input name from input index.
-	/// \param index - input index.
-	/// \param channel_name - set to true to get ADC channel name (ADC_Channel_xxx) or false to get input name
-	/// \return string with name
-	std::string get_input_name(size_t index, bool channel_name) const;
+    /// \brief Read samples and return average value for all samples
+    /// \param values - measured data represented by array of values (channels).
+    /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
+    void get(std::vector<double>& values, bool& ovf);
 
-	/// \brief  Returns inputs (channels) count
-	/// \return number of channels
-	size_t get_input_count() const;
+    /// \brief Returns input name from input index.
+    /// \param index - input index.
+    /// \param channel_name - set to true to get ADC channel name (ADC_Channel_xxx) or false to get input name
+    /// \return string with name
+    std::string get_input_name(size_t index, bool channel_name) const;
 
-	/// \brief Set current vref value to Vref+
-	/// \param Vref_plus - Vref+ voltage.
-	void set_vref(double Vref_plus);
+    /// \brief  Returns inputs (channels) count
+    /// \return number of channels
+    size_t get_input_count() const;
 
-	/// \brief Set current vref value based on internal reference voltage and it's measured value
-	/// \param vref_channel - measured value of ADC_Channel_Vrefint channel
-	/// \param V_ref_int - Reference internal voltage (typical value is 1.2V, for details take a look into MCU documentation)
-	void set_vref(uint16_t vref_channel, double V_ref_int = 1.2);
+    /// \brief Set current vref value to Vref+
+    /// \param Vref_plus - Vref+ voltage.
+    void set_vref(double Vref_plus);
+
+    /// \brief Set current vref value based on internal reference voltage and it's measured value
+    /// \param vref_channel - measured value of ADC_Channel_Vrefint channel
+    /// \param V_ref_int - Reference internal voltage (typical value is 1.2V, for details take a look into MCU documentation)
+    void set_vref(uint16_t vref_channel, double V_ref_int = 1.2);
 };
 
 /// @}

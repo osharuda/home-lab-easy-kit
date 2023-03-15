@@ -249,10 +249,7 @@ int main(int argc, char* argv[])
     }
     std::shared_ptr<EKitBus> i2cbus(new EKitI2CBus(bus_name));
     EKitTimeout to(0);
-    {
-	BusLocker block(i2cbus, 0, to);
-        i2cbus->open(to);
-    }
+    i2cbus->open(to);
 
     // Create firmware using a bus opened above
     std::shared_ptr<EKitBus> firmware (new EKitFirmware(i2cbus, LIBCONFIG_NAMESPACE::INFO_I2C_ADDRESS));

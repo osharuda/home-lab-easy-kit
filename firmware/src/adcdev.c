@@ -187,15 +187,16 @@ void adc_start_int_mode(volatile ADCDevFwInstance* dev) {
 volatile uint16_t* adc_init_dma(volatile ADCDevFwInstance* dev) {
     DMA_InitTypeDef dmainit;
     volatile PCircBuffer circ_buffer = (volatile PCircBuffer)&(dev->circ_buffer);
-    volatile uint16_t* res = (volatile uint16_t*)circbuf_reserve_block(circ_buffer);
-    if (res==0) {
+    volatile ADCDevFwPrivData* pdata = (&dev->privdata);
+    pdata->dest_buffer = (volatile uint16_t*)circbuf_reserve_block(circ_buffer);
+    if (pdata->dest_buffer==0) {
         goto done;
     }
 
     // Init DMA
     DMA_DeInit(dev->dma_channel);
     dmainit.DMA_PeripheralBaseAddr = dev->adc_dr_address;
-    dmainit.DMA_MemoryBaseAddr = (uint32_t)res;
+    dmainit.DMA_MemoryBaseAddr = (uint32_t)pdata->dest_buffer;
     dmainit.DMA_DIR = DMA_DIR_PeripheralSRC;
     dmainit.DMA_BufferSize = dev->input_count; // in data units
     dmainit.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
@@ -216,7 +217,7 @@ volatile uint16_t* adc_init_dma(volatile ADCDevFwInstance* dev) {
     DMA_ITConfig(dev->dma_channel, DMA_IT_TC, ENABLE);
 
 done:
-    return res;
+    return pdata->dest_buffer;
 }
 
 void adc_start_dma_mode(volatile ADCDevFwInstance* dev) {
@@ -226,6 +227,8 @@ void adc_start_dma_mode(volatile ADCDevFwInstance* dev) {
     if ((dev->privdata.samples_left | dev->privdata.unstoppable)==0) {
         return;
     }
+
+    ADC_Cmd(dev->adc, DISABLE);
 
     if (0==adc_init_dma(dev)) {
         return; // failed to allocate data

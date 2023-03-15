@@ -47,7 +47,7 @@ typedef struct tag_ADCDevFwPrivData {
                                                   ///  - #adc_start_timer() if conversion must be started by timer.
                                                   ///  - #adc_start_dma_mode() to start conversion now in DMA mode.
 
-    volatile uint16_t* dest_buffer;               ///< Buffer to store values sampled in interrupt mode
+    volatile uint16_t* dest_buffer;               ///< Buffer to store values sampled in interrupt or DMA mode
 
     uint16_t samples_left;                        ///< Amount of samples left to sample
 
@@ -125,6 +125,10 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
 /// \brief This macro is used to check if running in interrupt mode
 /// \param dev - pointer to #ADCDevFwInstance structure
 #define ADC_INT_MODE(dev) ((dev)->dma==0)
+
+/// \def ADC_RESOLUTION_BITS
+/// \brief This macro provides mask with meaningful bits for the sampled value
+#define ADC_RESOLUTION_BITS 0x0FFF
 
 /// \brief Initializes all ADCDev virtual devices
 void init_adc();

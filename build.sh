@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# In order to build without LIBHLEK set NO_LIBHLEK variable like in the example below:
+# NO_LIBHLEK=1 ./build.sh <.....>
+
 set -e
 INITDIR="$(pwd)"
 JOBCOUNT="$(nproc)"
@@ -70,7 +73,7 @@ function build_firmware {
 rm -rf "${LOGFILE}"
 
 # Build & install libhlek
-build_libhlek
+if [ -z "${NO_LIBHLEK+defined}" ]; then build_libhlek; fi
 
 ####### Build specified configurations
 for j in ${JSONS[@]}
