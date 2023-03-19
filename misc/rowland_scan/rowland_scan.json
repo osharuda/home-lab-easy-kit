@@ -1,0 +1,53 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C1"}
+    }},
+
+  "devices" : {
+
+    "StepMotorDevCustomizer": {
+      "goniometr" : {
+        "dev_id" : 10,
+        "motors" : {
+          "m0" : {
+            "buffer_size" : 512,
+            "steps_per_revolution" : 200,
+            "default_speed" : 2000,
+            "drive_type" : "drv8825",
+            "error_action" : "stop",
+            "step"  : {"gpio" :  "PA_15"},
+            "dir"   : {"gpio" :  "PB_1", "default" : "CCW"},
+            "m1"   : {"default" : 1},
+            "m2"   : {"default" : 1},
+            "m3"   : {"default" : 1},
+            "enable": {"gpio" :  "PA_9", "default" : "disable"},
+            "reset" : {"gpio" :  "PA_12"},
+            "fault" : {"gpio" :  "PA_11", "action": "stop", "active_level": "low"},
+            "sleep" : {"gpio" :  "PB_14", "default" : "wakeup"},
+            "cw_endstop" : {"position_limit" : "10000", "action": "stop"},
+            "ccw_endstop" : {"gpio" : "PA_8", "action": "stop", "active_level": "low"}
+          }},
+        "requires" :  { "timer" : "TIM2"}}
+  },
+
+  "ADCDevCustomizer": {
+    "adc" : {
+      "dev_id" : 11,
+      "buffer_size" : 1536,
+      "use_dma" : 1,
+      "vref" : 3.2,
+      "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
+                       "override" :  {"otp101" : "ADC_SampleTime_28Cycles5" }},
+      "requires" :  { "ADC" : {"adc" : "ADC1"},
+                      "TIMER" : {"timer" :  "TIM3"},
+                      "input_vref" : {"adc_input" : "ADC_Channel_Vrefint"},
+                      "input_temp" : {"adc_input" : "ADC_Channel_TempSensor"},
+                      "otp101" : {"adc_input" : "ADC_Channel_0"}}}
+    }
+  }
+}
