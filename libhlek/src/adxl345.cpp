@@ -496,9 +496,9 @@ void ADXL345::set_offset_data(ADXL345OffsetData& data) {
     }
 }
 
-void ADXL345::to_double_data(const ADXL345Data& uint_data,
+void ADXL345::to_double_data(const ADXL345Data& int_data,
                              ADXL345DataDbl&    dbl_data) const{
-    dbl_data.x = max_val * (double)uint_data.x * res_scale;
-    dbl_data.y = max_val * (double)uint_data.y * res_scale;
-    dbl_data.z = max_val * (double)uint_data.z * res_scale;
+    dbl_data.x = max_val * (double)int_data.x * res_scale;
+    dbl_data.y = max_val * (double)int_data.y * res_scale;
+    dbl_data.z = max_val * (double)int_data.z * res_scale;
 }

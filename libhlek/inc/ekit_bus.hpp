@@ -63,10 +63,10 @@ enum EKitBusState {
 /// \enum EKitBusType
 /// \brief Bus type identifiers
 enum EKitBusType : uint8_t {
-    BUS_I2C = 1,    ///< I2C
-    BUS_UART = 2,    ///< UART (not currently implemented)
-    BUS_SPI = 3,    ///< SPI (not currently implemented)
-    BUS_I2C_FIRMWARE = 4     ///< Communication protocol between software and firmware.
+    BUS_I2C = 1,         ///< I2C
+    BUS_UART = 2,        ///< UART
+    BUS_SPI = 3,         ///< SPI
+    BUS_I2C_FIRMWARE = 4 ///< Communication protocol between software and firmware.
 };
 
 using EKitTimeout = tools::StopWatch<std::chrono::milliseconds>;
@@ -185,17 +185,20 @@ public:
 class BusLocker final {
 
     EKitBus* sp_ebus; ///< shared pointer to the sp_ebus
-    bool locked;
+
+    bool locked;      ///< Indicates of lock is already owned.
 
 public:
      /// \brief Constructor
      /// \param ebus - reference to shared pointer with EKitBus.
+     /// \param timeout - to object for timeout control.
      BusLocker(std::shared_ptr<EKitBus> &ebus, EKitTimeout& to) :
           BusLocker(ebus.get(), to) {
      }
 
-     /// \brief Constructor
+     /// \brief Constructor for unaddressable bus.
      /// \param ebus - Raw pointer to EKitBus.
+     /// \param timeout - to object for timeout control.
      BusLocker(EKitBus* ebus, EKitTimeout& to) :
      sp_ebus(ebus),
      locked(true) {
@@ -206,12 +209,17 @@ public:
          }
      }
 
-
-     /// \brief Constructor
-     /// \param ebus - reference to shared pointer with EKitBus.
-     BusLocker(std::shared_ptr<EKitBus> &ebus, int addr, EKitTimeout& to) :
+    /// \brief Constructor for addressable bus.
+    /// \param ebus - reference to shared pointer with EKitBus.
+    /// \param addr - address
+    /// \param timeout - to object for timeout control.
+    BusLocker(std::shared_ptr<EKitBus> &ebus, int addr, EKitTimeout& to) :
         BusLocker(ebus.get(), addr, to) {}
 
+    /// \brief Constructor for addressable bus.
+    /// \param ebus - pointer to EKitBus.
+    /// \param addr - address
+    /// \param timeout - to object for timeout control.
     BusLocker(EKitBus* ebus, int addr, EKitTimeout& to) :
             sp_ebus(ebus),
             locked(true) {
@@ -231,6 +239,7 @@ public:
 
     }
 
+    /// \brief Allows to unlock before destructor is called.
     void unlock() {
         assert(locked);
         if (locked) {

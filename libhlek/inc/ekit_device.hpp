@@ -83,9 +83,13 @@ public:
         return dev_name;
     }
 
+    /// \brief Set device timeout
+    /// \param to - timeout in milliseconds.
     void set_timeout(int to) { dev_timeout = to;
     }
 
+    /// \brief Returns device timeout
+    /// \return Device timeout in milliseconds.
     int get_timeout() {
         return dev_timeout;
     }
@@ -99,7 +103,7 @@ public:
 
 
 /// \class EKitVirtualDevice
-/// \brief Generic implementation for virtual devices.
+/// \brief Generic implementation for virtual devices (the ones that work through MCU).
 class EKitVirtualDevice : public EKitDeviceBase{
 
     ///< \brief Device address
@@ -131,9 +135,9 @@ public:
         return dev_addr;
     }
 
-	/// \brief Destructor (virtual)
-	~EKitVirtualDevice() override {
-	}
+    /// \brief Destructor (virtual)
+    ~EKitVirtualDevice() override {
+    }
 };
 
 /// @}

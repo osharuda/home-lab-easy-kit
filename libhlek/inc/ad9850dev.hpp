@@ -49,9 +49,9 @@ class AD9850Dev final : public EKitVirtualDevice {
 
     /// \typedef super
     /// \brief Defines parent class
-	typedef EKitVirtualDevice super;
+    typedef EKitVirtualDevice super;
 
-	public:
+    public:
 
     /// \brief Pointer to the #tag_AD9850Config structure that describes AD9850Dev virtual device represented by this class.
     const AD9850Config* config;
@@ -68,14 +68,14 @@ class AD9850Dev final : public EKitVirtualDevice {
     /// \brief Constructor to be used
     /// \param ebus - reference to shared pointer with EKitBus. This bus must support FIRMWARE_OPT_FLAGS
     /// \param config - actual configuration of the device taken from generated configuration library.
-	AD9850Dev(std::shared_ptr<EKitBus>& ebus, const AD9850Config* config);
+    AD9850Dev(std::shared_ptr<EKitBus>& ebus, const AD9850Config* config);
 
     /// \brief Destructor (virtual)
-	~AD9850Dev() override;
+    ~AD9850Dev() override;
 
-	/// \brief Reset state of the device
-	/// \note AD9851 will be put in power down mode
-	void reset();
+    /// \brief Reset state of the device
+    /// \note AD9851 will be put in power down mode
+    void reset();
 
     /// \brief Update frequency and phase
     /// \param frequency - frequency in hertz

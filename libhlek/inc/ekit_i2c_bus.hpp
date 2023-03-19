@@ -75,13 +75,13 @@ public:
     /// \param file_name - device file name.
 	explicit EKitI2CBus(const std::string& file_name);
 
-	/// \brief Destructor (virtual)
-        /// \note Important note: Destructor may need to lock bus to terminate communication;
-        ///       in this case override destructor must lock bus, close method also require protection from
-        ///       race conditions. (#BusLocker may be used)
-	~EKitI2CBus() override;
+    /// \brief Destructor (virtual)
+    /// \note Important note: Destructor may need to lock bus to terminate communication;
+    ///       in this case override destructor must lock bus, close method also require protection from
+    ///       race conditions. (#BusLocker may be used)
+    ~EKitI2CBus() override;
 
-	/// \brief Implementation of the EKitBus#open() virtual function.
+    /// \brief Implementation of the EKitBus#open() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR open(EKitTimeout& to) override;
 
@@ -114,14 +114,14 @@ public:
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR write(const void* ptr, size_t len, EKitTimeout& to) override;
 
-        /// \brief Does write and read by single operation, the first write with subsequent read.
-        /// \param wbuf - memory to write.
-        /// \param wlen - length of the write buffer.
-        /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
-        /// \param rlen - length of the buffer to read data into (amount of data to read).
-        /// \param to - timeout counting object.
-        /// \return Corresponding EKIT_ERROR error code.
-        EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
+    /// \brief Does write and read by single operation, the first write with subsequent read.
+    /// \param wbuf - memory to write.
+    /// \param wlen - length of the write buffer.
+    /// \param rbuf - memory to read data (may be the same pointer as write buffer, wbuf).
+    /// \param rlen - length of the buffer to read data into (amount of data to read).
+    /// \param to - timeout counting object.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 
     /// \brief Implementation of the EKitBus#lock() virtual function.
     /// \param addr - Address of the device connected to the bus to work with. Ignored for buses that may not address
@@ -130,11 +130,11 @@ public:
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR lock(int addr, EKitTimeout& to) override;
 
-        /// \brief Implementation of the EKitBus#lock() virtual function.
-        /// \param to - optional time out to be used.
-        /// \return EKIT_NOT_SUPPORTED.
-        /// \note This function is not supported and causes failed assertion since i2c bus is addressable.
-        EKIT_ERROR lock(EKitTimeout& to) override;
+    /// \brief Implementation of the EKitBus#lock() virtual function.
+    /// \param to - optional time out to be used.
+    /// \return EKIT_NOT_SUPPORTED.
+    /// \note This function is not supported and causes failed assertion since i2c bus is addressable.
+    EKIT_ERROR lock(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.

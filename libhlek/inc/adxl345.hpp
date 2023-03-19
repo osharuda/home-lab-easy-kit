@@ -41,27 +41,36 @@
 
 #pragma pack(push, 1)
 
+/// \struct ADXL345Data
+/// \brief Describes acceleration measurement as native int16_t values.
 struct ADXL345Data {
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    int16_t x;  /// \brief Acceleration along X axis
+    int16_t y;  /// \brief Acceleration along Y axis
+    int16_t z;  /// \brief Acceleration along Z axis
 };
 
+/// \struct ADXL345OffsetData
+/// \brief Describes acceleration offset configuration data, used to elliminate statical measurement error.
 struct ADXL345OffsetData {
-    uint8_t header;
-    int8_t  ofs_x;
-    int8_t  ofs_y;
-    int8_t  ofs_z;
+    uint8_t header; /// \brief Reserved.
+    int8_t  ofs_x;  /// \brief Offset along X axis.
+    int8_t  ofs_y;  /// \brief Offset along Y axis.
+    int8_t  ofs_z;  /// \brief Offset along Z axis.
 };
 
+/// \struct ADXL345Data
+/// \brief Describes acceleration measurement as floating point (double) values.
+///        Values are specified m/s^2.
 struct ADXL345DataDbl {
-    double x;
-    double y;
-    double z;
+    double x; /// \brief Acceleration along X axis
+    double y; /// \brief Acceleration along Y axis
+    double z; /// \brief Acceleration along Z axis
 };
 
 #pragma pack(pop)
 
+/// \struct ADXL345Confiuration
+/// \brief ADXL345 configuration structure.
 struct ADXL345Confiuration {
     // POWER_CTL
     bool    link;
@@ -87,17 +96,21 @@ struct ADXL345Confiuration {
     bool    low_power;
     uint8_t rate;
 };
-
+/// \struct ADXL345Sample
+/// \brief Describes single ADXL345 measurement (including timestamp)
 struct ADXL345Sample {
     // The timestamp field must go the first, it is used during reading into the
     // following data member.
-    struct timespec    timestamp;
-    struct ADXL345Data data;
+    struct timespec    timestamp; /// \brief Timestamp
+    struct ADXL345Data data;      /// \brief Acceleration data, see \ref ADXL345Data.
 };
 
+/// \struct ADXL345SampleFP
+/// \brief Describes single ADXL345 measurement (including timestamp) in
+///        floating point format (double).
 struct ADXL345SampleFP {
-    struct timespec       timestamp;
-    struct ADXL345DataDbl data;
+    struct timespec       timestamp; /// \brief Timestamp
+    struct ADXL345DataDbl data;      /// \brief Acceleration data, in floating point format; see \ref ADXL345DataDbl.
 };
 
 /// \class ADXL345
@@ -106,12 +119,21 @@ class ADXL345 final : public EKitDeviceBase {
     /// \typedef super
     /// \brief Defines parent class
     typedef EKitDeviceBase  super;
+
+    /// \brief Current device configuration
     ADXL345Confiuration     adxl_config;
+
+    /// \brief maximim value in m/s^2
     double                  max_val    = 0.0;
+
+    /// \brief Resolution scale factor
     double                  res_scale  = 1.0;
+
+    /// \brief Free-fall acceleration on a planet Earth.
     static constexpr double grav_accel = 9.8L;
 
    public:
+
     /// \brief No default constructor
     ADXL345()                          = delete;
 
@@ -130,18 +152,53 @@ class ADXL345 final : public EKitDeviceBase {
     /// \brief Destructor (virtual)
     ~ADXL345() override;
 
+    /// \brief Enables/disables adxl345 chip
+    /// \param enabled - true: enable, false: disable adxl345
     void    enable(bool enabled);
+
+    /// \brief Configures module to sample acceleration data
+    /// \param rate - sample rate, must be one of the \ref ADXL345Constants::BW_RATE_XXX values.
+    /// \param watermark_samples - specifies amount samples in FIFO to indicate
+    ///        dangerous level (it's time to read data from FIFO). This value should
+    ///        match to \ref ADXL345Constants::FIFO_CTL_SAMPLES_MASK value.
+    /// \param range - range of the accelerations being measured. Specify one of
+    ///        the \ref ADXL345Constants::DATA_FORMAT_RANGE_XXg values.
     void    configure(uint8_t rate              = BW_RATE_100HZ,
                       uint8_t watermark_samples = FIFO_CTL_SAMPLES_DEFAULT,
                       uint8_t range             = DATA_FORMAT_RANGE_2g);
-    void    get_data(ADXL345Sample* data);
-    size_t  get_data_len(bool& fifo_triggered);
-    uint8_t get_events();
-    void    clear_fifo();
-    void    get_offset_data(ADXL345OffsetData& data);
-    void    set_offset_data(ADXL345OffsetData& data);
-    void to_double_data(const ADXL345Data& uint_data, ADXL345DataDbl& dbl_data) const;
 
+    /// \brief Reads single ADXL345 sample from the FIFO.
+    /// \param data - pointer to the \ref ADXL345Sample structure.
+    void    get_data(ADXL345Sample* data);
+
+    /// \brief Returns amount of data in FIFO
+    /// \param fifo_triggered - true returned if trigger event occurred, otherwise false.
+    /// \return Number of entries stored in FIFO.
+    size_t  get_data_len(bool& fifo_triggered);
+
+
+    /// \brief Returns bitmask with events indicating ADXL345 state
+    /// \return A bit mask of the values specified bt \ref ADXLEvents enum.
+    uint8_t get_events();
+
+    /// \brief Clears FIFO.
+    void    clear_fifo();
+
+    /// \brief returns offset data
+    /// \param data - reference to struct to return offset data in.
+    void    get_offset_data(ADXL345OffsetData& data);
+
+    /// \brief set offset data
+    /// \param data - reference to struct with offset data to be set.
+    void    set_offset_data(ADXL345OffsetData& data);
+
+    /// \brief Converts native accelerate data format to floating point values.
+    /// \param int_data - reference to data in native format (int16_t)
+    /// \param dbl_data - reference to a \ref ADXL345DataDbl to store data in floating point format.
+    void to_double_data(const ADXL345Data& int_data, ADXL345DataDbl& dbl_data) const;
+
+    /// \enum ADXL345Registers
+    /// \brief Describes registers avilable in ADXL345
     enum ADXL345Registers : uint8_t {
         DEVID          = 0x00,
         THRESH_TAP     = 0x1D,
@@ -175,6 +232,8 @@ class ADXL345 final : public EKitDeviceBase {
         FIFO_STATUS    = 0x39
     };
 
+    /// \enum ADXL345Constants
+    /// \brief Describes various constatns used with ADXL345.
     enum ADXL345Constants : uint8_t {
         REG_ADDR_MASK            = 0b00111111,
         READ_REG_FLAG            = 0b10000000,
@@ -234,33 +293,85 @@ class ADXL345 final : public EKitDeviceBase {
         POWER_CTL_WAKEUP_1HZ     = 0b00000011
     };
 
+    /// \enum ADXLEvents
+    /// \brief Specify possible events (bit mask) to be returned by \ref ADXL345::get_events method.
     enum ADXLEvents : uint8_t {
+        /// \brief Indicates data is ready is ready to be read from FIFO
         ADXL_EV_DATA_READY = 0b10000000,
+
+        /// \brief The SINGLE_TAP bit is set when a single acceleration event that is greater than the value in the THRESH_TAP register.
         ADXL_EV_SINGLE_TAP = 0b01000000,
+
+        /// \brief The DOUBLE_TAP bit is set when two acceleration events that are greater than the value in the THRESH_TAP register.
         ADXL_EV_DOUBLE_TAP = 0b00100000,
+
+        /// \brief The activity bit is set when acceleration greater than the value stored in the THRESH_ACT register.
         ADXL_EV_ACTIVITY   = 0b00010000,
+
+        /// \brief The inactivity bit is set when acceleration of less than the value stored in the THRESH_INACT register.
         ADXL_EV_INACTIVITY = 0b00001000,
+
+        /// \brief The FREE_FALL bit is set when acceleration of less than the value stored in the THRESH_FF register.
         ADXL_EV_FREE_FALL  = 0b00000100,
+
+        /// \brief The watermark bit is set when the number of samples in FIFO equals the value stored in the samples bits.
         ADXL_EV_WATERMARK  = 0b00000010,
+
+        /// \brief The overrun bit is set when new data replaces unread data.
         ADXL_EV_OVERRUN    = 0b00000001
     };
 
    private:
+
+    /// \brief Does single byte transaction to/from single single register
+    /// \param read - true to read data from device register, false to write data
+    ///        into device register
+    /// \param addr - register address. One of the \ref ADXL345Registers values.
+    /// \param data - reference to a byte with data to be read or written.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR single_byte_transaction(bool          read,
                                        const uint8_t addr,
                                        uint8_t&      data,
                                        EKitTimeout&  to);
 
+    /// \brief Returns FIFO control mode information
+    /// \param fifolen - specify how many FIFO entries will triggere corresponding event (depends on mode).
+    /// \param mode - current mode selected, must be one of the \ref ADXL345Constants::FIFO_CTL_MODE_XXX constants.
+    /// \param trigger - true links the trigger event of trigger mode to INT1, otherwise links to INT2.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR get_fifo_ctl_priv(size_t&      fifolen,
                                  uint8_t&     mode,
                                  bool&        trigger,
                                  EKitTimeout& to);
 
+    /// \brief Set FIFO control mode
+    /// \param fifolen - specify how many FIFO entries will triggere corresponding event (depends on mode).
+    /// \param mode - current mode selected, must be one of the \ref ADXL345Constants::FIFO_CTL_MODE_XXX constants.
+    /// \param trigger - true links the trigger event of trigger mode to INT1, otherwise links to INT2.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR set_fifo_ctl_priv(const size_t  fifolen,
                                  const uint8_t fifo_mode,
                                  const bool    trigger_int,
                                  EKitTimeout&  to);
 
+    /// \brief Sets data format
+    /// \param self_test - true to perform self test, otherwise false.
+    /// \param three_wire_spi - true to use 3 wire spi, otherwise false (4 wire SPI).
+    /// \param int_invert - true to set interrupts to active high, otherwise interrupts will be active low.
+    /// \param full_res - if true the device is in full resolution mode, where
+    ///        the output resolution increases with the g range set by the range
+    ///        bits to maintain a 4 mg/LSB scale factor. False instructs the device
+    ///        to work in 10-bit mode, and the range bits determine the maximum g
+    ///        range and scale factor.
+    /// \param justify_msb - True selects left-justified (MSB) mode, and false
+    ///        selects right-justified mode with sign extension.
+    /// \param range - Specifies measurement range. Use one of these constants
+    ///        \ref ADXL345Constants::DATA_FORMAT_RANGE_XXg
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR set_data_format_priv(bool         self_test,
                                     bool         three_wire_spi,
                                     bool         int_invert,
@@ -269,6 +380,20 @@ class ADXL345 final : public EKitDeviceBase {
                                     uint8_t      range,
                                     EKitTimeout& to);
 
+    /// \brief Returns data format
+    /// \param self_test - Reference to self-test value: true indicates self test, otherwise false.
+    /// \param three_wire_spi - Reference to SPI mode: true indicates 3 wire spi, otherwise false (4 wire SPI).
+    /// \param full_res - Reference to full resolution mode: if true the device is in full resolution mode, where
+    ///        the output resolution increases with the g range set by the range
+    ///        bits to maintain a 4 mg/LSB scale factor. False instructs the device
+    ///        to work in 10-bit mode, and the range bits determine the maximum g
+    ///        range and scale factor.
+    /// \param justify_msb - Reference to justification mode value: true selects left-justified (MSB) mode, and false
+    ///        selects right-justified mode with sign extension.
+    /// \param range - Reference to measured value range: One of these constants are returned:
+    ///        \ref ADXL345Constants::DATA_FORMAT_RANGE_XXg
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR get_data_format_priv(bool&        self_test,
                                     bool&        three_wire_spi,
                                     bool&        int_invert,
@@ -277,16 +402,56 @@ class ADXL345 final : public EKitDeviceBase {
                                     uint8_t&     range,
                                     EKitTimeout& to);
 
+    /// \brief Sets data flow rate
+    /// \param low_power - false selects normal operation, true selects reduced power operation, which has
+    ///                    somewhat higher noise
+    /// \param rate - data flow rate, specify one of the values: \ref ADXL345Constants::BW_RATE_XXXHz
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR set_rate_priv(bool low_power, uint8_t rate, EKitTimeout& to);
 
+    /// \brief Returns data flow rate
+    /// \param low_power - Reference to low power value: false selects normal operation,
+    ///        true selects reduced power operation, which has somewhat higher noise.
+    /// \param rate - Reference to data flow rate, returned one of the values: \ref ADXL345Constants::BW_RATE_XXXHz
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR get_rate_priv(bool& low_power, uint8_t& rate, EKitTimeout& to);
 
+    /// \brief Set power control
+    /// \param link - True with both the activity and inactivity functions enabled
+    ///        delays the start of the activity function until inactivity is detected.
+    /// \param auto_sleep - If the link bit is set and true is specified enables
+    ///        the auto-sleep functionality.
+    /// \param measure - False places the part into standby mode, and true places
+    ///        the part into measurement mode.
+    /// \param sleep - false puts the part into the normal mode of operation,
+    ///        and true places the part into sleep mode.
+    /// \param wakeup_rate - control the frequency of readings in sleep mode. One
+    ///        of these values must be specified \ref ADXL345Constants::POWER_CTL_WAKEUP_XHZ.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR set_power_ctl_priv(bool         link,
                                   bool         auto_sleep,
                                   bool         measure,
                                   bool         sleep,
                                   uint8_t      wakeup_rate,
                                   EKitTimeout& to);
+
+    /// \brief Returns current power control
+    /// \param link - Reference to link value: true with both the activity and
+    ///        inactivity functions enabled delays the start of the activity
+    ///        function until inactivity is detected.
+    /// \param auto_sleep - Reference to auto sleep value: if the link bit is
+    ///        set and true is specified enables the auto-sleep functionality.
+    /// \param measure - Reference to measure value: false places the part into
+    ///        standby mode, and true places the part into measurement mode.
+    /// \param sleep - Reference to sleep value: false puts the part into the
+    ///        normal mode of operation, and true places the part into sleep mode.
+    /// \param wakeup_rate - Reference to wakeup rate control value: One
+    ///        of these values are returned \ref ADXL345Constants::POWER_CTL_WAKEUP_XHZ.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR get_power_ctl_priv(bool&        link,
                                   bool&        auto_sleep,
                                   bool&        measure,
@@ -294,10 +459,21 @@ class ADXL345 final : public EKitDeviceBase {
                                   uint8_t&     wakeup_rate,
                                   EKitTimeout& to);
 
+    /// \brief Verifies device id
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR check_device_id_priv(EKitTimeout& to);
 
+    /// \brief Reads device configuration
+    /// \param config - reference to configuration to be read.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR read_config_priv(ADXL345Confiuration& config, EKitTimeout& to);
 
+    /// \brief Sets device configuration
+    /// \param config - reference to configuration to be set.
+    /// \param timeout - timeout object for timeout control.
+    /// \return Corresponding \ref EKIT_ERROR code.
     EKIT_ERROR write_config_priv(ADXL345Confiuration& config, EKitTimeout& to);
 };
 

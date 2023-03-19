@@ -39,8 +39,8 @@
 /// <CHECKIT> complete documentation ...
 ///
 
-/// \class ADXL345
-/// \brief ADXL345 support.
+/// \class HMC5883L
+/// \brief HMC5883L support.
 class HMC5883L final : public EKitDeviceBase {
     /// \typedef super
     /// \brief Defines parent class

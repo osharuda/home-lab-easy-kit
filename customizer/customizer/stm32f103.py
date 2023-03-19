@@ -831,7 +831,7 @@ def spi_get_baud_rate_control(spi: str, value : str):
         "18000000_1.125mhz":    0x0018, # prescaller=16
         "18000000_562khz":      0x0020, # prescaller=32
         "18000000_281khz":      0x0028, # prescaller=64
-        "18000000_140hz":       0x0030, # prescaller=128
+        "18000000_140khz":       0x0030, # prescaller=128
         "18000000_70khz":       0x0038, # prescaller=256
 
         # 72MHz bus
