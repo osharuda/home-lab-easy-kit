@@ -213,19 +213,19 @@ EKIT_ERROR EKitFirmware::get_opt(int opt, int& value, EKitTimeout& to) {
 // uint8_t flags: optional flags to send to the device
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){//(const std::vector<uint8_t>& data, uint8_t flags){
-	std::vector<uint8_t> buf;
-	CommResponseHeader rhdr;
-	size_t buf_len = len + sizeof(CommCommandHeader);
-	buf.resize(buf_len);
-	uint8_t* pbuf = buf.data();
-	EKIT_ERROR err;
+EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){
+    std::vector<uint8_t> buf;
+    CommResponseHeader rhdr;
+    size_t buf_len = len + sizeof(CommCommandHeader);
+    buf.resize(buf_len);
+    uint8_t* pbuf = buf.data();
+    EKIT_ERROR err;
 
-	CHECK_SAFE_MUTEX_LOCKED(bus_lock);	
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
-	// Prepare buffer
-	PCommCommandHeader phdr = (PCommCommandHeader)pbuf;
-	assert(vdev_addr>=0 && vdev_addr <= COMM_MAX_DEV_ADDR);
+    // Prepare buffer
+    PCommCommandHeader phdr = (PCommCommandHeader)pbuf;
+    assert(vdev_addr>=0 && vdev_addr <= COMM_MAX_DEV_ADDR);
     phdr->command_byte = vdev_addr | flags;
     phdr->length = len;
     if (len > 0) {
@@ -233,21 +233,21 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){//(
     }
     phdr->control_crc = tools::calc_contol_sum(pbuf, buf_len, sizeof(CommCommandHeader) - 1);
 
-	do {
-		err = bus->write(pbuf, buf_len, to);
-	} while (err == EKIT_WRITE_FAILED);
+    do {
+            err = bus->write(pbuf, buf_len, to);
+    } while (err == EKIT_WRITE_FAILED);
 
-	if (err == EKIT_OK) {
-		// wait device since command may take a while
-		// Note, don't bother with CRC here because it's firmware responsibility to check it
-		err = get_status(rhdr, true, to);
-	}	
+    if (err == EKIT_OK) {
+        // wait device since command may take a while
+        // Note, don't bother with CRC here because it's firmware responsibility to check it
+        err = get_status(rhdr, true, to);
+    }
 
     return err;
 }
 
 //------------------------------------------------------------------------------------
-// EKitFirmware::read_dev
+// EKitFirmware::read
 // Purpose: Read from the device fixed amount of bytes
 // void* ptr: buffer with data to send. May be an empty buffer.
 // bool check_crc: true - to check CRC, false - do not check CRC
@@ -259,7 +259,7 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){//(
 // do not use crc check when there is a chance that device buffer has more data than you
 // expect to read. Use check_crc == true when you know amount of data in the buffer for sure, otherwise false. 
 //------------------------------------------------------------------------------------
-EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){//read_dev(std::vector<uint8_t>& data){
+EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){
 	EKIT_ERROR err;
 	std::vector<uint8_t> buf;
 	size_t buf_len = len+sizeof(CommResponseHeader);

@@ -1,4 +1,5 @@
 #!/bin/bash
 killall openocd
-st-flash --format ihex write ./build/hlekfw.hex
+
+until st-flash --format ihex write ./build/hlekfw.hex; do sleep 1; done
 
