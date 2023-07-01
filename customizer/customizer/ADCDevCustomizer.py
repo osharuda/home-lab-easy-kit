@@ -92,9 +92,11 @@ class ADCDevCustomizer(DeviceCustomizer):
     def customize(self):
         fw_device_descrs = []
         fw_device_buffers = []      # these buffers are used to buffer all samples
+        fw_device_measurement_buffers = []
+        fw_device_sample_time_buffers = []
+        fw_device_accumulator_buffers = []
         sw_device_descrs = []
         buffer_defs = []
-        buffer_size_defs = []
         fw_device_analog_inputs = []
         sw_device_analog_inputs = []
         sw_config_declarations = []
@@ -105,12 +107,15 @@ class ADCDevCustomizer(DeviceCustomizer):
         timer_irq_handler_list = []
         index = 0
         adc_maxval = self.mcu_hw.get_ADC_MAXVAL();
+        sample_size = 2         # result of averaging will be uint16_t
+
+        print(f"--------------------------------------------------------- ")
 
 
         for dev_name, dev_config in self.device_list:
             adcdev_requires = dev_config["requires"]
             dev_id = dev_config["dev_id"]
-            buffer_size = dev_config["buffer_size"]
+            measurements_per_sample = dev_config["measurements_per_sample"]
             use_dma = dev_config["use_dma"] != 0
             adc_input_number = 0
             timer_count = 0
@@ -120,8 +125,6 @@ class ADCDevCustomizer(DeviceCustomizer):
             dr_address = "0"
             fw_analog_inputs = []
             sw_analog_inputs = []
-
-            vref = dev_config["vref"]
 
             self.sanity_checks(dev_config, adcdev_requires, dev_name)
 
@@ -144,7 +147,7 @@ class ADCDevCustomizer(DeviceCustomizer):
                         sample_time = "0"
 
                     fw_analog_inputs.append("{{ {0}, {1}, {2}, {3} }}".format(channel_port, channel_pin, res, sample_time))
-                    sw_analog_inputs.append('{{ "{0}", "{1}" }}'.format(rname, res))
+                    sw_analog_inputs.append('{{ "{0}", "{1}", {2}    }}'.format(rname, res, sample_time))
 
                 elif rtype == "adc":
                     adc = res
@@ -156,7 +159,8 @@ class ADCDevCustomizer(DeviceCustomizer):
 
             if adc_input_number == 0:
                 raise RuntimeError("Device {0} must have at least one adc_input".format(dev_name))
-            sample_block_size = adc_input_number*2
+            sample_block_size = adc_input_number*sample_size
+            buffer_size = dev_config["buffer_size"] * sample_block_size;
 
             if timer_count == 0:
                 raise RuntimeError("Device {0} must have one timer assigned".format(dev_name))
@@ -188,25 +192,34 @@ class ADCDevCustomizer(DeviceCustomizer):
                 irq_handler = self.mcu_hw.ADC_to_ADCHandler(adc)
                 adc_isr_list.append("MAKE_ISR_WITH_INDEX({0}, ADC_COMMON_ADC_IRQ_HANDLER, {1}) \\".format(irq_handler, index))
                 adcdev_requires["ADC_IRQ"] = {"irq_handlers": irq_handler}
-                print("Warning: device {0} will work in interrupt mode. DMA will not be used!".format(dev_name))
+                print("Warning: device {0} will work in interrupt mode!".format(dev_name))
 
 
             scan_complete_irqn = self.mcu_hw.ISRHandler_to_IRQn(irq_handler)
 
-            if not check_buffer_size_multiplicity(buffer_size, adc_input_number*2):
-                samples_per_channel = ( buffer_size // (adc_input_number*2) ) + 1
-                new_buffer_size = samples_per_channel * (adc_input_number*2)
+            if not check_buffer_size_multiplicity(buffer_size, sample_block_size):
+                samples_per_channel = ( buffer_size // sample_block_size ) + 1
+                new_buffer_size = samples_per_channel * sample_block_size
                 print(f'Warning: device {dev_name} has buffer size ({buffer_size}) not multiply to the number of inputs ({adc_input_number}) * sizeof('
                       'uint16_t)')
                 print(f'Buffer size is increased to {new_buffer_size}')
                 buffer_size = new_buffer_size
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             fw_inputs_name = "g_{0}_inputs".format(dev_name)
+
+            fw_measurement_buffer_size = measurements_per_sample * adc_input_number
+            fw_measurement_buffer_name = "g_{0}_measurement_buffer".format(dev_name)
+            fw_sample_time_buffer_name = "g_{0}_sample_time_buffer".format(dev_name)
+            fw_accumulator_buffer_name = "g_{0}_accumulator_buffer".format(dev_name)
+
             fw_device_descrs.append(f"""{{\\
     {{0}},\\
     {{0}},\\
     {{0}},\\
     {fw_inputs_name},\\
+    {fw_measurement_buffer_name},\\
+    {fw_sample_time_buffer_name},\\
+    {fw_accumulator_buffer_name},\\
     {fw_buffer_name},\\
     {adc},\\
     {timer},\\
@@ -216,6 +229,7 @@ class ADCDevCustomizer(DeviceCustomizer):
     {dma_it},\\
     {buffer_size},\\
     {sample_block_size},\\
+    {measurements_per_sample}, \\
     {self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler)},\\
     {scan_complete_irqn},\\
     {dev_id},\\
@@ -227,16 +241,21 @@ class ADCDevCustomizer(DeviceCustomizer):
     "{dev_name}",                          /* Device name */ \\
     {buffer_size},                         /* Buffer size */ \\
     {adc_input_number},                    /* Number of ADC inputs*/ \\
+    {measurements_per_sample},             /* Number of measurements to be averaged per sample */
     {self.mcu_hw.get_TIMER_freq(timer)},   /* Timer frequency */ \\
-    {vref},                                /* Reference voltage */ \\
     {adc_maxval},                          /* ADC maximum value */ \\
     {fw_inputs_name}                       /* Inputs */ }}""")
 
+            # Device data arrays
             fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
-
+            fw_device_measurement_buffers.append("volatile uint16_t {0}[{1}];\\".format(fw_measurement_buffer_name, fw_measurement_buffer_size))
             fw_device_analog_inputs.append("volatile ADCDevFwChannel {0}[]= {{ {1} }};\\".format(fw_inputs_name,
                                                                                                  ", ".join(fw_analog_inputs)))
+            fw_device_sample_time_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_sample_time_buffer_name, adc_input_number))
+            fw_device_accumulator_buffers.append("volatile uint32_t {0}[{1}];\\".format(fw_accumulator_buffer_name, adc_input_number))
 
+
+            # Software data arrays
             sw_device_analog_inputs.append("const ADCInput {0}[]= {{ {1} }};\\".format(fw_inputs_name,
                                                                                                  ", ".join(sw_analog_inputs)))
             sw_config_name = "adc_{0}_config".format(dev_name)
@@ -251,6 +270,9 @@ class ADCDevCustomizer(DeviceCustomizer):
                       "__ADCDEV_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descrs),
                       "__ADCDEV_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_descrs),
                       "__ADCDEV_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1],
+                      "__ADCDEV_FW_MEASUREMENT_BUFFERS__": concat_lines(fw_device_measurement_buffers)[:-1],
+                      "__ADCDEV_FW_ACCUMULATOR_BUFFERS__": concat_lines(fw_device_accumulator_buffers)[:-1],
+                      "__ADCDEV_FW_SAMPLE_TIME_BUFFERS__": concat_lines(fw_device_sample_time_buffers)[:-1],
                       "__ADCDEV_FW_CHANNELS__": concat_lines(fw_device_analog_inputs)[:-1],
                       "__ADCDEV_SW_CHANNELS__": concat_lines(sw_device_analog_inputs)[:-1],
                       "__ADCDEV_FW_ADC_IRQ_HANDLERS__": concat_lines(adc_isr_list)[:-1],

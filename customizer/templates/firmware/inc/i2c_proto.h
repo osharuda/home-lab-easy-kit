@@ -139,21 +139,21 @@ typedef struct tag_CommCommandHeader{{
 /// \brief This communication status indicates that communication with firmware is blocked by currently executed command.
 /// Do not attempt to send any commands to the device if this bit set.
 /// This flag is set by communication protocol implementation immediately after reception of command byte.
-#define COMM_STATUS_BUSY              128
+#define COMM_STATUS_BUSY              (uint8_t)(1 << 7)
 
 /// \def COMM_STATUS_FAIL
 /// \brief This communication status indicates that last command was not executed or recognized by device.
 /// In this case command should be either repeated or software should make corresponding actions that depend on the nature of the command.
-#define COMM_STATUS_FAIL              64
+#define COMM_STATUS_FAIL              (uint8_t)(1 << 6)
 
 /// \def COMM_STATUS_CRC
 /// \brief This communication status indicates that last command was not delivered successfully to device because of data corruptions detected by control sum check.
 /// Master should repeat this command. Control sum check is implemented by device separately.
-#define COMM_STATUS_CRC               32
+#define COMM_STATUS_CRC               (uint8_t)(1 << 5)
 
 /// \def COMM_STATUS_OVF
 /// \brief This communication status indicates that circular buffer of the device is overflow and some data is lost
-#define COMM_STATUS_OVF               16
+#define COMM_STATUS_OVF               (uint8_t)(1 << 4)
 
 /// \def COMM_STATUS_OK
 /// \brief This communication status indicates successful operation

@@ -1193,6 +1193,33 @@ void SPWMResetHandler::handle(const std::vector<std::string>& args) {
 }
 
 //----------------------------------------------------------------------------------------------//
+//                                    ADCDevStatusHandler                                        //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(ADCDevStatusHandler,"adc::", "::status")
+std::string ADCDevStatusHandler::help() const {
+    return tools::format_string("# %s Prints ADC status. No parameters are required.\n",
+                                get_command_name());
+}
+void ADCDevStatusHandler::handle(const std::vector<std::string>& args) {
+
+    static const std::map<uint16_t , std::pair<std::string, std::string>> adc_status_flags = {
+            {ADCDEV_STATUS_STARTED,      {"STARTED",    "STOPPED"}},
+            {ADCDEV_STATUS_UNSTOPPABLE,  {"UNSTOPPABLE","LIMITED"}},
+            {ADCDEV_STATUS_TOO_FAST,     {"TOO_FAST",   ""}},
+            {ADCDEV_STATUS_SAMPLING,     {"SAMPLING",   "NOT_SAMPLING"}}};
+
+
+    auto adc = dynamic_cast<ADCDev*>(device.get());
+    check_arg_count(args, 0);
+    uint16_t flags = 0;
+    size_t sample_count = adc->status(flags);
+    std::string text_status = tools::flags_to_string(flags, adc_status_flags, " ");
+    ui->log(tools::format_string("%s status: %s", adc->get_dev_name(), text_status));
+    ui->log(tools::format_string("%d samples in internal buffer.", sample_count));
+
+}
+
+//----------------------------------------------------------------------------------------------//
 //                                    ADCDevStartHandler                                        //
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(ADCDevStartHandler,"adc::", "::start")
@@ -1200,19 +1227,47 @@ std::string ADCDevStartHandler::help() const {
     return tools::format_string("# %s Starts ADC conversion.\n"
                                 "# usage: <count>,<period><unit>\n"
                                 "#        <count> number of samples to sample\n"
-                                "#        <period> time period between samples\n"
-                                "#        <unit> 'us' - microseconds, 'ms' - milliseconds, 's' - seconds\n"
                                 "# note: actual delay between samples may be inaccurate, especially if very little delays specified\n",
                                 get_command_name());
 }
 void ADCDevStartHandler::handle(const std::vector<std::string>& args) {
     auto adc = dynamic_cast<ADCDev*>(device.get());
     std::string unit;
-    check_arg_count(args, 2);
+    check_arg_count(args, 1);
     size_t sample_count = arg_int(args, "count", 0, USHRT_MAX, {""}, unit, "");
+    adc->start(sample_count);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    ADCDevConfigHandler                                        //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(ADCDevConfigHandler,"adc::", "::configure")
+std::string ADCDevConfigHandler::help() const {
+    return tools::format_string("# %s Configures ADC conversion.\n"
+                                "# usage: <count>,<period><unit>,<sample time>\n"
+                                "#        <count> number of samples to be averaged per sample\n"
+                                "#        <period> time period between samples\n"
+                                "#        <unit> 'us' - microseconds, 'ms' - milliseconds, 's' - seconds\n"
+                                "#        <sample time> - sample time, integers in range [0, 7]. Single value for all channels.\n"
+                                "#                        See ADC_SampleTime_<N>Cycles<M> constants in CMSIS library.\n"
+                                "# note: actual delay between samples may be inaccurate, especially if very little delays specified\n",
+                                get_command_name());
+}
+void ADCDevConfigHandler::handle(const std::vector<std::string>& args) {
+    auto adc = dynamic_cast<ADCDev*>(device.get());
+    std::string unit;
+    check_arg_count(args, 3);
+    size_t measurements_per_sample = arg_int(args, "count", 0, USHRT_MAX, {""}, unit, "");
     double delay_f = arg_double(args, "period", 0.0, DBL_MAX, {"us", "ms", "s"}, unit, "s");
     delay_f = arg_time_to_sec(delay_f, unit);
-    adc->start(sample_count, delay_f);
+    size_t sample_time = arg_int(args, "sample time", 0, 7, {""}, unit, "");
+    std::map<size_t, uint8_t> sampling_times;
+    size_t num_channels = adc->get_input_count();
+    for (size_t ch=0; ch<num_channels; ch++) {
+        sampling_times[ch] = sample_time;
+    }
+
+    adc->configure(delay_f, measurements_per_sample, sampling_times);
 }
 
 
@@ -1221,21 +1276,28 @@ void ADCDevStartHandler::handle(const std::vector<std::string>& args) {
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(ADCDevStopHandler,"adc::", "::stop")
 std::string ADCDevStopHandler::help() const {
-    return tools::format_string("# %s stops ADC conversion.\n",
-                                "# usage: either no arguments or \"reset\" must be specified\n"
-                                "#        if \"reset\" is specified, all buffered data for the device will be cleared\n",
+    return tools::format_string("# %s stops ADC conversion. No arguments are required.\n",
                                 get_command_name());
 }
 void ADCDevStopHandler::handle(const std::vector<std::string>& args) {
     auto adc = dynamic_cast<ADCDev*>(device.get());
-    size_t argc = check_arg_count_min(args, 0);
-    if (argc==1 && arg_get(args, "reset")=="reset") {
-        adc->stop(true);
-    } else if (argc==0) {
-        adc->stop(false);
-    }
+    size_t argc = check_arg_count(args, 0);
+    adc->stop();
+}
 
-    throw CommandHandlerException("Invalid argument specified");
+
+//----------------------------------------------------------------------------------------------//
+//                                    ADCDevClearHandler                                        //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(ADCDevClearHandler,"adc::", "::clear")
+std::string ADCDevClearHandler::help() const {
+    return tools::format_string("# %s resets ADC data. No arguments are required.\n",
+                                get_command_name());
+}
+void ADCDevClearHandler::handle(const std::vector<std::string>& args) {
+    auto adc = dynamic_cast<ADCDev*>(device.get());
+    size_t argc = check_arg_count(args, 0);
+    adc->clear();
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -1246,57 +1308,25 @@ std::string ADCDevReadHandler::help() const {
     return tools::format_string("# %s reads ADC data. No arguments are required\n",
                                 get_command_name());
 }
+
 void ADCDevReadHandler::handle(const std::vector<std::string>& args) {
     auto adc = dynamic_cast<ADCDev*>(device.get());
     bool overflow = false;
     size_t argc = check_arg_count(args, 0);
     size_t channel_count = adc->get_input_count();
     std::vector<std::vector<double>> data;
-    adc->get(data, overflow);
-
-    if (overflow) {
-        ui->log("*** Warning: overflow detected");
-    }
+    adc->get(data);
 
     // print data
-    for (size_t i=0; i<channel_count; i++) {
-        const std::vector<double>& v = data.at(i);
-        std::string l = adc->get_input_name(i, false) + ":";
-        for (auto s = v.begin(); s!=v.end(); ++s) {
-            l+= " " + std::to_string(*s);
+    size_t sample_count = data.size();
+    for (size_t ch=0; ch<channel_count; ch++) {
+        std::string l = adc->get_input_name(ch, false) + ":";
+        for (size_t s=0; s<sample_count; s++) {
+            l += " " + std::to_string(data[s][ch]);
         }
         ui->log(l);
     }
 }
-
-//----------------------------------------------------------------------------------------------//
-//                                    ADCDevReadMeanHandler                                     //
-//----------------------------------------------------------------------------------------------//
-DEFINE_HANDLER_DEFAULT_IMPL(ADCDevReadMeanHandler,"adc::", "::read_mean")
-std::string ADCDevReadMeanHandler::help() const {
-    return tools::format_string("# %s reads ADC data and print averages. No arguments are required\n",
-                                get_command_name());
-}
-void ADCDevReadMeanHandler::handle(const std::vector<std::string>& args) {
-    auto adc = dynamic_cast<ADCDev*>(device.get());
-    bool overflow = false;
-    size_t argc = check_arg_count(args, 0);
-    std::vector<double> data;
-    adc->get(data, overflow);
-
-    size_t channel_count = adc->get_input_count();
-
-    if (overflow) {
-        ui->log("*** Warning: overflow detected");
-    }
-
-    // print data
-    for (size_t i=0; i<channel_count; i++) {
-        std::string l = adc->get_input_name(i, false) + ": " + std::to_string(data.at(i));
-        ui->log(l);
-    }
-}
-
 
 //----------------------------------------------------------------------------------------------//
 //                                    StepMotorInfoHandler                                      //
@@ -1308,6 +1338,7 @@ std::string StepMotorInfoHandler::help() const {
                                 get_command_name(), 
                                 smd->get_dev_name());
 }
+
 void StepMotorInfoHandler::handle(const std::vector<std::string>& args) {
     auto smd = dynamic_cast<StepMotorDev*>(device.get());
     auto res = smd->get_motor_info();

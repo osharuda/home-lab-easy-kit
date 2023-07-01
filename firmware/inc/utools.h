@@ -57,6 +57,29 @@ extern int g_assert_param_count;
 
 extern GPIO_TypeDef g_null_port;
 
+/// \brief Allow to get member of the structure size.
+/// \param T - structure name
+/// \param M - member name (from the structure T)
+#define STRUCT_MEMBER_SIZE(T,M) (sizeof( ( (T*)0 ) -> M ) )
+
+#define DBGMCU_CR_DBG_TIM_ALL_STOP (DBGMCU_CR_DBG_TIM1_STOP | \
+                                    DBGMCU_CR_DBG_TIM2_STOP | \
+                                    DBGMCU_CR_DBG_TIM3_STOP | \
+                                    DBGMCU_CR_DBG_TIM4_STOP | \
+                                    DBGMCU_CR_DBG_TIM5_STOP | \
+                                    DBGMCU_CR_DBG_TIM6_STOP | \
+                                    DBGMCU_CR_DBG_TIM7_STOP | \
+                                    DBGMCU_CR_DBG_TIM8_STOP | \
+                                    DBGMCU_CR_DBG_TIM9_STOP | \
+                                    DBGMCU_CR_DBG_TIM10_STOP | \
+                                    DBGMCU_CR_DBG_TIM11_STOP | \
+                                    DBGMCU_CR_DBG_TIM12_STOP | \
+                                    DBGMCU_CR_DBG_TIM13_STOP | \
+                                    DBGMCU_CR_DBG_TIM14_STOP | \
+                                    DBGMCU_CR_DBG_TIM15_STOP | \
+                                    DBGMCU_CR_DBG_TIM16_STOP | \
+                                    DBGMCU_CR_DBG_TIM17_STOP)
+
 #ifndef NDEBUG
 /// \brief This variable is used in order to check if #DISABLE_IRQ and #ENABLE_IRQ macro were used correctly.
 /// \note is used in debug builds only.
@@ -80,19 +103,31 @@ extern volatile uint8_t g_irq_disabled;
 /// \brief Clears bits specified by f in x.
 /// \param x - value to be modified.
 /// \param f - bitmask where 1 indicates bit that should be cleared, bits with 0 are ignored.
-#define CLEAR_FLAGS(x,f)       ((x) = (x) & (~(f)))
+/// \note This macro will check statically that variables being passed are the same in type size.
+///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
+#define CLEAR_FLAGS(x,f) _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same"); \
+                         ((x) = (x) & (~(f)))
 
 /// \brief Sets bits specified by f in x.
 /// \param x - value to be modified.
 /// \param f - bitmask where 1 indicates bit that should be set, bits with 0 are ignored.
-#define SET_FLAGS(x,f)       ((x) = (x) | (f))
+/// \note This macro will check statically that variables being passed are the same in type size.
+///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
+#define SET_FLAGS(x,f)  _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same");                   \
+                        ((x) = (x) | (f))
 
 /// \brief Sets bits specified by value in x using mask.
 /// \param x - value to be modified.
 /// \param mask - bitmask where 1 indicates bit of interest that will be modified as specified by value, bits with 0 are
 ///        ignored.
 /// \param value - value that specifies new bit values.
-#define SET_BIT_FIELD(x, mask, value) (x) = (((x) & (~(mask))) | ((value)&(mask)))
+/// \note This macro will check statically that variables being passed are the same in type size.
+///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
+#define SET_BIT_FIELD(x, mask, value) _Static_assert(sizeof(x) == sizeof(mask), "Types size are not the same");  \
+                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
+                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
+                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
+                                      (x) = (((x) & (~(mask))) | ((value)&(mask)))
 
 /// \brief Checks if flags specified by mask are set as specified
 /// \param x - value to be inspected
@@ -212,6 +247,8 @@ void debug_checks_init(void);
 #error "ENABLE_SYSTICK macro is not defined. It should be defined by customizer in any case. Probably utools.h is included before fw.h"
 #endif
 
+void delay_loop(uint32_t n);
+
 #if ENABLE_SYSTICK!=0
 
 /// \brief Inittializes SysTick interrupt.
@@ -247,13 +284,36 @@ uint64_t get_tick_diff_64(uint64_t ev_1, uint64_t ev_2);
 
 #endif
 
-/// \brief Initialize TIMER update event using prescaller and period values.
+/// \brief Initialize TIMER to generate single update event using prescaller and period values.
 /// \param timer - timer to be initialized.
 /// \param prescaller - prescaller value.
 /// \param period - period value.
 /// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
 /// \param priority of the interrup.
 void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
+
+/// \brief Initialize TIMER to generate single update event using prescaller and period values.
+/// \param timer - timer to be initialized.
+/// \param prescaller - prescaller value.
+/// \param period - period value.
+/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
+/// \param priority of the interrup.
+/// \param force_first_call specify non-zero if you need timer to trigger immidiately.
+void timer_start_ex(TIM_TypeDef* timer,
+                    uint16_t prescaller,
+                    uint16_t period,
+                    IRQn_Type irqn,
+                    uint32_t priority,
+                    uint8_t force_first_call);
+
+
+/// \brief Initialize TIMER to generate repeatitive update event using prescaller and period values.
+/// \param timer - timer to be initialized.
+/// \param prescaller - prescaller value.
+/// \param period - period value.
+/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
+/// \param priority of the interrup.
+void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
 
 /// \brief Initialize TIMER update event using time period in microseconds.
 /// \param timer - timer to be initialized.
@@ -278,8 +338,16 @@ void timer_reschedule(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period);
 void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us);
 
 /// \brief Disables timer.
-/// \param timer - timer to be reinitialized.
+/// \param timer - timer to be disabled.
 void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
+
+/// \brief Disables timer.
+/// \param timer - timer to be disabled.
+void timer_disable_ex(TIM_TypeDef* timer);
+
+/// \brief Disables timer when IRQ is disabled.
+/// \param timer - timer to be reinitialized.
+void timer_disable_no_irq(TIM_TypeDef* timer, IRQn_Type irqn);
 
 /// Define this macro to 1 if you need some help during debugging. It allows counted breaks and debug pins.
 #define EMERGENCY_DEBUG_TOOLS 1

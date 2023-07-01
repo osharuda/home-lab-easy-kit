@@ -193,9 +193,11 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(SPWMResetHandler);
 
 	DEFINE_HANDLER_CLASS(ADCDevStartHandler);
+    DEFINE_HANDLER_CLASS(ADCDevStatusHandler);
+    DEFINE_HANDLER_CLASS(ADCDevConfigHandler);
 	DEFINE_HANDLER_CLASS(ADCDevStopHandler);
+    DEFINE_HANDLER_CLASS(ADCDevClearHandler);
 	DEFINE_HANDLER_CLASS(ADCDevReadHandler);
-	DEFINE_HANDLER_CLASS(ADCDevReadMeanHandler);
 
 	DEFINE_HANDLER_CLASS(StepMotorInfoHandler);
 	DEFINE_HANDLER_CLASS(StepMotorEnableHandler);

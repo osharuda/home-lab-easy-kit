@@ -452,12 +452,12 @@ void i2c_stop(void) {
 }
 
 MAKE_ISR(I2C_BUS_ER_ISR) {
-	volatile uint32_t flags = (I2C_BUS_PERIPH->SR2) | (I2C_BUS_PERIPH->SR1 << 16); // NOTE: This sequence doesn't clear ADD. Do not do this here, until DR is not set in transmit mode
-	if (CHECK_SR1SR2_FLAGS(flags, I2C_SR1_AF, I2C_SR2_TRA)) {
-		// STOPF event is not called during transmission when NACK is received, therefore this event should be received here.
-		i2c_stop();
-		CLEAR_FLAGS(I2C_BUS_PERIPH->SR1, I2C_SR1_AF);
-	}
+    uint16_t sr1 = I2C_BUS_PERIPH->SR1;
+    if (sr1 & (I2C_SR1_OVR | I2C_SR1_AF)) {
+        // Overflow/Underrun during receive
+        i2c_stop();
+        CLEAR_FLAGS(I2C_BUS_PERIPH->SR1, (uint16_t)(I2C_SR1_OVR | I2C_SR1_AF));
+    }
 }
 
 MAKE_ISR(I2C_BUS_EV_ISR) {

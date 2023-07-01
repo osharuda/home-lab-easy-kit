@@ -106,7 +106,7 @@ int main(void)
     SCB->SHCSR |= SCB_SHCSR_BUSFAULTENA;
     SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA;
     SCB->SHCSR |= SCB_SHCSR_USGFAULTENA;
-    DBGMCU->CR |= DBGMCU_CR_DBG_I2C2_SMBUS_TIMEOUT | DBGMCU_CR_DBG_TIM4_STOP;
+    DBGMCU->CR |= DBGMCU_CR_DBG_I2C2_SMBUS_TIMEOUT | DBGMCU_CR_DBG_TIM_ALL_STOP;
 
 
 	// This macro enables clock on required peripheral devices. It is auto-generated and defined in hal.h
@@ -161,7 +161,7 @@ int main(void)
 #endif
 
 #ifdef ADCDEV_DEVICE_ENABLED
-    init_adc();
+    adc_init();
 #endif
 
 #ifdef STEP_MOTOR_DEVICE_ENABLED

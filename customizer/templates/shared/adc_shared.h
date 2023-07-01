@@ -23,31 +23,65 @@
 /// \addtogroup group_adc_dev
 /// @{{
 
-/// \def ADCDEV_UNSTOPPABLE
-/// \brief Defines ADCDev command specific flag that instructs ADCDev to sample indefinitely, in this case tag_ADCDevCommand#sample_count
-///        is ignored
-#define ADCDEV_UNSTOPPABLE             128
+/// \def ADCDEV_CONFIGURE
+/// \brief Instructs to configure ADCDev (using /ref ADCDevConfig structure). Ongoing sampling will be stopped.
+#define ADCDEV_CONFIGURE             128
 
-/// \def ADCDEV_RESET_DATA
-/// \brief Defines ADCDev command specific flag instruct to reset all accumulated data.
-#define ADCDEV_RESET_DATA              64
+/// \def ADCDEV_CLEAR
+/// \brief Instructs to clear circular buffer. Ongoing sampling will NOT be stopped.
+#define ADCDEV_CLEAR                 64
 
-/// \def ADCDEV_RESERVED
-/// \brief Reserved, currently is not used
-#define ADCDEV_RESERVED                32
+/// \def ADCDEV_STOP
+/// \brief Stops ongoing sampling. To start ADCDEV all flags should be cleared.
+#define ADCDEV_STOP                  32
+
+/// \def ADCDEV_START
+/// \brief Starts sampling. If ADC is currently sampling returns COMM_STATUS_FAIL.
+/// \note This is equivalent to clear all flags.
+#define ADCDEV_START                 0
+
+
+/// \def ADCDEV_STATUS_STARTED
+/// \brief Specifies "started" device state. This state indicates device is sampling data. If cleared device is not sampling
+///        at the moment.
+#define ADCDEV_STATUS_STARTED       ((uint16_t)(1))
+
+/// \def ADCDEV_STATUS_UNSTOPPABLE
+/// \brief Device is sampling continuously, until it is not explicitly stopped.
+#define ADCDEV_STATUS_UNSTOPPABLE   ((uint16_t)(1 << 1))
+
+/// \def ADCDEV_STATUS_TOO_FAST
+/// \brief This is error flag that says device detected it's timer is not capable to handle specified data flow rate.
+///        If this flag is set device will be stopped and data flow rate should be decreased.
+#define ADCDEV_STATUS_TOO_FAST      ((uint16_t)(1 << 2))
+
+/// \def ADCDEV_STATUS_SAMPLING
+/// \brief This flag is reserved to calculate if timer interrupt overlaps with ADC/DMA interrupts.
+/// \note This flag may change random for software part. Software should ignore this flag.
+#define ADCDEV_STATUS_SAMPLING      ((uint16_t)(1 << 3))
 
 #pragma pack(push, 1)
-/// \struct tag_ADCDevCommand
-/// \brief This structure describes command payload that is used to start sampling by ADCDev
-typedef struct tag_ADCDevCommand {{
-    uint16_t sample_count;      ///< Number of samples to be sampled. Ignored if #ADCDEV_UNSTOPPABLE is specified.
+    /// \struct tag_ADCDevCommand
+    /// \brief This structure describes command payload that is used to start sampling by ADCDev
+    typedef struct tag_ADCDevCommand {{
+        uint16_t sample_count;      ///< Number of samples to be sampled. Ignored if #ADCDEV_UNSTOPPABLE is specified.
+    }} ADCDevCommand;
 
-    uint16_t timer_prescaller;  ///< Timer prescaller value. If this value and tag_ADCDevCommand#timer_period are zero
-                                ///  conversions will follow each other without delay.
+    /// \struct tag_ADCDevConfig
+    /// \brief This structure describes ADCDev configuration.
+    typedef struct tag_ADCDevConfig {{
+        uint16_t timer_prescaller;  ///< Timer prescaller value. If this value and tag_ADCDevCommand#timer_period are zero
+        ///  conversions will follow each other without delay.
 
-    uint16_t timer_period;      ///< Timer period value. If this value and tag_ADCDevCommand#timer_prescaller are zero
-                                ///  conversions will follow each other without delay.
-}} ADCDevCommand;
+        uint16_t timer_period;      ///< Timer period value. If this value and tag_ADCDevCommand#timer_prescaller are zero
+        ///  conversions will follow each other without delay.
+
+        uint16_t measurements_per_sample; ///< Number of measurements per sample. Must be in range [1, n] where n is number of
+                                          ///< measurements to average, as specified in json configuration file ("measurements_per_sample").
+
+        uint8_t  channel_sampling[];   ///< Sampling time per channel (may be omitted by software, in this case default value is used).
+    }} ADCDevConfig;
+
 #pragma pack(pop)
 /// @}}
 

@@ -21,15 +21,31 @@
  */
 
 #include "adcdev.hpp"
-
+#include "tools.hpp"
 #include "ekit_firmware.hpp"
 
 ADCDev::ADCDev(std::shared_ptr<EKitBus>& ebus, const ADCConfig* cfg)
     : super(ebus, cfg->dev_id, cfg->dev_name), config(cfg) {
-    vref_cur = config->vref;
+    static const char* const func_name = "ADCDev::ADCDev";
+
+    // Preallocate read buffer
+    if ((cfg->dev_buffer_len % sizeof(uint16_t)) != 0) {
+        throw EKitException(func_name, EKIT_UNALIGNED, "Device buffer size is unaligned.");
+    }
+
+    signal_ranges.resize(config->input_count);
+    for( auto sr = signal_ranges.begin(); sr!=signal_ranges.end(); ++sr) {
+        sr->first = 0.0L;
+        sr->second = 3.3L;
+    }
+
+    data_buffer.resize(cfg->dev_buffer_len + sizeof(uint16_t));
+    data_status = static_cast<volatile uint16_t*>(data_buffer.data());
+    data = data_status + 1;
 }
 
-ADCDev::~ADCDev() {}
+ADCDev::~ADCDev() {
+}
 
 std::string ADCDev::get_input_name(size_t index, bool channel_name) const {
     static const char* const func_name = "ADCDev::get_input_name";
@@ -42,25 +58,48 @@ std::string ADCDev::get_input_name(size_t index, bool channel_name) const {
                         : config->inputs[index].in_name;
 }
 
-size_t ADCDev::get_input_count() const { return config->input_count; }
+size_t ADCDev::get_input_count() const {
+    return config->input_count;
+}
 
-void   ADCDev::start(uint16_t sample_count, double delay_sec) {
+void   ADCDev::start(uint16_t sample_count) {
     static const char* const func_name = "ADCDev::start";
-    ADCDevCommand            data;
-    double                   expected;
-    uint8_t                  f = 0;
+    ADCDevCommand data = {.sample_count=sample_count};
+    write_device((uint8_t*)&data, sizeof(ADCDevCommand), ADCDEV_START);
+}
 
-    data.sample_count          = sample_count;
+void ADCDev::stop() {
+    static const char* const func_name = "ADCDev::stop";
+    write_device(nullptr, 0, ADCDEV_STOP);
+}
+
+void ADCDev::clear() {
+    static const char* const func_name = "ADCDev::clear";
+    write_device(nullptr, 0, ADCDEV_CLEAR);
+}
+
+void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t, uint8_t>& sampling) {
+    static const char* const func_name = "ADCDev::configure";
+    std::vector<uint8_t> adc_config_buffer(sizeof(ADCDevConfig) + config->input_count, 0);
+    ADCDevConfig* adc_config = reinterpret_cast<ADCDevConfig*>(adc_config_buffer.data());
+    uint8_t* adc_channel_sampling = adc_config_buffer.data() + sizeof(ADCDevConfig);
+    double  expected;
+
+    if ((average_samples <= 0) && (average_samples > config->measurements_per_sample)) {
+        throw EKitException(
+            func_name, EKIT_BAD_PARAM, "Average sampling number doesn't match with device configuration.");
+    }
+    adc_config->measurements_per_sample = static_cast<uint16_t>(average_samples);
 
     // figure out period and prescaller
     if (delay_sec == 0) {
-        data.timer_prescaller = 0;
-        data.timer_period     = 0;
+        adc_config->timer_prescaller = 0;
+        adc_config->timer_period     = 0;
     } else {
         int res = tools::stm32_timer_params(config->timer_freq,
                                             delay_sec,
-                                            data.timer_prescaller,
-                                            data.timer_period,
+                                            adc_config->timer_prescaller,
+                                            adc_config->timer_period,
                                             expected);
         if (res > 0) {
             throw EKitException(
@@ -71,142 +110,108 @@ void   ADCDev::start(uint16_t sample_count, double delay_sec) {
         }
     }
 
-    if (sample_count == 0) {
-        f |= ADCDEV_UNSTOPPABLE;
+    for (size_t ch=0; ch<config->input_count; ch++) {
+        adc_channel_sampling[ch] = tools::get_with_default(sampling, ch, config->inputs[ch].default_sampling_time);
     }
 
     // Do I/O operation
-    {
-        EKitTimeout to(get_timeout());
-        BusLocker   blocker(bus, get_addr(), to);
+    write_device(adc_config_buffer.data(), adc_config_buffer.size(), ADCDEV_CONFIGURE);
+}
 
-        EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
-        if (err != EKIT_OK) {
-            throw EKitException(func_name, err, "set_opt() failed");
-        }
+void ADCDev::write_device(uint8_t* ptr, size_t size, uint8_t flag) {
+    static const char* const func_name = "ADCDev::write_device";
+    EKitTimeout to(get_timeout());
+    BusLocker   blocker(bus, get_addr(), to);
 
-        // Write data
-        err = bus->write((uint8_t*)&data, sizeof(ADCDevCommand), to);
-        if (err != EKIT_OK) {
-            throw EKitException(func_name, err, "write() failed");
-        }
+    EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flag, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "set_opt() failed");
+    }
+
+    // Write data
+    err = bus->write(ptr, size, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "write() failed");
     }
 }
 
-void ADCDev::stop(bool reset_buffer) {
-    static const char* const func_name = "ADCDev::stop";
-    uint8_t                  f         = 0;
-
-    if (reset_buffer) {
-        f |= ADCDEV_RESET_DATA;
-    }
-
-    // Do I/O operation
-    {
-        EKitTimeout to(get_timeout());
-        BusLocker   blocker(bus, get_addr(), to);
-
-        EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, f, to);
-        if (err != EKIT_OK) {
-            throw EKitException(func_name, err, "set_opt() failed");
-        }
-
-        // Write zero-length buffer (just command byte, this will cause sampling
-        // stop)
-        err = bus->write(nullptr, 0, to);
-        if (err != EKIT_OK) {
-            throw EKitException(func_name, err, "write() failed");
-        }
-    }
-}
-
-void ADCDev::get(std::vector<uint16_t>& data, bool& ovf) {
+void ADCDev::get(std::vector<std::vector<double>>& dst) {
     static const char* const func_name = "ADCDev::get(1)";
-    // issue a command
-    {
-        EKitTimeout        to(get_timeout());
-        BusLocker          blocker(bus, get_addr(), to);
+    EKitTimeout        to(get_timeout());
+    BusLocker          blocker(bus, get_addr(), to);
 
-        // get amount of data
-        CommResponseHeader hdr;
-        EKIT_ERROR         err =
-            std::dynamic_pointer_cast<EKitFirmware>(bus)->get_status(
-                hdr, false, to);
-        if (err != EKIT_OK && err != EKIT_OVERFLOW) {
-            throw EKitException(func_name, err, "get_status() failed");
-        }
+    // get amount of data
+    size_t data_size = status_priv(nullptr, to);
+    assert(data_size>=sizeof(uint16_t));
 
-        // check for overflow
-        ovf = (hdr.comm_status & COMM_STATUS_OVF) != 0;
+    // read data (into data_buffer)
+    EKIT_ERROR err = bus->read((uint8_t*)data_status, data_size, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "read() failed");
+    }
+    data_size = (data_size - sizeof(uint16_t)) / sizeof(uint16_t); // <- Number of measurements (all channels)
+    size_t sample_count = data_size / config->input_count; // <- Number of samples
 
-        if (hdr.length == 0) goto done;
-
-        // sanity check, buffer must be aligned by size of all inputs
-        if ((hdr.length % (config->input_count * sizeof(uint16_t))) != 0) {
-            assert(false);
-            goto done;
-        }
-
-        // resize buffer
-        data.resize(hdr.length / sizeof(uint16_t));
-
-        // read data
-        err = bus->read((uint8_t*)data.data(), hdr.length, to);
-        if (err != EKIT_OK) {
-            throw EKitException(func_name, err, "read() failed");
+    // convert into doubles
+    dst.resize(sample_count);
+    for (int s = 0; s < sample_count; s++) {
+        dst[s].resize(config->input_count);
+        for (size_t ch = 0; ch < config->input_count; ch++) {
+            uint16_t v = data[ch + s * config->input_count];
+            double v_min = signal_ranges[ch].first;
+            double v_max = signal_ranges[ch].second;
+            double x = v_min + ((double)v / (double)config->adc_maxval) * (v_max - v_min);
+            dst[s][ch] = x;
         }
     }
+}
+
+size_t ADCDev::status(uint16_t& flags) {
+    static const char* const func_name = "ADCDev::status";
+
+    EKitTimeout        to(get_timeout());
+    BusLocker          blocker(bus, get_addr(), to);
+
+    return (status_priv(&flags, to) - sizeof(uint16_t)) / sizeof(uint16_t);
+}
+
+size_t ADCDev::status_priv(uint16_t* flags, EKitTimeout& to) {
+    static const char* const func_name = "ADCDev::status_priv";
+    EKIT_ERROR err = EKIT_FAIL;
+    CommResponseHeader hdr;
+
+    auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
+
+    do {
+        err = fw->get_status(hdr, false, to);
+    } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
+    assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
+
+    if (hdr.comm_status & COMM_STATUS_OVF) {
+        throw EKitException(func_name, EKIT_OVERFLOW, "Device buffer overflow.");
+    }
+
+    if (hdr.comm_status & COMM_STATUS_CRC) {
+        throw EKitException(func_name, EKIT_CRC_ERROR, "Communication CRC failure");
+    }
+
+    if (hdr.comm_status & COMM_STATUS_FAIL) {
+        throw EKitException(func_name, EKIT_COMMAND_FAILED, "Communication with firmware has failed.");
+    }
+
+    if (((hdr.length - sizeof(uint16_t)) % (config->input_count * sizeof(uint16_t)))!=0) {
+        throw EKitException(func_name, EKIT_UNALIGNED, "Device buffer seems to be unaligned.");
+    }
+
+    if (flags == nullptr) goto done;
+
+    err = bus->read((uint8_t*)data_status, sizeof(uint16_t), to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "read() failed");
+    }
+    *flags = *data_status;
 
 done:
-    return;
+    return hdr.length;
 }
 
-// returns all samples converted to double
-void ADCDev::get(std::vector<std::vector<double>>& values, bool& ovf) {
-    static const char* const func_name = "ADCDev::get(2)";
-    std::vector<uint16_t>    data;
-    get(data, ovf);
-    size_t sample_count = data.size() / config->input_count;
-
-    values.clear();
-
-    // convert into doubles
-    for (size_t ch = 0; ch < config->input_count; ch++) {
-        std::vector<double> ch_val;
-
-        for (int s = 0; s < sample_count; s++) {
-            uint16_t v = data.at(ch + s * config->input_count);
-            double   x = vref_cur * ((double)v / (double)config->adc_maxval);
-            ch_val.push_back(x);
-        }
-
-        values.push_back(std::move(ch_val));
-    }
-}
-
-// returns average for all samples converted to double
-void ADCDev::get(std::vector<double>& values, bool& ovf) {
-    static const char* const func_name = "ADCDev::get(3)";
-    std::vector<uint16_t>    data;
-    get(data, ovf);
-    size_t sample_count = data.size() / config->input_count;
-
-    values.clear();
-
-    // convert into doubles
-    for (size_t ch = 0; ch < config->input_count; ch++) {
-        uint32_t acc = 0;
-        for (int s = 0; s < sample_count; s++) {
-            acc += data.at(ch + s * config->input_count);
-        }
-
-        acc      = acc / sample_count;
-        double x = vref_cur * ((double)acc / (double)config->adc_maxval);
-        values.push_back(x);
-    }
-}
-
-void ADCDev::set_vref(double Vref_plus) { vref_cur = Vref_plus; }
-void ADCDev::set_vref(uint16_t vref_channel, double V_ref_int) {
-    vref_cur = V_ref_int * (double)config->adc_maxval / (double)vref_channel;
-}

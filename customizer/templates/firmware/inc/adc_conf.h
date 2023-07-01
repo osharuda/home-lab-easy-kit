@@ -47,6 +47,18 @@
 /// \brief Defines memory blocks used for ADCDev circular buffers as data storage
 #define ADCDEV_FW_BUFFERS {__ADCDEV_FW_BUFFERS__}
 
+/// \def ADCDEV_FW_MEASUREMENT_BUFFERS
+/// \brief Defines memory blocks used to keep data (measurements) to be averaged later into samples
+#define ADCDEV_FW_MEASUREMENT_BUFFERS {__ADCDEV_FW_MEASUREMENT_BUFFERS__}
+
+/// \def ADCDEV_FW_SAMPLE_TIME_BUFFERS
+/// \brief Defines memory blocks used to store sample time for each channel
+#define ADCDEV_FW_SAMPLE_TIME_BUFFERS {__ADCDEV_FW_SAMPLE_TIME_BUFFERS__}
+
+/// \def ADCDEV_FW_ACCUMULATOR_BUFFERS
+/// \brief Defines memory used to accumulate measurements (sum) and divide later to get average value.
+#define ADCDEV_FW_ACCUMULATOR_BUFFERS {__ADCDEV_FW_ACCUMULATOR_BUFFERS__}
+
 /// \def ADCDEV_FW_CHANNELS
 /// \brief Defines global arrays with channels being used by ADCDev virtual devices
 #define ADCDEV_FW_CHANNELS {__ADCDEV_FW_CHANNELS__}

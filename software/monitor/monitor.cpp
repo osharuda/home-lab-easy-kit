@@ -372,9 +372,11 @@ int main(int argc, char* argv[])
     struct ADCCommandHandlers {
         std::shared_ptr<ADCDev> dev;
         std::shared_ptr<CommandHandler> adc_start_handler;
+        std::shared_ptr<CommandHandler> adc_status_handler;
+        std::shared_ptr<CommandHandler> adc_config_handler;
         std::shared_ptr<CommandHandler> adc_stop_handler;
+        std::shared_ptr<CommandHandler> adc_clear_handler;
         std::shared_ptr<CommandHandler> adc_read_handler;
-        std::shared_ptr<CommandHandler> adc_mean_handler;
     };
 
     std::vector<ADCCommandHandlers> adc_handlers(adc_configs_number);
@@ -386,14 +388,19 @@ int main(int argc, char* argv[])
         h.dev.reset(new ADCDev(firmware, config));
 
         h.adc_start_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.adc_status_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.adc_config_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevConfigHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_stop_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.adc_clear_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevClearHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_read_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.adc_mean_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevReadMeanHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
 
-        ui->add_command(cmd_index++, h.adc_start_handler);  
-        ui->add_command(cmd_index++, h.adc_stop_handler);  
+
+        ui->add_command(cmd_index++, h.adc_status_handler);
+        ui->add_command(cmd_index++, h.adc_start_handler);
+        ui->add_command(cmd_index++, h.adc_config_handler);
+        ui->add_command(cmd_index++, h.adc_stop_handler);
+        ui->add_command(cmd_index++, h.adc_clear_handler);
         ui->add_command(cmd_index++, h.adc_read_handler);  
-        ui->add_command(cmd_index++, h.adc_mean_handler);
     }
 #endif    
 

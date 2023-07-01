@@ -4,43 +4,45 @@
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,
-      "address" : 19,
-      "requires" :  {"i2c" : "I2C2"}
-    }},
+      "address" : 32,
+      "requires" :  {"i2c" : "I2C1"}}},
 
   "devices" : {
+
+    "RTCCustomizer" : {
+      "rtc": {
+        "dev_id": 1,
+        "requires": { "bkp" : "BKP_DR1",
+                      "rtc" : "RTC"}}},
+
     "ADCDevCustomizer": {
-      "adc_0" : {
-        "dev_id" : 9,
-        "buffer_size" : 64,
+      "adc_dma" : {
+        "dev_id" : 2,
+        "buffer_size" : 256,
+	      "measurements_per_sample": 100,
         "use_dma" : 1,
-        "vref" : 3.2,
         "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
-                         "override" :  {}},
+                         "override" :  {"input_0" : "ADC_SampleTime_28Cycles5" }},
         "requires" :  { "ADC" : {"adc" : "ADC1"},
                         "TIMER" : {"timer" :  "TIM2"},
+                        "input_0" : {"adc_input" : "ADC_Channel_0"},
                         "input_vref" : {"adc_input" : "ADC_Channel_Vrefint"},
                         "input_temp" : {"adc_input" : "ADC_Channel_TempSensor"}}},
 
-      "adc_1" : {
-        "dev_id" : 10,
-        "buffer_size" : 640,
+      "adc_int" : {
+        "dev_id" : 3,
+        "buffer_size" : 256,
+        "measurements_per_sample": 100,
         "use_dma" : 0,
-        "vref" : 3.2,
         "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
-                         "override" :  {"input_0" : "ADC_SampleTime_28Cycles5" }},
+                         "override" : {}},
         "requires" :  { "ADC" : {"adc" : "ADC2"},
-                        "TIMER" : {"timer" :  "TIM3"},
-                        "input_0" : {"adc_input" : "ADC_Channel_0"},
+                        "TIMER" : {"timer" :  "TIM1"},
                         "input_1" : {"adc_input" : "ADC_Channel_1"},
                         "input_2" : {"adc_input" : "ADC_Channel_2"},
                         "input_3" : {"adc_input" : "ADC_Channel_3"},
-                        "input_4" : {"adc_input" : "ADC_Channel_4"},
-                        "input_5" : {"adc_input" : "ADC_Channel_5"},
-                        "input_6" : {"adc_input" : "ADC_Channel_6"},
-                        "input_7" : {"adc_input" : "ADC_Channel_7"},
-                        "input_8" : {"adc_input" : "ADC_Channel_8"},
-                        "input_9" : {"adc_input" : "ADC_Channel_9"}}}
-    }
+                        "input_4" : {"adc_input" : "ADC_Channel_4"}}}}
+
+
   }
 }

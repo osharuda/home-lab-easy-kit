@@ -70,9 +70,6 @@ class ADCDev final : public EKitVirtualDevice {
     /// \brief Defines parent class
     typedef EKitVirtualDevice super;
 
-    /// \brief Current vref value
-    double vref_cur;
-
     public:
 
     /// \brief Pointer to the #tag_PADCConfig structure that describes ADCDev virtual device represented by this class.
@@ -90,38 +87,42 @@ class ADCDev final : public EKitVirtualDevice {
     /// \brief Constructor to be used
     /// \param ebus - reference to shared pointer with EKitBus. This bus must support FIRMWARE_OPT_FLAGS.
     /// \param config - actual configuration of the device taken from generated configuration library.
-	ADCDev(std::shared_ptr<EKitBus>& ebus, const ADCConfig* config);
+    ADCDev(std::shared_ptr<EKitBus>& ebus, const ADCConfig* config);
 
     /// \brief Destructor (virtual)
     ~ADCDev() override;
 
     /// \brief Start sampling
     /// \param sample_count - amount of samples required. If zero - number of samples is unlimited.
-    /// \param delay_sec - number of micro seconds between samples. If 0 is passed conversion will follow each other without
-    ///        delay.
-    void start(uint16_t sample_count, double delay_sec);
+    void start(uint16_t sample_count);
 
-    /// \brief Stops sampling
-    /// \param reset_buffer - true to discard all the data accumulated in ADCDev circular buffer
-    void stop(bool reset_buffer);
+    /// \brief Stops sampling.
+    /// \note If ADCDev is stopped during sampling ADC related peripherals are re-initialized.
+    void stop();
 
-    /// \brief Read samples accumulated in circular buffer as uint16_t.
-    /// \param data - reference to std::vector to be filled with samples. Samples will appear as two-dimensional array
-    ///        data[s][c], where inner index c is for channels, s for sample. Return array may be empty, if no data available.
-    ///        Length of the data (in elements) is multiple to amount of channels.
-    /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-    void get(std::vector<uint16_t>& data, bool& ovf);
+    /// \brief Clears all the data accumulated inside ADCDev circular buffer.
+    /// \note This method may be called when sampling is active.
+    void clear();
+
+    /// \brief Configure and prepare device for the sampling.
+    /// \param delay_sec - number of micro seconds between samples. If 0 is
+    ///        passed conversion will follow each other without delay.
+    /// \param average_samples - number of samples to be averaged.
+    /// \param sampling - std::map with sampling information. key is a channel
+    ///        index, value is one of the \ref ADC_SampleTime_1Cycles5 "ADC sample time constants".
+    /// \note This call will stop active sampling and re-initialize ADC related
+    ///       peripherals. Use this call to reinitialize ADC related peripherals.
+    void configure(double delay_sec, size_t average_samples, std::map<size_t, uint8_t>& sampling);
+
+    /// \brief Get current device status
+    /// \param flags - output value to return current device state. It is described by ADCDEV_STATUS_XXX constants.
+    /// \return Number of samples stored in a buffer.
+    size_t status(uint16_t& flags);
 
     /// \brief Read samples accumulated in circular buffer as double, normalized by vref JSON configuration parameter.
     /// \param values - measured data represented by vector (samples) of vector (channels). Values are doubles, represent
     ///        calculated with vref.
-    /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-    void get(std::vector<std::vector<double>>& values, bool& ovf);
-
-    /// \brief Read samples and return average value for all samples
-    /// \param values - measured data represented by array of values (channels).
-    /// \param ovf - output parameter to notify if ADCDev circular buffer was overflown.
-    void get(std::vector<double>& values, bool& ovf);
+    void get(std::vector<std::vector<double>>& values);
 
     /// \brief Returns input name from input index.
     /// \param index - input index.
@@ -133,14 +134,19 @@ class ADCDev final : public EKitVirtualDevice {
     /// \return number of channels
     size_t get_input_count() const;
 
-    /// \brief Set current vref value to Vref+
-    /// \param Vref_plus - Vref+ voltage.
-    void set_vref(double Vref_plus);
+   private:
 
-    /// \brief Set current vref value based on internal reference voltage and it's measured value
-    /// \param vref_channel - measured value of ADC_Channel_Vrefint channel
-    /// \param V_ref_int - Reference internal voltage (typical value is 1.2V, for details take a look into MCU documentation)
-    void set_vref(uint16_t vref_channel, double V_ref_int = 1.2);
+    /// \brief Get current device status (private implementation)
+    /// \param flags - optional output value to return current device state. It is described by ADCDEV_STATUS_XXX constants.
+    ///                If not required, pass nullptr.
+    /// \return Number of bytes accumulated in circular buffer (including status).
+    size_t status_priv(uint16_t* flags, EKitTimeout& to);
+
+    void write_device(uint8_t* ptr, size_t size, uint8_t flag);
+    std::vector<std::pair<double, double>> signal_ranges;
+    std::vector<uint16_t> data_buffer;
+    volatile uint16_t* data_status;
+    volatile uint16_t* data;
 };
 
 /// @}

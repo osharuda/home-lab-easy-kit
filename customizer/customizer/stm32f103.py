@@ -582,6 +582,16 @@ def get_ADC_MAXVAL() -> int:
     return 4095  # 12 bit ADC
 
 
+def get_resources_by_type(rtype: str):
+    result = list()
+    for rname, rdata in mcu_resources:
+        if rdata['type']==rtype:
+            result.append(rname)
+
+    return result
+def get_ADC_CHANL_COUNT() -> int:
+    return len(get_resources_by_type('adc_input'))
+
 def check_ADC_sample_time(st: str) -> bool:
     return st in adc_sample_times
 
@@ -687,7 +697,7 @@ def get_TIMER_freq(timer: str, prescaller: int = 1) -> int:
     # get number of APB bus RCC_APB ->2<- Periph_TIM1
     n = int(mcu_resources[timer]["bus"][7])
     if n == 1:
-        return mult * system_clock // 2
+        return mult * system_clock
     elif n == 2:
         return mult * system_clock
     else:

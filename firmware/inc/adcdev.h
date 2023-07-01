@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "circbuffer.h"
+
 #ifdef ADCDEV_DEVICE_ENABLED
 
 /// \defgroup group_adc_dev ADCDev
@@ -37,17 +39,35 @@
 
 /// \typedef ADCStartSamplingFunc
 /// \brief Defines function to be used in order to start sampling
-typedef void (*ADCStartSamplingFunc)(volatile void*);
+typedef void (*ADCStartSamplingFunc)(volatile void*, volatile void*);
+typedef void (*ADCResetFunc)(volatile void*, volatile void*);
+
+#define ADC_CR2_FLAG_SWSTART       ((uint32_t)0x00400000)
+#define ADC_CR2_FLAG_EXT_TRIG      ((uint32_t)0x00100000)
+#define ADC_CR2_FLAG_DMA           ((uint32_t)0x00000100)
+#define ADC_CR2_FLAG_CONT          ((uint32_t)0x00000002)
+#define ADC_CR2_FLAG_ADON          ((uint32_t)0x00000001)
+
+#define ADC_CR1_FLAG_SCAN          ((uint32_t)0x00000100)
 
 /// \struct tag_ADCDevFwPrivData
 /// \brief Structure that describes private ADCDev values
-typedef struct tag_ADCDevFwPrivData {
-    ADCStartSamplingFunc start_sampling_func;     ///< Function pointer that starts ADC sampling. Possible values are:
-                                                  ///  - #adc_start_int_mode() to start conversion now in interrupt mode.
-                                                  ///  - #adc_start_timer() if conversion must be started by timer.
-                                                  ///  - #adc_start_dma_mode() to start conversion now in DMA mode.
+typedef struct __attribute__ ((aligned)) tag_ADCDevFwPrivData {
+    ADCStartSamplingFunc adc_continue_sampling_ptr;  ///< Function pointer that schedules (continues) next ADC sampling.
 
-    volatile uint16_t* dest_buffer;               ///< Buffer to store values sampled in interrupt or DMA mode
+    ADCResetFunc adc_hw_reset_ptr;                ///< Pointer to the function that reset adc hardware
+
+    volatile uint16_t* current_measurement;       ///< Pointer to the current measurement
+
+    volatile uint16_t* end_measurement;           ///< Pointer to the next after last measurements.
+
+    uint32_t interrupt_priority;                  ///< Interrupt priority. One of the IRQ_PRIORITY_ADC_XXX values.
+
+    uint32_t measurement_count;                   ///< Number of measurements that should be made for all channels per one sample.
+
+    uint16_t status;                              ///< ADCDev status
+
+    uint16_t measurement_per_sample;              ///< Number of measurements per sample
 
     uint16_t samples_left;                        ///< Amount of samples left to sample
 
@@ -56,16 +76,6 @@ typedef struct tag_ADCDevFwPrivData {
 
     uint16_t period;                              ///< Timer period value. If this value and tag_ADCDevFwPrivData#prescaller are zero
                                                   ///  conversions will follow each other without delay.
-
-    uint8_t started;                              ///< Indicates if sampling is started; non-zero sampling is started,
-                                                  ///  0 - sampling is not started.
-
-    uint8_t stop;                                 ///< Non-zero value indicates stop is requested by software.
-
-    uint8_t unstoppable;                          ///< Non-zero indicates that tag_ADCDevCommand#sample_count should be
-                                                  ///  ignored sampling must go on indefinitely.
-
-    uint8_t current_channel;                      ///< Currently sampled channel in interrupt mode
 } ADCDevFwPrivData;
 
 
@@ -89,6 +99,12 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
 
         volatile ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
 
+        volatile uint16_t*          measurement_buffer; ///< Buffer for values to be measured (and averaged later).
+
+        volatile uint8_t*           sample_time_buffer; ///< Sample time buffer, used to keep current sample time settings.
+
+        volatile uint32_t*          accumulator_buffer; ///< Accumulator buffer.
+
         volatile uint8_t*           buffer;             ///< Memory block used for circular buffer as storage
 
         ADC_TypeDef*                adc;                ///< ADC being used
@@ -106,6 +122,8 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
         uint16_t                    buffer_size;        ///< Circular buffer size
 
         uint16_t                    sample_block_size;  ///< Amount of bytes used for sample buffer
+
+        uint16_t                    max_measurement_per_sample; ///< Maximum number of measurements per sample
 
         IRQn_Type                   timer_irqn;         ///< Timer interrupt number
 
@@ -131,7 +149,7 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
 #define ADC_RESOLUTION_BITS 0x0FFF
 
 /// \brief Initializes all ADCDev virtual devices
-void init_adc();
+void adc_init();
 
 /// \brief #ON_COMMAND callback for all ADCDev devices
 /// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte

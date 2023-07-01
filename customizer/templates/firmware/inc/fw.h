@@ -47,8 +47,10 @@
 
 #define IRQ_PRIORITY_DMA                   3
 #define IRQ_PRIORITY_DAC_TIMER             4
-#define IRQ_PRIORITY_ADC                   5
-#define IRQ_PRIORITY_ADC_TIMER             6
+
+#define IRQ_PRIORITY_ADC_HI_PRIO           5
+#define IRQ_PRIORITY_ADC_LO_PRIO           6
+
 #define IRQ_PRIORITY_USART                 7
 #define IRQ_PRIORITY_CAN                   7
 #define IRQ_PRIORITY_SPI                   7
