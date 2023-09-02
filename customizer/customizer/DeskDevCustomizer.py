@@ -29,7 +29,7 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
-        self.add_template(os.path.join(self.sw_lib_src_templ_path + self.sw_lib_source),
+        self.add_template(os.path.join(self.sw_lib_src_templ_path,self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),

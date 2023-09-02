@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.20)
 
 set(FW_NAME hlekfw)
 project(${{FW_NAME}} C ASM)
 
 set(EXTRA_FLAGS "")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(PROJECT_COMMON_DIR ${{PROJECT_SOURCE_DIR}}/../../firmware)
+set(PROJECT_COMMON_DIR ${{HLEK_ROOT}}/firmware)
+
 string(TOLOWER ${{CMAKE_BUILD_TYPE}} BUILD_TYPE)
 
 if (${{BUILD_TYPE}} STREQUAL "release")
@@ -36,7 +37,7 @@ include_directories(    ${{STDPERIF_PATH}}/Libraries/CMSIS/CM3/CoreSupport
                         ${{STDPERIF_PATH}}/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/
                         ${{STDPERIF_PATH}}/Libraries/STM32F10x_StdPeriph_Driver/inc
                         ${{PROJECT_COMMON_DIR}}/inc
-                        inc)
+                        ${{HLEK_ROOT}}/${{HLEK_CONFIG}}/firmware/inc)
 
 add_executable( ${{FW_NAME}}.elf
                 ${{FW_SRC}}

@@ -1,7 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
 set(PROJECTNAME testtool)
 set(MAIN_BINARY "${{PROJECTNAME}}.bin")
 project(${{PROJECTNAME}} C CXX)
-cmake_minimum_required(VERSION 3.10)
 
 ########################## LIBHLEK
 set(HLEK_NAME {__HLEK_NAME__})

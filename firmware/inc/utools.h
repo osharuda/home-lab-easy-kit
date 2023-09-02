@@ -105,7 +105,7 @@ extern volatile uint8_t g_irq_disabled;
 /// \param f - bitmask where 1 indicates bit that should be cleared, bits with 0 are ignored.
 /// \note This macro will check statically that variables being passed are the same in type size.
 ///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
-#define CLEAR_FLAGS(x,f) _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same"); \
+#define CLEAR_FLAGS(x,f) { _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same"); } \
                          ((x) = (x) & (~(f)))
 
 /// \brief Sets bits specified by f in x.
@@ -113,7 +113,7 @@ extern volatile uint8_t g_irq_disabled;
 /// \param f - bitmask where 1 indicates bit that should be set, bits with 0 are ignored.
 /// \note This macro will check statically that variables being passed are the same in type size.
 ///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
-#define SET_FLAGS(x,f)  _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same");                   \
+#define SET_FLAGS(x,f)  { _Static_assert(sizeof(x) == sizeof(f), "Types size are not the same") ; } \
                         ((x) = (x) | (f))
 
 /// \brief Sets bits specified by value in x using mask.
@@ -123,10 +123,10 @@ extern volatile uint8_t g_irq_disabled;
 /// \param value - value that specifies new bit values.
 /// \note This macro will check statically that variables being passed are the same in type size.
 ///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
-#define SET_BIT_FIELD(x, mask, value) _Static_assert(sizeof(x) == sizeof(mask), "Types size are not the same");  \
-                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
-                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
-                                      _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); \
+#define SET_BIT_FIELD(x, mask, value) { _Static_assert(sizeof(x) == sizeof(mask), "Types size are not the same");   \
+                                        _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same");  \
+                                        _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same");  \
+                                        _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); }\
                                       (x) = (((x) & (~(mask))) | ((value)&(mask)))
 
 /// \brief Checks if flags specified by mask are set as specified

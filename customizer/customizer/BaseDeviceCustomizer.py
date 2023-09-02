@@ -16,58 +16,60 @@
 import os
 from tools import *
 from shutil import copy2
+from BaseCustomizer import *
 
-class BaseDeviceCustomizer:
+
+class BaseDeviceCustomizer(BaseCustomizer):
     def __init__(self, mcu_hw, dev_configs, common_config):
+        super().__init__()
         self.mcu_hw = mcu_hw
         self.dev_configs = dev_configs
         self.device_name = "BASE_DEVICE"
         self.config_name = common_config['firmware']['device_name'] #<!CHECKIT!> device name should become config name
 
-        self.fw_templ = "../templates/firmware/"
-        self.fw_inc_templ = "../templates/firmware/inc/"
-        self.fw_src_templ = "../templates/firmware/src/"
-        self.fw_path = "../../firmware/"
-        self.fw_inc_source_path = "../../firmware/inc/"
-        self.fw_src_source_path = "../../firmware/src/"
+        self.toolchain_name = "toolchain.cmake"
+        self.fw_templ = os.path.join(self.template_dir, "firmware");
+        self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
+        self.fw_src_templ = os.path.join(self.template_dir, "firmware/src")
+        self.fw_path = os.path.join(self.project_dir, "firmware")
+        self.fw_inc_source_path = os.path.join(self.fw_path, "inc")
+        self.fw_src_source_path = os.path.join(self.fw_path, "src")
         self.fw_inc_dest = common_config['firmware']['firmware_inc_path']
         self.fw_dest = common_config['firmware']['firmware_path']
-        self.shared_templ = "../templates/shared/"
+        self.shared_templ = os.path.join(self.template_dir, "shared")
 
-        self.sw_templ = "../templates/monitor/"
-        self.sw_example_templ = "../templates/example/"
-        self.sw_example_inc_templ = "../templates/example/inc/"
-        self.sw_example_src_templ = "../templates/example/src/"
-        self.sw_monitor_dest = common_config["firmware"]["monitor_path"] + os.path.sep
+        self.sw_templ = os.path.join(self.template_dir, "monitor")
+        self.sw_example_templ = os.path.join(self.template_dir, "example")
+        self.sw_example_inc_templ = os.path.join(self.sw_example_templ , "inc")
+        self.sw_example_src_templ = os.path.join(self.sw_example_templ , "src")
+        self.sw_monitor_dest = common_config["firmware"]["monitor_path"]
 
-        self.sw_example_dest = common_config["firmware"]["example_path"] + os.path.sep
-        self.sw_example_inc_dest = common_config["firmware"]["example_inc_path"] + os.path.sep
-        self.sw_example_src_dest = common_config["firmware"]["example_src_path"] + os.path.sep
+        self.sw_example_dest = common_config["firmware"]["example_path"]
+        self.sw_example_inc_dest = common_config["firmware"]["example_inc_path"]
+        self.sw_example_src_dest = common_config["firmware"]["example_src_path"]
 
-        self.sw_inc_templ = "../templates/libhlek/inc/"
-        self.sw_src_templ = "../templates/software/src/"
+        self.sw_inc_templ = os.path.join(self.template_dir, "libhlek/inc")
+        self.sw_src_templ = os.path.join(self.template_dir, "software/src")
 
-
-        self.sw_inc_dest = "../../software/inc/"
-        self.sw_src_dest = "../../software/src/"
-        self.sw_testtool_templ = "../templates/software/testtool/"
-        self.sw_testtool_dest = "../../software/testtool/"
+        #self.sw_inc_dest = os.path.join(self.project_dir, "software/inc")
+        #self.sw_src_dest = os.path.join(self.project_dir, "software/src")
+        self.sw_testtool_templ = os.path.join(self.template_dir, "software/testtool")
+        self.sw_testtool_dest = os.path.join(self.project_dir, "software/testtool")
 
         self.sw_lib_path = common_config['firmware']['libconfig_path']
-        self.sw_lib_inc_dest = common_config['firmware']['libconfig_inc_path'] + os.path.sep
-        self.sw_lib_src_dest = common_config['firmware']['libconfig_src_path'] + os.path.sep
+        self.sw_lib_inc_dest = common_config['firmware']['libconfig_inc_path']
+        self.sw_lib_src_dest = common_config['firmware']['libconfig_src_path']
 
-        self.sw_lib_templ_path = os.path.abspath("../templates/libconfig/") + os.path.sep
-        self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc/") + os.path.sep
-        self.sw_lib_src_templ_path = os.path.join(self.sw_lib_templ_path, "src/") + os.path.sep
+        self.sw_lib_templ_path = os.path.join(self.template_dir, "libconfig")
+        self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc")
+        self.sw_lib_src_templ_path = os.path.join(self.sw_lib_templ_path, "src")
         self.flash_script = "flash.sh"
         self.fw_base_header = "fw.h"
         self.fw_header = self.fw_base_header
 
-        self.libhlek_templ_path = os.path.abspath("../templates/libhlek/") + os.path.sep
-        self.libhlek_dest_path = os.path.abspath("../../libhlek") + os.path.sep
-        self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc") + os.path.sep
-        self.libhlek_src_dest_path = os.path.join(self.libhlek_dest_path, "src") + os.path.sep
+        self.libhlek_dest_path = os.path.join(self.project_dir, "libhlek")
+        self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
+        #self.libhlek_src_dest_path = os.path.join(self.libhlek_dest_path, "src")
 
         self.template_list = dict()
         self.file_copy_list = dict()
@@ -85,9 +87,6 @@ class BaseDeviceCustomizer:
                 "Error: {0} doesn't support {1} devices per mcu. {2} devices are supported".format(self.device_name,
                                                                                                    dev_cnt,
                                                                                                    count))
-
-    def customize(self) -> str:
-        return ""
 
     def add_template(self, in_file: str, out_file_list: list):
         self.template_list[in_file] = out_file_list

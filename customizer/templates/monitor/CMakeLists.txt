@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
 set(DEVICE_NAME "{__DEVICE_NAME__}")
 set(PROJECTNAME ${{DEVICE_NAME}}_example)

@@ -11,7 +11,6 @@ NCPU=$(grep -c ^processor /proc/cpuinfo)
 BUILDCONF="Debug"
 ROOTDIR=$(pwd)
 LOGFILE="${ROOTDIR}/build.log"
-NULL_JSON="null.json"
 
 ####### Parse arguments
 i=0
@@ -28,6 +27,12 @@ do
 	((++i))
 done
 
+function make_subproject {
+	echo "Generating cmake project for ${CONFIGDIR}/$1"
+	cd ${CONFIGDIR} && cd $1 && mkdir ${BUILDCONF} && cd ${BUILDCONF}
+	cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "Ninja" ../ >> "${LOGFILE}" 2>&1
+	cd "${INITDIR}"
+}
 
 function build_subproject {
 	local skip_install=true
@@ -37,35 +42,66 @@ function build_subproject {
 	fi
 
 	echo "Building $1 [${BUILDCONF}]"
-	cd ${CONFIGDIR} && cd $1 && rm -rf build && mkdir build && cd build
-	cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "CodeBlocks - Unix Makefiles" ../ >> "${LOGFILE}" 2>&1
-	make -j${NCPU} >> "${LOGFILE}" 2>&1
+	if [ -d "${CONFIGDIR}/$1/${BUILDCONF}" ]
+	then
+		echo "Skipping cmake project generation for ${CONFIGDIR}/$1"
+	else
+		make_subproject $1
+	fi
+	cd "${CONFIGDIR}/$1/${BUILDCONF}"
+
+	ninja -j${NCPU} >> "${LOGFILE}" 2>&1
 	if [ $skip_install == false ]
 	then 
 		echo "Installing $1"
-		sudo make install >> "${LOGFILE}" 2>&1
+		sudo ninja install >> "${LOGFILE}" 2>&1
 	fi
-	cd ../../..
+	cd "${INITDIR}"
+}
+
+
+function make_libhlek {
+    echo "Generating cmake project for LIBHLEK"
+    cd libhlek && mkdir ${BUILDCONF} && cd ${BUILDCONF}
+    cmake -DHLEK_ROOT="${INITDIR}" -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "Ninja" ../ >> "${LOGFILE}" 2>&1	
+    cd ${INITDIR}
 }
 
 function build_libhlek {
-		echo "Building LIBHLEK [${BUILDCONF}]"
-		./customize.sh "${NULL_JSON}" >> "${LOGFILE}" 2>&1
-		cd libhlek && rm -rf build && mkdir build && cd build
-		cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "CodeBlocks - Unix Makefiles" ../ >> "${LOGFILE}" 2>&1
-		make -j${NCPU} >> "${LOGFILE}" 2>&1
-		echo "Installing LIBHLEK"
-		sudo make install >> "${LOGFILE}" 2>&1
-		cd ../..
-		rm -rf ./null
+	echo "Building LIBHLEK [${BUILDCONF}]"
+	./customize.sh --libhlek >> "${LOGFILE}" 2>&1
+
+	if [ -d "libhlek/${BUILDCONF}" ]
+	then
+		echo "Skipping LIBHLEK project generation"
+	else
+		make_libhlek
+	fi
+	cd "libhlek/${BUILDCONF}"
+	ninja -j${NCPU} >> "${LOGFILE}" 2>&1
+	echo "Installing LIBHLEK"
+	sudo ninja install >> "${LOGFILE}" 2>&1
+	cd "${INITDIR}"
+}
+
+function make_firmware {
+	echo "Generating cmake project for firmware/${CONFIGDIR}"
+	cd ${CONFIGDIR} && cd firmware && mkdir ${BUILDCONF} && cd ${BUILDCONF}
+	cmake -G"Unix Makefiles" -DHLEK_ROOT="${INITDIR}" -DHLEK_CONFIG="${CONFIGDIR}" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_BUILD_TYPE=${BUILDCONF} -DCMAKE_TOOLCHAIN_FILE:PATH="${INITDIR}/firmware/toolchain.cmake"  .. >> "${LOGFILE}" 2>&1
+	cd ${INITDIR}
 }
 
 function build_firmware {
 	echo "Building firmware [${BUILDCONF}]"
-	cd ${CONFIGDIR} && cd firmware && rm -rf build && mkdir build && cd build
-	cmake -G"Unix Makefiles" -DCMAKE_DEPENDS_USE_COMPILER:BOOL=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE:PATH="../../firmware/toolchain.cmake"  .. >> "${LOGFILE}" 2>&1
+	if [ -d "${CONFIGDIR}/firmware/${BUILDCONF}" ]
+	then
+		echo "Skipping firmware (${CONFIGDIR}) project generation"
+	else
+		make_firmware
+	fi
+	cd "${CONFIGDIR}/firmware/${BUILDCONF}"
 	make -j${NCPU} >> "${LOGFILE}" 2>&1
-	cd ../../..
+	cd "${INITDIR}"
 }
 
 
@@ -73,17 +109,17 @@ function build_firmware {
 rm -rf "${LOGFILE}"
 
 # Build & install libhlek
-if [ -z "${NO_LIBHLEK+defined}" ]; then build_libhlek; fi
+build_libhlek
 
 ####### Build specified configurations
 for j in ${JSONS[@]}
 do
 	# Customize configuration
 	json=$(basename -- "$j")
+	json_file_name="$(cd "$(dirname "$j")"; pwd -P)/$(basename "$j")"
 	CONFIGDIR="${json%.*}"
 	echo "Customizing ${json}"
-	rm -rf ${CONFIGDIR}
-	./customize.sh ${json} >> "${LOGFILE}" 2>&1
+	./customize.sh --json=${json_file_name} >> "${LOGFILE}" 2>&1
 
 	# Build & install libconf
 	build_subproject "lib${CONFIGDIR}" true
@@ -98,3 +134,5 @@ do
 	# Build firmware
 	build_firmware
 done
+
+./customize.sh --update-global

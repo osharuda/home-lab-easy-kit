@@ -27,7 +27,6 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.dev_config = dev_config
         self.fw_header = "fw.h"
         self.proto_header = "i2c_proto.h"
-        self.cmake_script = "CMakeLists.txt"
         self.example_main_hpp = "main.hpp"
         self.example_main_cpp = "main.cpp"
         self.fw_dev_headers = []
@@ -37,6 +36,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.required_features = required_features
         self.hlek_name = "hlek"
         self.install_path = common_config["global"]["install_path"]
+        self.cmsis_path = common_config["global"]["cmsis_path"]
         self.libhlek_name = "lib" + self.hlek_name
         self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
 
@@ -49,8 +49,14 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
+
+        # CMakeLists.txt
         self.add_template(os.path.join(self.fw_templ, self.cmake_script),
                           [os.path.join(self.fw_dest, self.cmake_script)])
+
+        # toolchain.cmake
+        self.add_template(os.path.join(self.fw_templ, self.toolchain_name),
+                          [os.path.join(self.fw_dest, self.toolchain_name)])
 
         self.add_copy(os.path.join(self.fw_path, self.flash_script),
                       [os.path.join(self.fw_dest, self.flash_script)])
@@ -58,13 +64,12 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.add_template(os.path.join(self.fw_inc_templ, self.proto_header),
                           [os.path.join(self.fw_inc_dest, self.proto_header),
                            os.path.join(self.libhlek_inc_dest_path, self.proto_header)])
+
         self.add_template(self.sw_lib_inc_templ, [os.path.join(self.sw_lib_inc_dest, self.sw_libconfig_name)])
         self.add_template(os.path.join(self.sw_lib_templ_path, self.cmake_script),
                           [os.path.join(self.sw_lib_path, self.cmake_script)])
         self.add_template(os.path.join(self.sw_templ, self.cmake_script),
                           [os.path.join(self.sw_monitor_dest, self.cmake_script)])
-        self.add_template(os.path.join(self.libhlek_templ_path, self.cmake_script),
-                          [os.path.join(self.libhlek_dest_path, self.cmake_script)])
 
         self.add_template(os.path.join(self.sw_example_templ, self.cmake_script),
                           [os.path.join(self.sw_example_dest, self.cmake_script)])
@@ -125,7 +130,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__LIBHLEK_NAME__": self.libhlek_name,
                       "__LIBHLEK_INSTALL_PATH__": self.libhlek_install_path,
                       "__LIBCONFIG_NAME__": self.config_name,
-                      "__LIBCONFIG_INSTALL_PATH__": self.libconfig_install_path
+                      "__LIBCONFIG_INSTALL_PATH__": self.libconfig_install_path,
+                      "__STDPERIF_PATH__": self.cmsis_path
                       }
 
         vocabulary.update(self.make_feature_macroses())

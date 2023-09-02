@@ -1,6 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
-
-
+cmake_minimum_required(VERSION 3.20)
 
 set(HLEK_NAME {__HLEK_NAME__})
 set(LIBHLEK_NAME {__LIBHLEK_NAME__})

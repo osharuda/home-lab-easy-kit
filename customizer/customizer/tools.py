@@ -26,9 +26,13 @@ def concat_lines(l: list) -> str:
     return line_separator.join(l)
 
 def get_project_root() -> str:
-    cur_path = os.path.dirname(os.path.abspath(__file__))
-    return os.path.abspath(os.path.join(cur_path, os.pardir, os.pardir))
+    return os.path.abspath(get_env_var("PROJECTDIR"))
 
+def get_env_var(name: str) -> str:
+    if name not in os.environ:
+        raise RuntimeError(f'Environment variable "{name}" is not set!')
+
+    return os.environ[name]
 
 def get_leaf_values(d) -> list:
     res = list()
@@ -94,7 +98,7 @@ def set_to_ordered_list(st: set) -> list:
     l.sort()
     return l
 
-class Config_JSON_Encoder(json.JSONEncoder):
+class Sorted_JSON_Encoder(json.JSONEncoder):
     def default(self, item):
         if isinstance(item, set):
             result = list(item)
@@ -102,16 +106,46 @@ class Config_JSON_Encoder(json.JSONEncoder):
             return result
         else:
             return json.JSONEncoder.default(self, item)
+
 def hash_dict_as_c_array(d: dict) -> str:
-    s = json.dumps(d, sort_keys=True, cls=Config_JSON_Encoder)
-    hsh = hashlib.sha1()
-    hsh.update(s.encode('utf-8'))
-    digest = hsh.digest()
+    digest = hash_dict_as_bytes(d)
     l = list()
-    for i in range(0, hsh.digest_size):
+    for i in range(0, len(digest)):
         l.append("0x{:02X}".format(int(digest[i])))
 
-    return (", ".join(l), hsh.digest_size)
+    return (", ".join(l), len(digest))
+
+
+def hash_text(s: str) -> bytes:
+    hsh = hashlib.sha1()
+    hsh.update(s.encode('utf-8'))
+    return hsh.digest()
+
+
+def hash_text_file(fn: str)-> str:
+    if os.path.isfile(fn):
+        s = read_text_file(fn)
+        return hash_text(s).hex()
+    else:
+        return ""
+
+def hash_dict_as_bytes(d: dict) -> str:
+    s = json.dumps(d, sort_keys=True, cls=Sorted_JSON_Encoder)
+    digest = hash_text(s)
+    return digest
+
+def hash_merge_digests(dl: list[bytes]):
+    len = len(dl[0])
+    result = bytes(len)
+    for d in dl:
+        if len(d) != len:
+            raise RuntimeError('Digest length mismatch')
+
+        for i in range(0, len):
+            result[i] = result[i] ^ d[i]
+
+    return result
+
 
 
 def hash_string(s: str) -> str:
@@ -273,3 +307,53 @@ def frequency_to_int(f: str) -> int:
     else:
         return int(f)
 
+
+arg_switch_re = re.compile(r'^--([a-zA-Z0-9]+-)*[a-zA-Z0-9]+$')
+def is_switch_arg(a: str)-> bool:
+    res = bool(arg_switch_re.match(a))
+    return res
+
+arg_equal_re = re.compile(r'^--([a-zA-Z0-9]+-)*[a-zA-Z0-9]+=([^=]+)$')
+def is_equal_arg(a: str)-> str:
+    m = arg_equal_re.match(a)
+    if m:
+        value = m.group(2)
+        key = a[0: len(a)-len(value)-1]
+        return key, value
+    else:
+        return None, None
+
+
+def parse_cmd_line(argv: list[str], defaults: dict) -> dict:
+    result = defaults.copy()
+    available_keys = set()
+    for a in argv:
+        if is_switch_arg(a):
+            if a not in result or\
+                    type(result[a][0]) is not bool:
+                raise RuntimeError(f'Invalid argument "{a}"')
+            else:
+                available_keys.add(a)
+                result[a][0] = bool(not result[a][0])
+                continue
+
+        key, value = is_equal_arg(a)
+
+        if not key:
+            raise RuntimeError(f'Invalid argument "{key}"')
+
+        if type(result[key][0])==str:
+            result[key][0] = value
+        elif type(result[key][0]==int):
+            result[key][0] = int(value)
+        else:
+            raise RuntimeError(f'Invalid argument "{key}"')
+        available_keys.add(key)
+
+    for a in available_keys:
+        incompatible_keys = result[a][1]
+        for i in incompatible_keys:
+            if i in available_keys:
+                raise RuntimeError(f'Arguments {a} and {i} are not compatible.')
+
+    return result

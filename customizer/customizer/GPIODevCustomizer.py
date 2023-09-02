@@ -34,7 +34,7 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
         self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
-        self.add_shared_code(self.shared_templ + self.shared_header, self.shared_token)
+        self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
     def customize(self):
         fw_pin_list = []
