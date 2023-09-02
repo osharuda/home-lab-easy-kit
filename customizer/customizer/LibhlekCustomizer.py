@@ -24,23 +24,37 @@ class LibhlekCustomizer(BaseCustomizer):
     def __init__(self, common_config):
         super().__init__()
         self.hlek_name = "hlek"
+        self.shared_headers = common_config["generation"]["shared"]
         self.install_path = common_config["global"]["install_path"]
         self.libhlek_name = "lib" + self.hlek_name
         self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
         self.libhlek_dest_path = os.path.join(self.project_dir, "libhlek")
         self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
+        self.sw_inc_templ = os.path.join(self.template_dir, "libhlek/inc")
         self.libhlek_cmakelists_path = os.path.join(self.libhlek_dest_path, self.cmake_script)
 
-        self.add_template(os.path.join(self.libhlek_templ_path, self.cmake_script),
-                                  [self.libhlek_cmakelists_path])
+        self.add_template(os.path.join(self.fw_inc_templ, self.proto_header), [os.path.join(self.libhlek_inc_dest_path, self.proto_header)])
+        self.add_template(os.path.join(self.libhlek_templ_path, self.cmake_script), [self.libhlek_cmakelists_path])
+        self.add_common_headers()
 
+
+    def add_common_headers(self):
+        for customizer, info in self.shared_headers.items():
+            hlek_lib_common_header, shared_header, fw_header, sw_header, shared_token = info
+
+            self.add_template(os.path.join(self.sw_inc_templ, hlek_lib_common_header),
+                              [os.path.join(self.libhlek_inc_dest_path, hlek_lib_common_header)])
+
+            self.add_shared_code(os.path.join(self.shared_templ, shared_header), shared_token)
 
     def get_cmakelists_path(self):
         return self.libhlek_cmakelists_path
+
     def customize(self):
-        vocabulary = {"__HLEK_NAME__": self.hlek_name,
+        self.vocabulary = self.vocabulary | {
+                      "__HLEK_NAME__": self.hlek_name,
                       "__LIBHLEK_NAME__": self.libhlek_name,
                       "__LIBHLEK_INSTALL_PATH__": self.libhlek_install_path
                       }
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()

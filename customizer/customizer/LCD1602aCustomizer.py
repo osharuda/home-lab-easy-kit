@@ -26,11 +26,10 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
         self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
@@ -52,7 +51,8 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
         wline1, wline2 = self.get_welcome()
 
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__LCD1602a_DEVICE_NAME__": self.device_name,
 
@@ -80,7 +80,7 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
                       "__LCD1602a_WELCOME_1__": '{0}'.format(wline1),
                       "__LCD1602a_WELCOME_2__": '{0}'.format(wline2)}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()
 
     def get_welcome(self) -> tuple:
         wlines = ["",""]

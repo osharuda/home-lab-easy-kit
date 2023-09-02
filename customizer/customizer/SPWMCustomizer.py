@@ -26,11 +26,10 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
         self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
@@ -114,7 +113,8 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
 
             port_index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__SPWM_DEVICE_NAME__": self.device_name,
                       "__SPWM_PORT_COUNT__": len(used_ports),
@@ -129,4 +129,4 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
                       "__SPWM_SW_DESCRIPTION__": ", ".join(pin_sw_defines),
                       "__SPWM_DEF_FREQ__": str(default_freq)}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()

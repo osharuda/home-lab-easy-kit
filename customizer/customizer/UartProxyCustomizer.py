@@ -25,8 +25,6 @@ class UartProxyCustomizer(DeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
@@ -90,7 +88,8 @@ class UartProxyCustomizer(DeviceCustomizer):
             indx+=1
 
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__UART_PROXY_BUFFERS__": concat_lines(buffer_defs),
                       "__UART_PROXY_DEVICE_NUMBER__": len(self.dev_configs),
                       "__UART_PROXY_BUFFER_LENGTHS__": concat_lines(fw_buffer_size_defs),
@@ -102,6 +101,6 @@ class UartProxyCustomizer(DeviceCustomizer):
                       "__UART_PROXY_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
         }
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()
 
         return

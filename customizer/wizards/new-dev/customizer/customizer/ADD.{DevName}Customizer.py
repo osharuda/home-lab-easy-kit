@@ -27,9 +27,6 @@ class {DevName}Customizer(DeviceCustomizer):
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
 
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
-
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
 
@@ -136,9 +133,10 @@ class {DevName}Customizer(DeviceCustomizer):
 
             index += 1
 
-        vocabulary = {"__{DEVNAME}_DEVICE_COUNT__": len(fw_device_descriptors),
+        self.vocabulary = self.vocabulary | {
+                      "__{DEVNAME}_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__{DEVNAME}_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
                       "__{DEVNAME}_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),
                       "__{DEVNAME}_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1]}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()

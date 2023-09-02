@@ -26,8 +26,6 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
@@ -162,7 +160,8 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
             indx += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__STEP_MOTORS_BUFFERS__": concat_lines(fw_motor_buffers)[:-1],
                       "__STEP_MOTOR_MOTOR_DESCRIPTORS__": concat_lines(fw_motor_descriptors)[:-1],
                       "__STEP_MOTOR_DEVICE_DESCRIPTORS__": concat_lines(fw_device_descriptors)[:-1],
@@ -182,7 +181,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                       "__STEP_MOTOR_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
                       }
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()
 
         return
 
@@ -279,7 +278,8 @@ class StepMotorDevCustomizer(DeviceCustomizer):
         steps_per_revolution = int(
             self.get_config_option(None, "steps_per_revolution", mname, mcfg, dev_name, None, None))
 
-        vocabulary = {"__step_port__": indention + self.mcu_hw.GPIO_to_port(step_pin),
+        self.vocabulary = self.vocabulary | {
+                      "__step_port__": indention + self.mcu_hw.GPIO_to_port(step_pin),
                       "__step_pin__": indention + str(self.mcu_hw.GPIO_to_pin_number(step_pin)),
                       "__default_speed__": indention + str(default_speed),
                       "__motor_driver__" : indention + drive_type_dict[driver_type],
@@ -288,12 +288,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- DIRECTION PIN -------------------------------
         if dir_pin is not None:
-            vocabulary["__dir_port__"] = indention + self.mcu_hw.GPIO_to_port(dir_pin)
-            vocabulary["__dir_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(dir_pin))
+            self.vocabulary["__dir_port__"] = indention + self.mcu_hw.GPIO_to_port(dir_pin)
+            self.vocabulary["__dir_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(dir_pin))
             config_flags.append(indention + "STEP_MOTOR_DIR_IN_USE |\\")
         else:
-            vocabulary["__dir_port__"] = indention + "0"
-            vocabulary["__dir_pin__"] = indention + "0"
+            self.vocabulary["__dir_port__"] = indention + "0"
+            self.vocabulary["__dir_pin__"] = indention + "0"
 
         dv = self.get_config_option("dir", "default", mname, mcfg, dev_name, None, {"CW", "CCW"})
         if dv == "CW":
@@ -301,12 +301,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- M1 PIN -------------------------------
         if m1_pin is not None:
-            vocabulary["__m1_port__"] = indention + self.mcu_hw.GPIO_to_port(m1_pin)
-            vocabulary["__m1_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m1_pin))
+            self.vocabulary["__m1_port__"] = indention + self.mcu_hw.GPIO_to_port(m1_pin)
+            self.vocabulary["__m1_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m1_pin))
             config_flags.append(indention + "STEP_MOTOR_M1_IN_USE |\\")
         else:
-            vocabulary["__m1_port__"] = indention + "0"
-            vocabulary["__m1_pin__"] = indention + "0"
+            self.vocabulary["__m1_port__"] = indention + "0"
+            self.vocabulary["__m1_pin__"] = indention + "0"
 
         dv = self.get_config_option("m1", "default", mname, mcfg, dev_name, None, {1, 0})
         if dv == 1:
@@ -314,12 +314,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- M2 PIN -------------------------------
         if m2_pin is not None:
-            vocabulary["__m2_port__"] = indention + self.mcu_hw.GPIO_to_port(m2_pin)
-            vocabulary["__m2_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m2_pin))
+            self.vocabulary["__m2_port__"] = indention + self.mcu_hw.GPIO_to_port(m2_pin)
+            self.vocabulary["__m2_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m2_pin))
             config_flags.append(indention + "STEP_MOTOR_M2_IN_USE |\\")
         else:
-            vocabulary["__m2_port__"] = indention + "0"
-            vocabulary["__m2_pin__"] = indention + "0"
+            self.vocabulary["__m2_port__"] = indention + "0"
+            self.vocabulary["__m2_pin__"] = indention + "0"
 
         dv = self.get_config_option("m2", "default", mname, mcfg, dev_name, None, {1, 0})
         if dv == 1:
@@ -327,12 +327,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- M3 PIN -------------------------------
         if m3_pin is not None:
-            vocabulary["__m3_port__"] = indention + self.mcu_hw.GPIO_to_port(m3_pin)
-            vocabulary["__m3_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m3_pin))
+            self.vocabulary["__m3_port__"] = indention + self.mcu_hw.GPIO_to_port(m3_pin)
+            self.vocabulary["__m3_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(m3_pin))
             config_flags.append(indention + "STEP_MOTOR_M3_IN_USE |\\")
         else:
-            vocabulary["__m3_port__"] = indention + "0"
-            vocabulary["__m3_pin__"] = indention + "0"
+            self.vocabulary["__m3_port__"] = indention + "0"
+            self.vocabulary["__m3_pin__"] = indention + "0"
 
         dv = self.get_config_option("m3", "default", mname, mcfg, dev_name, None, {1, 0})
         if dv == 1:
@@ -340,12 +340,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- ENABLE PIN -------------------------------
         if enable_pin is not None:
-            vocabulary["__enable_port__"] = indention + self.mcu_hw.GPIO_to_port(enable_pin)
-            vocabulary["__enable_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(enable_pin))
+            self.vocabulary["__enable_port__"] = indention + self.mcu_hw.GPIO_to_port(enable_pin)
+            self.vocabulary["__enable_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(enable_pin))
             config_flags.append(indention + "STEP_MOTOR_ENABLE_IN_USE |\\")
         else:
-            vocabulary["__enable_port__"] = indention + "0"
-            vocabulary["__enable_pin__"] = indention + "0"
+            self.vocabulary["__enable_port__"] = indention + "0"
+            self.vocabulary["__enable_pin__"] = indention + "0"
 
         dv = self.get_config_option("enable", "default", mname, mcfg, dev_name, None, {"enable", "disable"})
         if dv == "disable":
@@ -353,21 +353,21 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- RESET PIN -------------------------------
         if reset_pin is not None:
-            vocabulary["__reset_port__"] = indention + self.mcu_hw.GPIO_to_port(reset_pin)
-            vocabulary["__reset_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(reset_pin))
+            self.vocabulary["__reset_port__"] = indention + self.mcu_hw.GPIO_to_port(reset_pin)
+            self.vocabulary["__reset_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(reset_pin))
             config_flags.append(indention + "STEP_MOTOR_RESET_IN_USE |\\")
         else:
-            vocabulary["__reset_port__"] = indention + "0"
-            vocabulary["__reset_pin__"] = indention + "0"
+            self.vocabulary["__reset_port__"] = indention + "0"
+            self.vocabulary["__reset_pin__"] = indention + "0"
 
         # ------------------------------- SLEEP PIN -------------------------------
         if sleep_pin is not None:
-            vocabulary["__sleep_port__"] = indention + self.mcu_hw.GPIO_to_port(sleep_pin)
-            vocabulary["__sleep_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(sleep_pin))
+            self.vocabulary["__sleep_port__"] = indention + self.mcu_hw.GPIO_to_port(sleep_pin)
+            self.vocabulary["__sleep_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(sleep_pin))
             config_flags.append(indention + "STEP_MOTOR_SLEEP_IN_USE |\\")
         else:
-            vocabulary["__sleep_port__"] = indention + "0"
-            vocabulary["__sleep_pin__"] = indention + "0"
+            self.vocabulary["__sleep_port__"] = indention + "0"
+            self.vocabulary["__sleep_pin__"] = indention + "0"
 
         dv = self.get_config_option("sleep", "default", mname, mcfg, dev_name, None, {"sleep", "wakeup"})
         if dv == "wakeup":
@@ -380,9 +380,9 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- FAULT PIN -------------------------------
         if fault_pin is not None:
-            vocabulary["__fault_port__"] = indention + self.mcu_hw.GPIO_to_port(fault_pin)
-            vocabulary["__fault_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(fault_pin))
-            vocabulary["__fault_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(fault_pin)
+            self.vocabulary["__fault_port__"] = indention + self.mcu_hw.GPIO_to_port(fault_pin)
+            self.vocabulary["__fault_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(fault_pin))
+            self.vocabulary["__fault_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(fault_pin)
             dev_requires["{0}_{1}_fault_extiline".format(dev_name.lower(), mname.lower())] = {
                 "exti_line": self.mcu_hw.GPIO_to_EXTI_line(fault_pin)}
             active_level = self.get_config_option("fault", "active_level", mname, mcfg, dev_name, None, {"high", "low"})
@@ -394,9 +394,9 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             if dv != "stop":
                 config_flags.append(indention + self.get_action_flag("STEP_MOTOR_CONFIG_FAILURE", dv) + " |\\")
         else:
-            vocabulary["__fault_port__"] = indention + "0"
-            vocabulary["__fault_pin__"] = indention + "0"
-            vocabulary["__fault_exticr__"] = indention + "0"
+            self.vocabulary["__fault_port__"] = indention + "0"
+            self.vocabulary["__fault_pin__"] = indention + "0"
+            self.vocabulary["__fault_exticr__"] = indention + "0"
 
         dv = self.get_config_option("sleep", "default", mname, mcfg, dev_name, None, {"sleep", "wakeup"})
         if dv == "wakeup":
@@ -404,10 +404,10 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- CW ENCODER PIN -------------------------------
         if cw_endstop_pin is not None:
-            vocabulary["__cw_sft_limit__"] = indention + "0"
-            vocabulary["__cw_endstop_port__"] = indention + self.mcu_hw.GPIO_to_port(cw_endstop_pin)
-            vocabulary["__cw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(cw_endstop_pin))
-            vocabulary["__cw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(cw_endstop_pin)
+            self.vocabulary["__cw_sft_limit__"] = indention + "0"
+            self.vocabulary["__cw_endstop_port__"] = indention + self.mcu_hw.GPIO_to_port(cw_endstop_pin)
+            self.vocabulary["__cw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(cw_endstop_pin))
+            self.vocabulary["__cw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(cw_endstop_pin)
             dev_requires["{0}_{1}_cw_endstop_extiline".format(dev_name.lower(), mname.lower())] = {
                 "exti_line": self.mcu_hw.GPIO_to_EXTI_line(cw_endstop_pin)}
             active_level = self.get_config_option("cw_endstop", "active_level", mname, mcfg, dev_name, None,
@@ -416,11 +416,11 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                 config_flags.append(indention + "STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH |\\")
             config_flags.append(indention + "STEP_MOTOR_CWENDSTOP_IN_USE |\\")
         else:
-            vocabulary["__cw_endstop_port__"] = indention + "0"
-            vocabulary["__cw_endstop_pin__"] = indention + "0"
-            vocabulary["__cw_endstop_exticr__"] = indention + "0"
+            self.vocabulary["__cw_endstop_port__"] = indention + "0"
+            self.vocabulary["__cw_endstop_pin__"] = indention + "0"
+            self.vocabulary["__cw_endstop_exticr__"] = indention + "0"
             cw_sft_limit = self.get_int_config_option("cw_endstop", "position_limit", mname, mcfg, dev_name, None)
-            vocabulary["__cw_sft_limit__"] = indention + str(cw_sft_limit)
+            self.vocabulary["__cw_sft_limit__"] = indention + str(cw_sft_limit)
 
         dv = self.get_config_option("cw_endstop", "action", mname, mcfg, dev_name, None, {"ignore", "stop", "stop_all"})
         if dv != "stop":
@@ -428,10 +428,10 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         # ------------------------------- CCW ENCODER PIN -------------------------------
         if ccw_endstop_pin is not None:
-            vocabulary["__ccw_sft_limit__"] = indention + "0"
-            vocabulary["__ccw_endstop_port__"] = indention + self.mcu_hw.GPIO_to_port(ccw_endstop_pin)
-            vocabulary["__ccw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(ccw_endstop_pin))
-            vocabulary["__ccw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(ccw_endstop_pin)
+            self.vocabulary["__ccw_sft_limit__"] = indention + "0"
+            self.vocabulary["__ccw_endstop_port__"] = indention + self.mcu_hw.GPIO_to_port(ccw_endstop_pin)
+            self.vocabulary["__ccw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(ccw_endstop_pin))
+            self.vocabulary["__ccw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(ccw_endstop_pin)
             dev_requires["{0}_{1}_ccw_endstop_extiline".format(dev_name.lower(), mname.lower())] = {
                 "exti_line": self.mcu_hw.GPIO_to_EXTI_line(ccw_endstop_pin)}
             active_level = self.get_config_option("ccw_endstop", "active_level", mname, mcfg, dev_name, None,
@@ -441,11 +441,11 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             config_flags.append(indention + "STEP_MOTOR_CCWENDSTOP_IN_USE |\\")
 
         else:
-            vocabulary["__ccw_endstop_port__"] = indention + "0"
-            vocabulary["__ccw_endstop_pin__"] = indention + "0"
-            vocabulary["__ccw_endstop_exticr__"] = indention + "0"
+            self.vocabulary["__ccw_endstop_port__"] = indention + "0"
+            self.vocabulary["__ccw_endstop_pin__"] = indention + "0"
+            self.vocabulary["__ccw_endstop_exticr__"] = indention + "0"
             ccw_sft_limit = self.get_int_config_option("ccw_endstop", "position_limit", mname, mcfg, dev_name, None)
-            vocabulary["__ccw_sft_limit__"] = indention + str(ccw_sft_limit)
+            self.vocabulary["__ccw_sft_limit__"] = indention + str(ccw_sft_limit)
 
         dv = self.get_config_option("ccw_endstop", "action", mname, mcfg, dev_name, None, {"ignore", "stop", "stop_all"})
         if dv != "stop":
@@ -461,11 +461,11 @@ class StepMotorDevCustomizer(DeviceCustomizer):
         if len(config_flags) == 0:
             config_flags.append(indention + "0|\\")
 
-        vocabulary["__config_flags__"] = concat_lines(config_flags)[:-2]
-        vocabulary["__buffer__"] = indention + buf_name
-        vocabulary["__buffer_size__"] = indention + str(buf_size)
+        self.vocabulary["__config_flags__"] = concat_lines(config_flags)[:-2]
+        self.vocabulary["__buffer__"] = indention + buf_name
+        self.vocabulary["__buffer_size__"] = indention + str(buf_size)
 
-        return template.format(**vocabulary)
+        return template.format(**self.vocabulary)
 
     def get_action_flag(self, purpose, action : str):
         action_map = {"ignore": "_IGNORE", "stop_all": "_ALL"}

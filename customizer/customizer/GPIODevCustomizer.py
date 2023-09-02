@@ -26,11 +26,10 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
         self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
@@ -71,7 +70,8 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
             gpio_requires[pin_def_name] = {"gpio": gpio}
             index += 1
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__GPIO_DEVICE_NAME__": self.device_name,
                       "__CPP_GPIO_DEV_PINS_DECLARATION__": concat_lines(cpp_pin_defs),
@@ -80,4 +80,4 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
                       "__GPIO_SW_DEV_DESCRIPTION__": ", ".join(sw_pin_list),
                       "__GPIO_PIN_COUNT__": index}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()

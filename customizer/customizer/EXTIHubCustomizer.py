@@ -78,11 +78,12 @@ class EXTIHubCustomizer(BaseDeviceCustomizer):
             dev_requires["exti_irq_{0}".format(index)] = {"irq_handler": exti_irq_handler}
             index = index + 1
 
-        vocabulary = {"__EXTIHUB_ENABLED__": 1,
+        self.vocabulary = self.vocabulary | {
+                      "__EXTIHUB_ENABLED__": 1,
                       "__EXTIHUB_IRQ_HANDLERS__": concat_lines(exti_irq_defines)[:-1],
                       "__EXTIHUB_LINE_TO_IRQN__": ", ".join(exti_line_to_irqn),
                       "__EXTIHUB_LINE_COUNT__": exti_line_count}
-        self.patch_templates(vocabulary)
+        self.patch_templates()
 
         return dev_requires
 

@@ -26,7 +26,6 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.device_name = "FIRMWARE"
         self.dev_config = dev_config
         self.fw_header = "fw.h"
-        self.proto_header = "i2c_proto.h"
         self.example_main_hpp = "main.hpp"
         self.example_main_cpp = "main.cpp"
         self.fw_dev_headers = []
@@ -62,8 +61,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       [os.path.join(self.fw_dest, self.flash_script)])
 
         self.add_template(os.path.join(self.fw_inc_templ, self.proto_header),
-                          [os.path.join(self.fw_inc_dest, self.proto_header),
-                           os.path.join(self.libhlek_inc_dest_path, self.proto_header)])
+                          [os.path.join(self.fw_inc_dest, self.proto_header)])
 
         self.add_template(self.sw_lib_inc_templ, [os.path.join(self.sw_lib_inc_dest, self.sw_libconfig_name)])
         self.add_template(os.path.join(self.sw_lib_templ_path, self.cmake_script),
@@ -100,10 +98,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
         self.required_resources.extend(get_leaf_values(extender_requires))
 
-        # get info uuid length
-        h, hash_len = hash_dict_as_c_array("")
-
-        vocabulary = {"__I2C_BUS_PERIPH__": i2c_periph,
+        self.vocabulary = self.vocabulary | {
+                      "__I2C_BUS_PERIPH__": i2c_periph,
                       "__I2C_BUS_CLOCK_SPEED__": clock_speed,
                       "__I2C_BUS_SDA_PORT__": self.mcu_hw.GPIO_to_port(sda),
                       "__I2C_BUS_SDA_PIN_MASK__": self.mcu_hw.GPIO_to_pin_mask(sda),
@@ -118,13 +114,10 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__COMM_BUFFER_LENGTH__": buffer_size,
                       "__I2C_FIRMWARE_ADDRESS__": address_0,
                       "__APB_CLOCK_ENABLE__": self.mcu_hw.ENABLE_CLOCK_on_APB(self.required_resources),
-
                       "__MCU_FREQUENCY_MHZ__": self.mcu_hw.system_clock // 1000000,
                       "__MCU_FREQUENCY__": self.mcu_hw.system_clock,
                       "__MCU_MAXIMUM_TIMER_US__": (0xFFFF + 1) * (0xFFFF + 1) * 1000000 // self.mcu_hw.system_clock,
                       "__DEVICE_NAME__": device_name,
-                      "__INFO_UUID_LEN__": hash_len,
-                      "__COMM_MAX_DEV_ADDR__": 15,
                       "__NAMESPACE_NAME__": self.project_name,
                       "__HLEK_NAME__": self.hlek_name,
                       "__LIBHLEK_NAME__": self.libhlek_name,
@@ -134,10 +127,10 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__STDPERIF_PATH__": self.cmsis_path
                       }
 
-        vocabulary.update(self.make_feature_macroses())
+        self.vocabulary.update(self.make_feature_macroses())
         # print(vocabulary)
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()
         self.copy_files_for_tests()
 
     def add_fw_header(self, header: str):
@@ -148,11 +141,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.sw_dev_headers.append(f'#include \"{header}\"')
         return
 
-    def add_libhlek_common_header(self, config: dict, customizer: str):
+    def add_shared_header(self, config: dict, customizer: str):
         hlek_lib_common_header, shared_header, fw_header, sw_header, shared_token = config["generation"]["shared"][customizer]
-        self.add_template(os.path.join(self.sw_inc_templ, hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, hlek_lib_common_header)])
-
         self.add_shared_code(os.path.join(self.shared_templ, shared_header), shared_token)
         return
 

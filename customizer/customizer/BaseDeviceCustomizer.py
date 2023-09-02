@@ -29,14 +29,12 @@ class BaseDeviceCustomizer(BaseCustomizer):
 
         self.toolchain_name = "toolchain.cmake"
         self.fw_templ = os.path.join(self.template_dir, "firmware");
-        self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
         self.fw_src_templ = os.path.join(self.template_dir, "firmware/src")
         self.fw_path = os.path.join(self.project_dir, "firmware")
         self.fw_inc_source_path = os.path.join(self.fw_path, "inc")
         self.fw_src_source_path = os.path.join(self.fw_path, "src")
         self.fw_inc_dest = common_config['firmware']['firmware_inc_path']
         self.fw_dest = common_config['firmware']['firmware_path']
-        self.shared_templ = os.path.join(self.template_dir, "shared")
 
         self.sw_templ = os.path.join(self.template_dir, "monitor")
         self.sw_example_templ = os.path.join(self.template_dir, "example")
@@ -47,9 +45,6 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.sw_example_dest = common_config["firmware"]["example_path"]
         self.sw_example_inc_dest = common_config["firmware"]["example_inc_path"]
         self.sw_example_src_dest = common_config["firmware"]["example_src_path"]
-
-        self.sw_inc_templ = os.path.join(self.template_dir, "libhlek/inc")
-        self.sw_src_templ = os.path.join(self.template_dir, "software/src")
 
         #self.sw_inc_dest = os.path.join(self.project_dir, "software/inc")
         #self.sw_src_dest = os.path.join(self.project_dir, "software/src")
@@ -73,7 +68,6 @@ class BaseDeviceCustomizer(BaseCustomizer):
 
         self.template_list = dict()
         self.file_copy_list = dict()
-        self.shared_code = dict()
         self.tab = "    "
         self.newline = "\n"
         self.project_name = common_config['firmware']['device_name']
@@ -93,40 +87,6 @@ class BaseDeviceCustomizer(BaseCustomizer):
 
     def add_copy(self, in_file: str, out_file_list: list):
         self.file_copy_list[in_file] = out_file_list
-
-    def add_shared_code(self, in_file: str, token: str):
-        header_separator = "/* --------------------> END OF THE TEMPLATE HEADER <-------------------- */"
-        with open(os.path.abspath(in_file), 'r') as f:
-            template = f.read()
-
-            # cut the file header
-            indx = template.find(header_separator)
-
-            self.shared_code[token] = template[indx+len(header_separator):]
-
-    def patch_templates(self, vocabulary: dict):
-
-        for in_file, out_file_list in self.template_list.items():
-            # read in_file
-            with open(os.path.abspath(in_file), 'r') as f:
-                template = f.read()
-
-            # patch shared code first
-            for k,v in self.shared_code.items():
-                template = template.replace("{"+k+"}", v)
-
-            # patch tokens
-            template = template.format(**vocabulary)
-
-            for fn in out_file_list:
-                with open(os.path.abspath(fn), 'w') as f:
-                    f.write(template)
-
-        # Process file copy
-        for in_file, out_file_list in self.file_copy_list.items():
-            for fn in out_file_list:
-                copy2(in_file, fn)
-
 
 
     def get_gpio(self, d: dict) -> str:

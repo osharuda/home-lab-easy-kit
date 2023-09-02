@@ -25,11 +25,10 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
         self.add_template(os.path.join(self.sw_lib_src_templ_path, self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
@@ -43,7 +42,8 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
         irrc_requires["exti_line_irrc"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(data_pin)}
         data_pin_number = self.mcu_hw.GPIO_to_pin_number(data_pin)
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": self.dev_config["dev_id"],
                       "__IRRC_DEVICE_NAME__": self.device_name,
                       "__IRRC_BUF_LEN__": self.dev_config["buffer_size"],
@@ -53,4 +53,4 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
                       "__IRRC_OUT_PIN_MASK__": self.mcu_hw.GPIO_to_pin_mask(data_pin),
                       "__IRRC_EXTICR__": self.mcu_hw.GPIO_to_AFIO_EXTICR(data_pin)}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()

@@ -53,17 +53,25 @@ def load_json(fn: str) -> dict:
 
 def is_outdated(key: str, digest: str, check_dir: str = None):
     if opt_ignore_cache:
+        if opt_verbose:
+            print("Ignoring hashes, customization will be performed.")
         return True
 
     if check_dir and not os.path.exists(check_dir):
+        if opt_verbose:
+            print("Check directory is specified and it is not found, customization will be performed.")
         return True
 
     if GLOBAL_HASH_KEY not in hashes or\
             global_hash != hashes[GLOBAL_HASH_KEY]:
+        if opt_verbose:
+            print(f"Customization will be performed because {GLOBAL_HASH_KEY} hash wasn't calculated yet or mismatch.")
         return True
 
     if key not in hashes or\
             digest != hashes[key]:
+        if opt_verbose:
+            print(f"Customization will be performed because {key} hash wasn't calculated yet or mismatch.")
         return True
 
     return False
@@ -73,6 +81,45 @@ def update_caches(key: str, digest):
     hashes[key] = digest
     hashes_text = json.dumps(hashes, indent=4, cls=Sorted_JSON_Encoder)
     write_text_file(HASHES_JSON, hashes_text)
+
+
+def get_shared_headers_dict():
+    shared_headers = dict()
+
+    # Customizer class name |libhlek common header  |    shared header    |  firmware header     | config header        | shared token
+    shared_headers[AD9850DevCustomizer.__name__] = (
+    "ad9850_common.hpp", "ad9850_shared.h", "ad9850_conf.h", "ad9850_conf.hpp", "__AD9850_SHARED_HEADER__")
+    shared_headers[ADCDevCustomizer.__name__] = (
+    "adc_common.hpp", "adc_shared.h", "adc_conf.h", "adc_conf.hpp", "__ADC_SHARED_HEADER__")
+    shared_headers[CanCustomizer.__name__] = (
+    "can_common.hpp", "can_shared.h", "can_conf.h", "can_conf.hpp", "__CAN_SHARED_HEADER__")
+    shared_headers[DeskDevCustomizer.__name__] = (
+    "desk_common.hpp", "desk_shared.h", "desk_conf.h", "desk_conf.hpp", "__DESKDEV_SHARED_HEADER__")
+    shared_headers[GPIODevCustomizer.__name__] = (
+    "gpio_common.hpp", "gpio_shared.h", "gpio_conf.h", "gpio_conf.hpp", "__GPIO_SHARED_HEADER__")
+    shared_headers[InfoCustomizer.__name__] = (
+    "info_common.hpp", "info_shared.h", "info_conf.h", "info_conf.hpp", "__INFO_SHARED_HEADER__")
+    shared_headers[IRRCCustomizer.__name__] = (
+    "irrc_common.hpp", "irrc_shared.h", "irrc_conf.h", "irrc_conf.hpp", "__CONTROLS_SHARED_HEADER__")
+    shared_headers[LCD1602aCustomizer.__name__] = (
+    "lcd1602a_common.hpp", "lcd1602a_shared.h", "lcd1602a_conf.h", "lcd1602a_conf.hpp", "__LCD1602A_SHARED_HEADER__")
+    shared_headers[RTCCustomizer.__name__] = (
+    "rtc_common.hpp", "rtc_shared.h", "rtc_conf.h", "rtc_conf.hpp", "__RTC_SHARED_HEADER__")
+    shared_headers[SPIDACCustomizer.__name__] = (
+    "spidac_common.hpp", "spidac_shared.h", "spidac_conf.h", "spidac_conf.hpp", "__SPIDAC_SHARED_HEADER__")
+    shared_headers[SPIProxyCustomizer.__name__] = (
+    "spiproxy_common.hpp", "spiproxy_shared.h", "spiproxy_conf.h", "spiproxy_conf.hpp", "__SPIPROXY_SHARED_HEADER__")
+    shared_headers[SPWMCustomizer.__name__] = (
+    "spwm_common.hpp", "spwm_shared.h", "spwm_conf.h", "spwm_conf.hpp", "__SPWM_SHARED_HEADER__")
+    shared_headers[StepMotorDevCustomizer.__name__] = (
+    "step_motor_common.hpp", "step_motor_shared.h", "step_motor_conf.h", "step_motor_conf.hpp",
+    "__STEP_MOTOR_SHARED_HEADER__")
+    shared_headers[UartProxyCustomizer.__name__] = (
+    "uart_proxy_common.hpp", "uart_proxy_shared.h", "uart_proxy_conf.h", "uartproxy_conf.hpp",
+    "__UART_PROTO_SHARED_HEADER__")
+    # ADD_SHARED_HEADER_RECORD
+
+    return shared_headers
 
 
 def customize_firmware(json_file_name: str):
@@ -122,42 +169,8 @@ def customize_firmware(json_file_name: str):
     configuration["firmware"]["firmware_path"] = firmware_path
     configuration["firmware"]["firmware_inc_path"] = firmware_inc_path
 
-    shared_headers = dict()
-    # Customizer class name                          |libhlek common header  |    shared header    |  firmware header     | config header        | shared token
-    shared_headers[AD9850DevCustomizer.__name__] = (
-    "ad9850_common.hpp", "ad9850_shared.h", "ad9850_conf.h", "ad9850_conf.hpp", "__AD9850_SHARED_HEADER__")
-    shared_headers[ADCDevCustomizer.__name__] = (
-    "adc_common.hpp", "adc_shared.h", "adc_conf.h", "adc_conf.hpp", "__ADC_SHARED_HEADER__")
-    shared_headers[CanCustomizer.__name__] = (
-    "can_common.hpp", "can_shared.h", "can_conf.h", "can_conf.hpp", "__CAN_SHARED_HEADER__")
-    shared_headers[DeskDevCustomizer.__name__] = (
-    "desk_common.hpp", "desk_shared.h", "desk_conf.h", "desk_conf.hpp", "__DESKDEV_SHARED_HEADER__")
-    shared_headers[GPIODevCustomizer.__name__] = (
-    "gpio_common.hpp", "gpio_shared.h", "gpio_conf.h", "gpio_conf.hpp", "__GPIO_SHARED_HEADER__")
-    shared_headers[InfoCustomizer.__name__] = (
-    "info_common.hpp", "info_shared.h", "info_conf.h", "info_conf.hpp", "__INFO_SHARED_HEADER__")
-    shared_headers[IRRCCustomizer.__name__] = (
-    "irrc_common.hpp", "irrc_shared.h", "irrc_conf.h", "irrc_conf.hpp", "__CONTROLS_SHARED_HEADER__")
-    shared_headers[LCD1602aCustomizer.__name__] = (
-    "lcd1602a_common.hpp", "lcd1602a_shared.h", "lcd1602a_conf.h", "lcd1602a_conf.hpp", "__LCD1602A_SHARED_HEADER__")
-    shared_headers[RTCCustomizer.__name__] = (
-    "rtc_common.hpp", "rtc_shared.h", "rtc_conf.h", "rtc_conf.hpp", "__RTC_SHARED_HEADER__")
-    shared_headers[SPIDACCustomizer.__name__] = (
-    "spidac_common.hpp", "spidac_shared.h", "spidac_conf.h", "spidac_conf.hpp", "__SPIDAC_SHARED_HEADER__")
-    shared_headers[SPIProxyCustomizer.__name__] = (
-    "spiproxy_common.hpp", "spiproxy_shared.h", "spiproxy_conf.h", "spiproxy_conf.hpp", "__SPIPROXY_SHARED_HEADER__")
-    shared_headers[SPWMCustomizer.__name__] = (
-    "spwm_common.hpp", "spwm_shared.h", "spwm_conf.h", "spwm_conf.hpp", "__SPWM_SHARED_HEADER__")
-    shared_headers[StepMotorDevCustomizer.__name__] = (
-    "step_motor_common.hpp", "step_motor_shared.h", "step_motor_conf.h", "step_motor_conf.hpp",
-    "__STEP_MOTOR_SHARED_HEADER__")
-    shared_headers[UartProxyCustomizer.__name__] = (
-    "uart_proxy_common.hpp", "uart_proxy_shared.h", "uart_proxy_conf.h", "uartproxy_conf.hpp",
-    "__UART_PROTO_SHARED_HEADER__")
-    # ADD_SHARED_HEADER_RECORD
-
     configuration["generation"] = dict()
-    configuration["generation"]["shared"] = shared_headers
+    configuration["generation"]["shared"] = get_shared_headers_dict()
 
     # Check if customization is actually required
     if not is_outdated(hash_key, configuration_hash):
@@ -190,20 +203,20 @@ def customize_firmware(json_file_name: str):
                                        required_features)
 
     # Add headers to libhlek (all must be added)
-    fw_customizer.add_libhlek_common_header(configuration, AD9850DevCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, ADCDevCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, CanCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, DeskDevCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, GPIODevCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, InfoCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, IRRCCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, LCD1602aCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, RTCCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, SPIDACCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, SPIProxyCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, SPWMCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, StepMotorDevCustomizer.__name__)
-    fw_customizer.add_libhlek_common_header(configuration, UartProxyCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, AD9850DevCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, ADCDevCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, CanCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, DeskDevCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, GPIODevCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, InfoCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, IRRCCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, LCD1602aCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, RTCCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, SPIDACCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, SPIProxyCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, SPWMCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, StepMotorDevCustomizer.__name__)
+    fw_customizer.add_shared_header(configuration, UartProxyCustomizer.__name__)
     # ADD_LIBHLEK_COMMON_HEADER
 
     # InfoCustomizer - device containing all information about build
@@ -304,11 +317,15 @@ def customize_libhlek():
     LIBHLEK_HASH_KEY = "libhlek"
     configuration = dict()
     configuration["global"] = global_config
+    configuration["generation"] = dict()
+    configuration["generation"]["shared"] = get_shared_headers_dict()
+
     customizer = LibhlekCustomizer(configuration)
     cmakelists_path = customizer.get_cmakelists_path()
     libhlek_hash = hash_text_file(cmakelists_path)
     if is_outdated(LIBHLEK_HASH_KEY, libhlek_hash, cmakelists_path):
         customizer.customize()
+        libhlek_hash = hash_text_file(cmakelists_path)
         update_caches(LIBHLEK_HASH_KEY, libhlek_hash)
         print("libhlek customization done.")
     else:

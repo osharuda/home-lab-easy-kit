@@ -26,7 +26,20 @@ class BaseCustomizer:
         self.cmake_script = "CMakeLists.txt"
         self.customizer_dir = os.path.join(self.project_dir, "customizer")
         self.template_dir = os.path.join(self.customizer_dir, "templates")
+        self.shared_templ = os.path.join(self.template_dir, "shared")
         self.libhlek_templ_path = os.path.join(self.template_dir, "libhlek")
+        self.proto_header = "i2c_proto.h"
+        self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
+
+        # get info uuid length
+        h, hash_len = hash_dict_as_c_array("")
+
+        self.vocabulary = {
+            "__INFO_UUID_LEN__": hash_len,
+            "__COMM_MAX_DEV_ADDR__": 15,
+            "__I2C_FIRMWARE_ADDRESS__": 0,
+            "__COMM_BUFFER_LENGTH__": 0
+        }
 
     def customize(self):
         pass
@@ -47,7 +60,7 @@ class BaseCustomizer:
 
             self.shared_code[token] = template[indx+len(header_separator):]
 
-    def patch_templates(self, vocabulary: dict):
+    def patch_templates(self):
 
         for in_file, out_file_list in self.template_list.items():
             # read in_file
@@ -59,7 +72,7 @@ class BaseCustomizer:
                 template = template.replace("{"+k+"}", v)
 
             # patch tokens
-            template = template.format(**vocabulary)
+            template = template.format(**self.vocabulary)
 
             for fn in out_file_list:
                 with open(os.path.abspath(fn), 'w') as f:

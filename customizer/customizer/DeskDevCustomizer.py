@@ -24,11 +24,10 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
 
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
-        self.add_template(os.path.join(self.sw_inc_templ, self.hlek_lib_common_header),
-                          [os.path.join(self.libhlek_inc_dest_path, self.hlek_lib_common_header)])
 
         self.add_template(os.path.join(self.sw_lib_inc_templ_path, self.sw_lib_header),
                           [os.path.join(self.sw_lib_inc_dest, self.sw_lib_header)])
+
         self.add_template(os.path.join(self.sw_lib_src_templ_path,self.sw_lib_source),
                           [os.path.join(self.sw_lib_src_dest, self.sw_lib_source)])
 
@@ -45,7 +44,8 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
         enc_a = self.get_gpio(requires["encoder"]["A"])
         enc_b = self.get_gpio(requires["encoder"]["B"])
 
-        params = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                  "__NAMESPACE_NAME__": self.project_name,
                   "__DEVICE_ID__": self.dev_config["dev_id"],
                   "__DESKDEV_DEVICE_NAME__": self.device_name,
 
@@ -80,7 +80,7 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
                   "__ENCODER_B_EXTICR__": self.mcu_hw.GPIO_to_AFIO_EXTICR(enc_b),
                   }
 
-        self.patch_templates(params)
+        self.patch_templates()
 
         requires["exti_line_btn_up"] = {"exti_line" : self.mcu_hw.GPIO_to_EXTI_line(btn_up)}
         requires["exti_line_btn_down"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(btn_down)}

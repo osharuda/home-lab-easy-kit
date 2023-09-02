@@ -56,7 +56,8 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
             dt, hint, name = self.devices.get(dev_id, ("INFO_DEV_TYPE_NONE", "INFO_DEV_HINT_NONE", ""))
             info_desciption.append('{{ {0}, {1}, (const char*)"{2}" }}'.format(dt, hint, name))
 
-        vocabulary = {"__NAMESPACE_NAME__": self.project_name,
+        self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__DEVICE_ID__": 0,
                       "__INFO_UUID__": h,
                       "__INFO_UUID_LEN__": hash_len,
@@ -65,7 +66,7 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
                       "__INFO_PROJECT_NAME__": self.configuration["firmware"]["device_name"],
                       "__INFO_I2C_ADDRESS__": self.i2c_address}
 
-        self.patch_templates(vocabulary)
+        self.patch_templates()
 
     def add_devices(self, configs_dict: dict, dev_type: str):
         result = dict()

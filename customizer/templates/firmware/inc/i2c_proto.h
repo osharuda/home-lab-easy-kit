@@ -175,10 +175,6 @@ typedef struct tag_CommResponseHeader{{
 /// \brief Defines bad byte to sent if software requires more data than available in device buffer on firmware side.
 #define COMM_BAD_BYTE                 0xBB
 
-/// \def COMM_BUFFER_LENGTH
-/// \brief Defines communication buffer length. Software may not send commands longer than this value.
-#define COMM_BUFFER_LENGTH            {__COMM_BUFFER_LENGTH__}
-
 /// \def COMM_MAX_DEV_ADDR
 /// \brief Defines maximum device ID value.
 #define COMM_MAX_DEV_ADDR             {__COMM_MAX_DEV_ADDR__}
@@ -196,10 +192,13 @@ typedef struct tag_CommResponseHeader{{
 /// \brief Defines offset (in bytes) of the tag_CommCommandHeader#command_byte
 #define COMM_COMMAND_BYTE_OFFSET      0
 
-
 #ifdef HLEK_FIRMWARE
 /// \def I2C_FIRMWARE_ADDRESS
 /// \brief Defines first I2C address for the device. Used with firmware only.
 #define I2C_FIRMWARE_ADDRESS          {__I2C_FIRMWARE_ADDRESS__}
+
+/// \def COMM_BUFFER_LENGTH
+/// \brief Defines communication buffer length. Software may not send commands longer than this value.
+#define COMM_BUFFER_LENGTH            {__COMM_BUFFER_LENGTH__}
 #endif
 /// @}}

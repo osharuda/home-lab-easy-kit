@@ -63,7 +63,7 @@ function build_subproject {
 function make_libhlek {
     echo "Generating cmake project for LIBHLEK"
     cd libhlek && mkdir ${BUILDCONF} && cd ${BUILDCONF}
-    cmake -DHLEK_ROOT="${INITDIR}" -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "Ninja" ../ >> "${LOGFILE}" 2>&1	
+    cmake -DCMAKE_BUILD_TYPE=${BUILDCONF} -G "Ninja" ../ >> "${LOGFILE}" 2>&1	
     cd ${INITDIR}
 }
 
@@ -87,7 +87,7 @@ function build_libhlek {
 function make_firmware {
 	echo "Generating cmake project for firmware/${CONFIGDIR}"
 	cd ${CONFIGDIR} && cd firmware && mkdir ${BUILDCONF} && cd ${BUILDCONF}
-	cmake -G"Unix Makefiles" -DHLEK_ROOT="${INITDIR}" -DHLEK_CONFIG="${CONFIGDIR}" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_BUILD_TYPE=${BUILDCONF} -DCMAKE_TOOLCHAIN_FILE:PATH="${INITDIR}/firmware/toolchain.cmake"  .. >> "${LOGFILE}" 2>&1
+	cmake -G"Unix Makefiles" -DHLEK_ROOT="${INITDIR}" -DHLEK_CONFIG="${CONFIGDIR}" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_BUILD_TYPE=${BUILDCONF} -DCMAKE_TOOLCHAIN_FILE:PATH="../toolchain.cmake"  .. >> "${LOGFILE}" 2>&1
 	cd ${INITDIR}
 }
 
