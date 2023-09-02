@@ -7,7 +7,7 @@ set(tools "/usr")
 
 # Should point to the CMSIS library. For the latest version of the library
 # this path should end with "/STM32F10x_StdPeriph_Lib_V3.6.0"
-set(STDPERIF_PATH "/home/oleg/STM32F10x_StdPeriph_Lib_V3.6.0")
+set(STDPERIF_PATH "__STDPERIF_PATH__")
 
 set(CMAKE_C_COMPILER ${tools}/bin/arm-none-eabi-gcc)
 set(CMAKE_CXX_COMPILER ${tools}/bin/arm-none-eabi-g++)
