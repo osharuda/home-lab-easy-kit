@@ -50,7 +50,7 @@ function build_subproject {
 	fi
 	cd "${CONFIGDIR}/$1/${BUILDCONF}"
 
-	ninja -j${NCPU} >> "${LOGFILE}" 2>&1
+	ninja -v -j${NCPU} >> "${LOGFILE}" 2>&1
 	if [ $skip_install == false ]
 	then 
 		echo "Installing $1"
@@ -78,7 +78,7 @@ function build_libhlek {
 		make_libhlek
 	fi
 	cd "libhlek/${BUILDCONF}"
-	ninja -j${NCPU} >> "${LOGFILE}" 2>&1
+	ninja -v -j${NCPU} >> "${LOGFILE}" 2>&1
 	echo "Installing LIBHLEK"
 	sudo ninja install >> "${LOGFILE}" 2>&1
 	cd "${INITDIR}"

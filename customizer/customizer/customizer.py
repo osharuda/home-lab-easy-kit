@@ -37,6 +37,9 @@ from CanCustomizer import *
 from SPIProxyCustomizer import *
 from AD9850DevCustomizer import *
 from SPIDACCustomizer import *
+# -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
+from PaceMakerDevCustomizer import *
+# -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
 # IMPORT_CUSTOMIZER
 
 # Load configuration file specified as parameter
@@ -117,6 +120,9 @@ def get_shared_headers_dict():
     shared_headers[UartProxyCustomizer.__name__] = (
     "uart_proxy_common.hpp", "uart_proxy_shared.h", "uart_proxy_conf.h", "uartproxy_conf.hpp",
     "__UART_PROTO_SHARED_HEADER__")
+# -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
+    shared_headers[PaceMakerDevCustomizer.__name__] = ("pacemakerdev_common.hpp", "pacemakerdev_shared.h", "pacemakerdev_conf.h", "pacemakerdev_conf.hpp", "__PACEMAKERDEV_SHARED_HEADER__")
+# -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
     # ADD_SHARED_HEADER_RECORD
 
     return shared_headers
@@ -217,6 +223,9 @@ def customize_firmware(json_file_name: str):
     fw_customizer.add_shared_header(configuration, SPWMCustomizer.__name__)
     fw_customizer.add_shared_header(configuration, StepMotorDevCustomizer.__name__)
     fw_customizer.add_shared_header(configuration, UartProxyCustomizer.__name__)
+# -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
+    fw_customizer.add_shared_header(configuration, PaceMakerDevCustomizer.__name__)
+# -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
     # ADD_LIBHLEK_COMMON_HEADER
 
     # InfoCustomizer - device containing all information about build
@@ -267,6 +276,11 @@ def customize_firmware(json_file_name: str):
         elif customizer_name == "SPIDACCustomizer":
             dt = "INFO_DEV_TYPE_SPIDAC"
             customizer = SPIDACCustomizer(mcu, config_dict, configuration)
+# -> REGISTER_CUSTOMIZER | HASH: D85113CE1E662E848F94E1C716B0F918DCD14FEC
+        elif customizer_name == "PaceMakerDevCustomizer":
+            dt = "INFO_DEV_TYPE_PACEMAKERDEV"
+            customizer = PaceMakerDevCustomizer(mcu, config_dict, configuration)
+# -> REGISTER_CUSTOMIZER | HASH: D85113CE1E662E848F94E1C716B0F918DCD14FEC
         # REGISTER_CUSTOMIZER
         elif customizer_name == "InfoCustomizer":
             continue

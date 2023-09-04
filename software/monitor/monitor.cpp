@@ -40,6 +40,9 @@
 #include <libhlek/rtc.hpp>
 #include <libhlek/step_motor.hpp>
 #include <libhlek/can.hpp>
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+#include <libhlek/pacemakerdev.hpp>
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 // INCLUDE_HEADER
 #include <libhlek/i2c_proto.h>
 #include "handlers.hpp"
@@ -606,6 +609,27 @@ int main(int argc, char* argv[])
         ui->add_command(cmd_index++, h.spidac_triangle_handler);
     }
 #endif  
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+#ifdef PACEMAKERDEV_DEVICE_ENABLED
+    struct PaceMakerDevCommandHandlers {
+        std::shared_ptr<PaceMakerDev> dev;
+        std::shared_ptr<CommandHandler> pacemakerdev_info_handler;
+    };
+
+    std::vector<PaceMakerDevCommandHandlers> pacemakerdev_handlers(PACEMAKERDEV_DEVICE_COUNT);
+
+    for (size_t index=0; index<PACEMAKERDEV_DEVICE_COUNT; index++) {
+        const PaceMakerDevInstance* descr = PaceMakerDev::get_descriptor(index);
+        uint8_t dev_id = descr->dev_id;
+        PaceMakerDevCommandHandlers& h = pacemakerdev_handlers.at(index);
+
+
+        h.dev.reset(new PaceMakerDev(firmware, dev_id));
+        h.pacemakerdev_info_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.pacemakerdev_info_handler);  
+    }
+#endif  
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE
 
     ui->runloop();

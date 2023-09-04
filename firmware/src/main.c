@@ -40,6 +40,9 @@
 #include "spiproxy.h"
 #include "ad9850dev.h"
 #include "spidac.h"
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+#include "pacemakerdev.h"
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 // INCLUDE_HEADER
 
 void init_NVIC() {
@@ -183,6 +186,11 @@ int main(void)
 #ifdef SPIDAC_DEVICE_ENABLED
     spidac_init();
 #endif
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+#ifdef PACEMAKERDEV_DEVICE_ENABLED
+    pacemakerdev_init();
+#endif
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE
 
     enable_debug_pins();
