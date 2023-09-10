@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include <cstddef>
+
 /// \addtogroup group_{devname}
 /// @{{
 
@@ -50,6 +52,7 @@ typedef struct tag_{DevName}Command {{
 typedef struct tag_{DevName}Config{{
     uint8_t         dev_id;             ///< Device ID for {DevName} virtual device
     const char*     dev_name;           ///< Name of the {DevName} virtual device as given in JSON configuration file
+    size_t          dev_buffer_len;     ///< Length of the {DevName} internal buffer
 }} {DevName}Config;
 
 /// @}}

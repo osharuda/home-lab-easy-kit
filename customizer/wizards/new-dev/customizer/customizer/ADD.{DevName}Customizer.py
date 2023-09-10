@@ -43,6 +43,9 @@ class {DevName}Customizer(DeviceCustomizer):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
         fw_device_buffers = []          # these buffers are used to be internal buffers for all configured devices on firmware side
+        sw_configs = []
+        sw_config_declarations = []
+        sw_config_array_name = "{devname}_configs"
 
         index = 0
         for dev_name, dev_config in self.device_list:
@@ -102,7 +105,7 @@ class {DevName}Customizer(DeviceCustomizer):
                 fw_device_descriptors.append("{{ {{0}}, {{0}}, {0} }}".format(
                     dev_id))
 
-                sw_device_desсriptors.append('{{ {0}, "{1}"}}'.format(
+                sw_device_desсriptors.append('{{ {0}, "{1}", 0}}'.format(
                     dev_id, dev_name))
 
                 fw_device_buffers = []
@@ -131,12 +134,22 @@ class {DevName}Customizer(DeviceCustomizer):
 
                 fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
+            sw_config_name = "{devname}_{0}_config_ptr".format(dev_name)
+            sw_config_declarations.append(f"extern const {DevName}Config* {sw_config_name};")
+            sw_configs.append(
+                f"const {DevName}Config* {sw_config_name} = {sw_config_array_name} + {index};")
+
             index += 1
 
         self.vocabulary = self.vocabulary | {
+                      "__NAMESPACE_NAME__": self.project_name,
                       "__{DEVNAME}_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__{DEVNAME}_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
                       "__{DEVNAME}_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),
-                      "__{DEVNAME}_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1]}
+                      "__{DEVNAME}_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1],
+                      "__{DEVNAME}_CONFIGURATION_DECLARATIONS__": concat_lines(sw_config_declarations),
+                      "__{DEVNAME}_CONFIGURATIONS__": concat_lines(sw_configs),
+                      "__{DEVNAME}_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
+        }
 
         self.patch_templates()
