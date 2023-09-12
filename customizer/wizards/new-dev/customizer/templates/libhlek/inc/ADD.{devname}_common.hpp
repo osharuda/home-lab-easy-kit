@@ -28,21 +28,7 @@
 
 #include <cstddef>
 
-/// \addtogroup group_{devname}
-/// @{{
-
-#pragma pack(push, 1)
-
-/// \struct tag_{DevName}Command
-/// \brief Structure that describes command for {DevName}
-typedef struct tag_{DevName}Command {{
-    /// \brief Some data
-    uint8_t data;
-}} {DevName}Command;
-
-#pragma pack(pop)
-/// @}}
-
+{__{DEVNAME}_SHARED_HEADER__}
 
 /// \addtogroup group_{devname}
 /// @{{
@@ -52,7 +38,7 @@ typedef struct tag_{DevName}Command {{
 typedef struct tag_{DevName}Config{{
     uint8_t         dev_id;             ///< Device ID for {DevName} virtual device
     const char*     dev_name;           ///< Name of the {DevName} virtual device as given in JSON configuration file
-    size_t          dev_buffer_len;     ///< Length of the {DevName} internal buffer
+    size_t          dev_buffer_len;     ///< Length of the {DevName} internal buffer, 0 if no buffer is used.
 }} {DevName}Config;
 
 /// @}}

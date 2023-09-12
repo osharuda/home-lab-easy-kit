@@ -17,15 +17,6 @@
 
  /* --------------------> END OF THE TEMPLATE HEADER <-------------------- */
 
-/// \def {DEVNAME}_DEVICE_COUNT
-/// \brief Number of {DevName} devices being used
-#define {DEVNAME}_DEVICE_COUNT {__{DEVNAME}_DEVICE_COUNT__}
-
-#define DEV_NO_BUFFER           0
-#define DEV_LINIAR_BUFFER       1
-#define DEV_CIRCULAR_BUFFER     2
-#define {DEVNAME}_DEVICE_BUFFER_TYPE __DEVICE_BUFFER_TYPE__
-
 /// \addtogroup group_{devname}
 /// @{{
 

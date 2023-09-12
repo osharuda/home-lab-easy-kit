@@ -82,6 +82,18 @@
 /// receive buffer (common to all virtual devices) and ON_COMMAND device callback is called.
 ///
 
+/// \def DEV_NO_BUFFER
+/// \brief Says virtual device has no internal buffer
+#define DEV_NO_BUFFER           0
+
+/// \def DEV_LINIAR_BUFFER
+/// \brief Says virtual device has liniar buffer
+#define DEV_LINIAR_BUFFER       1
+
+/// \def DEV_CIRCULAR_BUFFER
+/// \brief Says virtual device has circular buffer
+#define DEV_CIRCULAR_BUFFER     2
+
 /// \def COMM_CMDBYTE_DEV_SPECIFIC_4
 /// \brief Defines a custom device specific flag in command byte (offset 4)
 #define COMM_CMDBYTE_DEV_SPECIFIC_4  (uint8_t)(1<<4)

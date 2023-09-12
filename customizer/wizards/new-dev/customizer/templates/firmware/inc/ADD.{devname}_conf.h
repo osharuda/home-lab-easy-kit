@@ -28,6 +28,14 @@
 /// \addtogroup group_{devname}
 /// @{{
 
+/// \def {DEVNAME}_DEVICE_COUNT
+/// \brief Number of {DevName} devices being used
+#define {DEVNAME}_DEVICE_COUNT {__{DEVNAME}_DEVICE_COUNT__}
+
+/// \def {DEVNAME}_DEVICE_BUFFER_TYPE
+/// \brief Type of the buffer used by device
+#define {DEVNAME}_DEVICE_BUFFER_TYPE __DEVICE_BUFFER_TYPE__
+
 /// \def {DEVNAME}_FW_DEV_DESCRIPTOR
 /// \brief Defines array with configurations for {DevName} virtual devices
 #define {DEVNAME}_FW_DEV_DESCRIPTOR {{  {__{DEVNAME}_FW_DEV_DESCRIPTOR__} }}
