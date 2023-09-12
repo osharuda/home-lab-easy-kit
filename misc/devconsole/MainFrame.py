@@ -67,7 +67,7 @@ class MainFrame(wx.Frame):
         sizer_5.Add(label_1, 0, wx.ALIGN_CENTER_VERTICAL, 0)
 
         self.btn_nfs_config = wx.Button(self, wx.ID_ANY, "")
-        self.btn_nfs_config.SetBitmap(wx.Bitmap("/mnt/SHARE/home-lab-easy-kit/devconsole/icons/hammer_and_wrench_48.png", wx.BITMAP_TYPE_ANY))
+        self.btn_nfs_config.SetBitmap(wx.Bitmap("icons/hammer_and_wrench_48.png", wx.BITMAP_TYPE_ANY))
         sizer_5.Add(self.btn_nfs_config, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 0)
 
         sizer_5.Add((60, 20), 0, 0, 0)
