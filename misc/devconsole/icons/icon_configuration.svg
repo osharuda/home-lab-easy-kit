@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="640mm"
+   height="640mm"
+   viewBox="0 0 640 640"
+   version="1.1"
+   id="svg827"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   sodipodi:docname="icon_configuration.svg"
+   inkscape:export-filename="/mnt/SHARE/home-lab-easy-kit/devconsole/icons/hammer_and_wrench_48.png"
+   inkscape:export-xdpi="1.905"
+   inkscape:export-ydpi="1.905"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview829"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.32"
+     inkscape:cx="2839.0625"
+     inkscape:cy="1454.6875"
+     inkscape:window-width="3840"
+     inkscape:window-height="2072"
+     inkscape:window-x="0"
+     inkscape:window-y="1440"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs824">
+    <rect
+       x="3029.1225"
+       y="-763.68134"
+       width="976.86361"
+       height="750.19691"
+       id="rect5363" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       transform="scale(0.26458333)"
+       id="text5361"
+       style="fill:black;fill-opacity:1;line-height:1.25;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;white-space:pre;shape-inside:url(#rect5363)" />
+    <g
+       id="g4628"
+       transform="translate(-1.9786421,-5.2691793)">
+      <g
+         id="g4326"
+         transform="rotate(-46.796457,1239.6399,1806.6755)">
+        <path
+           id="rect4073"
+           style="fill:#808080;stroke:#000000;stroke-width:0.1;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;paint-order:markers fill stroke"
+           d="m 1953.0868,0.45576818 -101.183,0.047546 -9.7002,9.17619972 0.041,87.1553881 -0.4821,5.3e-4 v 95.965188 a 124.11956,123.24209 53.093136 0 0 0.5281,1.21645 l 0.062,131.26953 3.9062,4.12893 30.7863,-0.015 85.5586,-104.4086 -0.1013,-214.583297 z" />
+        <path
+           id="rect1994-1-0-3"
+           style="fill:#502d16;stroke:#000000;stroke-width:0.377953;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;paint-order:markers fill stroke"
+           d="m 6960.9922,365.99219 -1713.5488,2.55859 -43.7032,47.91602 1.834,254.11718 51.4199,46.9043 1702.0215,-2.54297 a 469.1133,465.79688 53.093136 0 0 1.9766,4.55078 z"
+           transform="scale(0.26458333)" />
+      </g>
+      <path
+         id="rect1994"
+         style="fill:#808080;stroke:#000000;stroke-width:0.890505;stroke-linejoin:round;stroke-dasharray:1.78102, 0.890505, 0.445251, 0.890505;paint-order:markers fill stroke"
+         d="m 163.59069,77.9447 a 123.2421,124.11956 7.3556166 0 0 -6.5102,0.04444 123.2421,124.11956 7.3556166 0 0 -19.39313,2.205032 l -19.20813,20.481438 80.76199,75.74215 2.0805,16.98811 -39.78052,42.41705 -14.24719,1.74511 -83.636238,-78.43758 -25.164354,26.83246 a 123.2421,124.11956 7.3556166 0 0 -0.04134,0.2496 123.2421,124.11956 7.3556166 0 0 106.337692,138.87628 123.2421,124.11956 7.3556166 0 0 59.58034,-7.22127 l 277.54843,269.68741 h 16.57006 l 45.21842,-47.13717 V 518.86041 L 272.03162,254.88015 A 123.2421,124.11956 7.3556166 0 0 282.90848,217.76924 123.2421,124.11956 7.3556166 0 0 246.41612,112.67333 123.2421,124.11956 7.3556166 0 0 176.57077,78.892961 123.2421,124.11956 7.3556166 0 0 163.59069,77.9447 Z" />
+    </g>
+  </g>
+</svg>
