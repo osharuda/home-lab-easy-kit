@@ -1,0 +1,28 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "device_name" : "pacemakerdev_tester",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 512,
+      "address" : 19,
+      "requires" :  {"i2c" : "I2C2"}
+    }},
+
+  "devices" : {
+    "PaceMakerDevCustomizer": {
+      "pacemakerdev_0" : {
+        "dev_id" : 1,
+        "buffer_size" : 64,
+        "requires" :  {
+          "main_timer": { "timer" : "TIM2"},
+          "internal_timer": { "timer" : "TIM3"},
+          "signal_0"   : {"gpio" :  "PB_1"},
+          "signal_1"   : {"gpio" :  "PB_2"},
+          "signal_2"   : {"gpio" :  "PB_3"},
+          "signal_3"   : {"gpio" :  "PB_4"}
+        }
+      }
+    }
+  }
+}

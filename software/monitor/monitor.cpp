@@ -616,15 +616,15 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> pacemakerdev_info_handler;
     };
 
-    std::vector<PaceMakerDevCommandHandlers> pacemakerdev_handlers(PACEMAKERDEV_DEVICE_COUNT);
+    std::vector<PaceMakerDevCommandHandlers> pacemakerdev_handlers(LIBCONFIG_NAMESPACE::pacemakerdev_configs_number);
 
-    for (size_t index=0; index<PACEMAKERDEV_DEVICE_COUNT; index++) {
-        const PaceMakerDevInstance* descr = PaceMakerDev::get_descriptor(index);
+    for (size_t index=0; index<LIBCONFIG_NAMESPACE::pacemakerdev_configs_number; index++) {
+        const PaceMakerDevConfig* descr = LIBCONFIG_NAMESPACE::pacemakerdev_configs+index;
         uint8_t dev_id = descr->dev_id;
         PaceMakerDevCommandHandlers& h = pacemakerdev_handlers.at(index);
 
 
-        h.dev.reset(new PaceMakerDev(firmware, dev_id));
+        h.dev.reset(new PaceMakerDev(firmware, descr));
         h.pacemakerdev_info_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         ui->add_command(cmd_index++, h.pacemakerdev_info_handler);  
     }
