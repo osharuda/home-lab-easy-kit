@@ -7,6 +7,9 @@ rm -rf build.log
 rm -rf libhlek/CMakeLists.txt
 rm -rf libhlek/inc/i2c_proto.h
 rm -rf libhlek/inc/*_common.hpp
+rm -rf libhlek/cmake-build-debug
+rm -rf libhlek/cmake-build-release
+rm -rf libhlek/hlekConfig.cmake
 rm -rf libhlek/Debug
 rm -rf libhlek/Release
 rm -rf software/testtool/circbuffer.*

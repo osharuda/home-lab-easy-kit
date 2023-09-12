@@ -28,6 +28,14 @@
 /// \addtogroup group_pacemakerdev
 /// @{{
 
+/// \def PACEMAKERDEV_DEVICE_COUNT
+/// \brief Number of PaceMakerDev devices being used
+#define PACEMAKERDEV_DEVICE_COUNT {__PACEMAKERDEV_DEVICE_COUNT__}
+
+/// \def PACEMAKERDEV_DEVICE_BUFFER_TYPE
+/// \brief Type of the buffer used by device
+#define PACEMAKERDEV_DEVICE_BUFFER_TYPE DEV_LINIAR_BUFFER
+
 /// \def PACEMAKERDEV_FW_DEV_DESCRIPTOR
 /// \brief Defines array with configurations for PaceMakerDev virtual devices
 #define PACEMAKERDEV_FW_DEV_DESCRIPTOR {{  {__PACEMAKERDEV_FW_DEV_DESCRIPTOR__} }}

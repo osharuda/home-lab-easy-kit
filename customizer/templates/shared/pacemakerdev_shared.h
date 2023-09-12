@@ -17,15 +17,6 @@
 
  /* --------------------> END OF THE TEMPLATE HEADER <-------------------- */
 
-/// \def PACEMAKERDEV_DEVICE_COUNT
-/// \brief Number of PaceMakerDev devices being used
-#define PACEMAKERDEV_DEVICE_COUNT {__PACEMAKERDEV_DEVICE_COUNT__}
-
-#define DEV_NO_BUFFER           0
-#define DEV_LINIAR_BUFFER       1
-#define DEV_CIRCULAR_BUFFER     2
-#define PACEMAKERDEV_DEVICE_BUFFER_TYPE DEV_LINIAR_BUFFER
-
 /// \addtogroup group_pacemakerdev
 /// @{{
 

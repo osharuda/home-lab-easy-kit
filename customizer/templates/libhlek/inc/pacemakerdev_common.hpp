@@ -28,21 +28,7 @@
 
 #include <cstddef>
 
-/// \addtogroup group_pacemakerdev
-/// @{{
-
-#pragma pack(push, 1)
-
-/// \struct tag_PaceMakerDevCommand
-/// \brief Structure that describes command for PaceMakerDev
-typedef struct tag_PaceMakerDevCommand {{
-    /// \brief Some data
-    uint8_t data;
-}} PaceMakerDevCommand;
-
-#pragma pack(pop)
-/// @}}
-
+{__PACEMAKERDEV_SHARED_HEADER__}
 
 /// \addtogroup group_pacemakerdev
 /// @{{
@@ -52,7 +38,7 @@ typedef struct tag_PaceMakerDevCommand {{
 typedef struct tag_PaceMakerDevConfig{{
     uint8_t         dev_id;             ///< Device ID for PaceMakerDev virtual device
     const char*     dev_name;           ///< Name of the PaceMakerDev virtual device as given in JSON configuration file
-    size_t          dev_buffer_len;     ///< Length of the PaceMakerDev internal buffer
+    size_t          dev_buffer_len;     ///< Length of the PaceMakerDev internal buffer, 0 if no buffer is used.
 }} PaceMakerDevConfig;
 
 /// @}}
