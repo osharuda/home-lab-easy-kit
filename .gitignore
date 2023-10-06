@@ -30,3 +30,18 @@ software/testtool/circbuffer.h
 software/testtool/utools.c
 software/testtool/utools.h
 software/testtool/CMakeLists.txt
+
+# Generated directories for known JSON files
+/adctest
+/alldev
+/dacdev
+/pacemakerdev
+/spiflash
+/spwm
+/adxl350
+/can
+/deskdev
+/RPiExtender
+/spiproxy
+/step_motors
+
