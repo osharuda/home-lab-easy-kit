@@ -1,0 +1,32 @@
+# Archives
+*.tar.gz
+
+# Logs
+build.log
+
+# Temporary files, swap files and hashes
+*.swp
+*.swo
+/hashes
+*~
+
+# Build directories for some IDEs
+**/.idea
+**/cmake-build-debug/
+**/cmake-build-release/
+**/Debug
+**/Release
+**/__pycache__
+
+# Ignore libhlek generated files
+libhlek/inc/*_common.hpp
+libhlek/inc/i2c_proto.h
+libhlek/CMakeLists.txt
+libhlek/hlekConfig.cmake
+
+# Ignore testtool files (generated and copied from other places)
+software/testtool/circbuffer.c
+software/testtool/circbuffer.h
+software/testtool/utools.c
+software/testtool/utools.h
+software/testtool/CMakeLists.txt
