@@ -58,3 +58,4 @@ def set_choise( control: wx.Choice, s: str):
         indx += 1
 
     raise RuntimeError(f"String {s} is not found in choice.")
+

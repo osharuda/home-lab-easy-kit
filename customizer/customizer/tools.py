@@ -46,18 +46,6 @@ def get_leaf_values(d) -> list:
     return res
 
 
-def check_duplicates(l: list) -> bool:
-    return len(l) != len(set(l))
-
-
-def check_instance_count(dev_name: str, dev_data_list: list, count: int) -> bool:
-    dev_cnt = len(dev_data_list)
-    if dev_cnt == 0:
-        return False
-    elif dev_cnt > count:
-        raise RuntimeError(
-            "Error: {0} doesn't support {1} devices per mcu. {2} devices are supported".format(devname, dev_cnt, count))
-    return True
 
 
 def get_duplicates(l: list) -> list:
@@ -80,8 +68,7 @@ def int_to_bool(x: int) -> str:
         return "true"
 
 
-def check_buffer_size_multiplicity(bsize: int, factor: int) -> bool:
-    return bsize == (bsize // factor) * factor
+
 
 
 def add_to_values(d: dict, prefix=None, suffix=None):
@@ -357,3 +344,42 @@ def parse_cmd_line(argv: list[str], defaults: dict) -> dict:
                 raise RuntimeError(f'Arguments {a} and {i} are not compatible.')
 
     return result
+
+
+#region VALIDATION TOOLS
+
+def check_items(d: dict,
+               required_items: dict[str, type],
+               optional_items: dict[str, type]=None):
+    for ri in required_items.items():
+        key = ri[0]
+        if key not in d.keys():
+            raise RuntimeError(f'required key "{key}" is not found')
+
+    all_items = required_items
+    if optional_items:
+        all_items.update(optional_items)
+
+    for key, item in d.items():
+        if key not in all_items.keys():
+            raise RuntimeError(f'"{key}" is not allowed')
+        if type(item) != all_items[key]:
+            raise RuntimeError(f'"type of the {key}" key is not {str(item)}')
+
+
+def check_buffer_size_multiplicity(bsize: int, factor: int) -> bool:
+    return bsize == (bsize // factor) * factor
+
+def check_duplicates(l: list) -> bool:
+    return len(l) != len(set(l))
+
+def check_instance_count(dev_name: str, dev_data_list: list, count: int) -> bool:
+    dev_cnt = len(dev_data_list)
+    if dev_cnt == 0:
+        return False
+    elif dev_cnt > count:
+        raise RuntimeError(
+            "Error: {0} doesn't support {1} devices per mcu. {2} devices are supported".format(devname, dev_cnt, count))
+    return True
+
+#endregion

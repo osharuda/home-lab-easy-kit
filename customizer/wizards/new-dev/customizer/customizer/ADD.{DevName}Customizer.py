@@ -35,9 +35,6 @@ class {DevName}Customizer(DeviceCustomizer):
 
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
-        return
-
 
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
@@ -54,10 +51,8 @@ class {DevName}Customizer(DeviceCustomizer):
             dev_id       = dev_config["dev_id"]
             buffer_size  = dev_config["buffer_size"]
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
-
             for rdecl, ritem in dev_requires.items():
-                rtype, rname = self.get_resource(ritem)
+                rtype, rname = self.unpack_resource(ritem)
 
                 # Custom resource handling
                 if rtype == "gpio":

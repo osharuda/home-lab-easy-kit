@@ -26,6 +26,13 @@
 #include "i2c_proto.h"
 #include <cxxabi.h>
 #include <math.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
 
 #ifdef __PYTHON_MODULE__
 #include <Python.h>
@@ -53,8 +60,6 @@ void tools::debug_print(const char *format, ... )
     va_end(argptr);
 #endif
 }
-
-
 
 std::string get_backtrace() {
     static const int STACK_TRACE_COUNT = 100;
@@ -110,7 +115,6 @@ std::string get_backtrace() {
     free(strings);
     return res;
 }
-
 
 #ifndef NDEBUG
 
@@ -243,5 +247,36 @@ bool tools::is_little_endian() {
     uint32_t test = 1;
     uint8_t* ptest = (uint8_t*)&test;
     return *ptest==1;
+}
+
+bool tools::make_pid_file() {
+    bool result = false;
+    int fd;
+
+    // Get pid and it's string representation
+    pid_t pid = getpid(); // Current pid
+    std::string str_pid = std::to_string(pid);
+
+    // Get absolute executable file path and form pid file name
+    constexpr const char* prefix = ".pid";
+    char buffer[PATH_MAX+1+strlen(prefix)];
+    char* pid_file_name = realpath("/proc/self/exe", buffer);
+    if (pid_file_name==NULL) goto done;
+    strcat(pid_file_name, prefix);
+
+    // Open and lock pid file
+    fd = open(pid_file_name,
+              O_CREAT | O_RDWR,
+              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (fd < 0) goto done;
+    if (flock(fd, LOCK_EX | LOCK_NB) < 0) goto done;
+
+    // Write file and exit. Note, fd remains opened until process is terminated.
+    do {
+        result = write(fd, str_pid.c_str(), str_pid.length()) > 0;
+    } while (!result && errno==EINTR);
+
+done:
+    return result;
 }
 

@@ -2362,7 +2362,7 @@ void SPIDACUploadTriangleWaveform::handle(const std::vector<std::string>& args) 
 
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 //----------------------------------------------------------------------------------------------//
-//                                    PaceMakerDevInfoHandler                                      //
+//                                    PaceMakerDevInfoHandler                                   //
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(PaceMakerDevInfoHandler,"pacemakerdev::", "::info")
 std::string PaceMakerDevInfoHandler::help() const {
@@ -2374,7 +2374,111 @@ std::string PaceMakerDevInfoHandler::help() const {
 
 void PaceMakerDevInfoHandler::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<PaceMakerDev*>(device.get());
-    ui->log(tools::str_format("Not implemented"));
+    PaceMakerStatus status;
+    d->status(status);
+
+    ui->log(tools::format_string("%s status:", d->get_dev_name()));
+    ui->log(tools::format_string("started: %i", status.started));
+    ui->log(tools::format_string("last_error: %i  (%s)", status.last_error, errname(status.last_error)));
+    ui->log(tools::format_string("main_counter: %i:", status.main_counter));
+    ui->log(tools::format_string("internal_index: %d", status.internal_index));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    PaceMakerDevStartHandler                                  //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(PaceMakerDevStartHandler,"pacemakerdev::", "::start")
+std::string PaceMakerDevStartHandler::help() const {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    return tools::format_string("# %s starts signals generation for %s device. No parameters are required.\n"
+                                "#        <count> - Number of main cycles, 0 to run indefinitely, until stopped. \n"
+                                "#        <frequency> - frequency of the main cycle. \n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void PaceMakerDevStartHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+
+
+    std::string unit;
+    check_arg_count(args, 2);
+    size_t main_cycles_count = arg_int(args, "count", 0, USHRT_MAX, {""}, unit, "");
+    double frequency = arg_double(args, "sampling frequency", 0.0, DBL_MAX, {"khz", "mhz", "hz"}, unit, "hz");
+    frequency = arg_frequency_to_hz(frequency, unit);
+
+    d->start(frequency, main_cycles_count);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    PaceMakerDevStopHandler                                   //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(PaceMakerDevStopHandler,"pacemakerdev::", "::stop")
+std::string PaceMakerDevStopHandler::help() const {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    return tools::format_string("# %s stops signals generation for %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void PaceMakerDevStopHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    d->stop();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    PaceMakerDevResetHandler                                  //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(PaceMakerDevResetHandler,"pacemakerdev::", "::reset")
+std::string PaceMakerDevResetHandler::help() const {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    return tools::format_string("# %s reset signals generation for %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void PaceMakerDevResetHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    d->reset();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    PaceMakerDevSetDataHandler                    //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(PaceMakerDevSetDataHandler,"pacemakerdev::", "::set_data")
+std::string PaceMakerDevSetDataHandler::help() const {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+    return tools::format_string("# %s adds signal transition for %s device.\n"
+                                "Parameters are:\n"
+                                "#        <period> - Some time quantum for signal structur \n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<PaceMakerDev*>(device.get());
+
+    std::string unit;
+    check_arg_count(args, 1);
+    double quant = arg_double(args, "quant", 0.0, DBL_MAX, {"us", "ms", "s"}, unit, "s");
+    quant = arg_time_to_sec(quant, unit);
+    double inter_test_delay = quant * 10.0L;
+
+
+    uint32_t affected_signals = d->all_signals_mask() ^ 1;  // Signal 1 is for main clock tracking
+
+    d->reset_signals();
+    d->add_flip(quant, 1);
+
+    // Flip twice
+    d->add_flip(quant, affected_signals);
+    d->add_flip(quant, affected_signals);
+
+    // Pwm and clock (it's the same)
+    d->add_pwm(inter_test_delay, quant, 0.33, 3, affected_signals);
+    d->add_default(inter_test_delay);
+
+    d->set_data();
 }
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE

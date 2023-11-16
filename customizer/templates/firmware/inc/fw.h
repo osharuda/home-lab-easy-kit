@@ -45,6 +45,9 @@
 #define IRQ_PRIORITY_I2C_ER                1
 #define IRQ_PRIORITY_SYSTICK               2
 
+#define IRQ_PRIORITY_PACEMAKER_MAIN        3
+#define IRQ_PRIORITY_PACEMAKER_INTERNAL    4
+
 #define IRQ_PRIORITY_DMA                   3
 #define IRQ_PRIORITY_DAC_TIMER             4
 
@@ -60,20 +63,23 @@
 #define ENABLE_SYSTICK {__ENABLE_SYSTICK__}
 
 
-# define I2C_BUS_PERIPH                {__I2C_BUS_PERIPH__}
-# define I2C_BUS_CLOCK_SPEED           {__I2C_BUS_CLOCK_SPEED__}
+#define I2C_BUS_PERIPH                {__I2C_BUS_PERIPH__}
+#define I2C_BUS_CLOCK_SPEED           {__I2C_BUS_CLOCK_SPEED__}
 
-# define I2C_BUS_SDA_PORT              {__I2C_BUS_SDA_PORT__}
-# define I2C_BUS_SDA_PIN_MASK          {__I2C_BUS_SDA_PIN_MASK__}
+#define I2C_BUS_SDA_PORT              {__I2C_BUS_SDA_PORT__}
+#define I2C_BUS_SDA_PIN_MASK          {__I2C_BUS_SDA_PIN_MASK__}
 
-# define I2C_BUS_SCL_PORT              {__I2C_BUS_SCL_PORT__}
-# define I2C_BUS_SCL_PIN_MASK          {__I2C_BUS_SCL_PIN_MASK__}
+#define I2C_BUS_SCL_PORT              {__I2C_BUS_SCL_PORT__}
+#define I2C_BUS_SCL_PIN_MASK          {__I2C_BUS_SCL_PIN_MASK__}
 
-# define I2C_BUS_EV_ISR                {__I2C_BUS_EV_ISR__}
-# define I2C_BUS_EV_IRQ                {__I2C_BUS_EV_IRQ__}
+#define I2C_BUS_EV_ISR                {__I2C_BUS_EV_ISR__}
+#define I2C_BUS_EV_IRQ                {__I2C_BUS_EV_IRQ__}
 
-# define I2C_BUS_ER_ISR                {__I2C_BUS_ER_ISR__}
-# define I2C_BUS_ER_IRQ                {__I2C_BUS_ER_IRQ__}
+#define I2C_BUS_ER_ISR                {__I2C_BUS_ER_ISR__}
+#define I2C_BUS_ER_IRQ                {__I2C_BUS_ER_IRQ__}
+
+// LibHLEK error codes extracted from ekit_error.hpp. Are used to return device errors.
+{__LIBHLEK_ERROR_DEFINES__}
 
 #include "i2c_proto.h"
 {__FW_HEADERS__}

@@ -25,6 +25,8 @@
 #include <map>
 #include "ekit_device.hpp"
 #include "pacemakerdev_common.hpp"
+#include <iostream> /* TEST CODE */
+#include <iomanip> /* TEST CODE */
 
 /// \defgroup group_pacemakerdev PaceMakerDevDev
 /// \brief PaceMakerDev support
@@ -42,6 +44,15 @@
 /// \image latex PaceMakerDevDev_schema.eps
 ///
 
+/// \struct PaceMakerSignalTransit
+/// \brief Describes signal transit
+struct PaceMakerSignalTransit{
+    uint32_t signal;    // Signals to set
+    double next_delay;  // Delay before the next signal transit
+};
+typedef PaceMakerSignalTransit* PPaceMakerSignalTransit;
+typedef std::list<PaceMakerSignalTransit> PaceMakerSignals;
+
 /// \class PaceMakerDev
 /// \brief PaceMakerDev implementation. Use this class in order to control PaceMakerDev virtual devices.
 class PaceMakerDev final : public EKitVirtualDevice {
@@ -49,6 +60,15 @@ class PaceMakerDev final : public EKitVirtualDevice {
     /// \typedef super
     /// \brief Defines parent class
 	typedef EKitVirtualDevice super;
+
+    static constexpr double max_main_freq = 800000.0L;
+    static constexpr double max_internal_delay = 60.0L;
+    static constexpr double min_internal_delay = 1 / 800000.0L;
+
+    uint32_t all_signals;
+    uint32_t current_signal;
+    PaceMakerSignals signals;
+
 
 	public:
 
@@ -72,9 +92,63 @@ class PaceMakerDev final : public EKitVirtualDevice {
     /// \brief Destructor (virtual)
 	~PaceMakerDev() override;
 
-    void set_main_signal(double period, size_t repeat_count);
-    void set_devault_signals();
-    void add_signal(uint8_t signal_id, double offset);
+    /// \brief Starts signal generation
+    /// \param frequency - frequency of main cycle repetition
+    /// \param repeat_count - Number of times to repeat main cycle
+    void start(double frequency, size_t repeat_count);
+
+    /// \brief Stops signals generation
+    void stop();
+
+    /// \brief Resets device to it's default state.
+    void reset();
+
+    /// \brief Sends data to the device buffer.
+    void set_data();
+
+    /// \brief Reset signal composer.
+    void reset_signals();
+
+    /// \brief Returns status of the device
+    void status(PaceMakerStatus& s);
+
+    /// \brief Append event which set's all signals.
+    /// \param offset - offset, in seconds, from the last signal change.
+    /// \param signal_value - signals values: bits with 1 set outputs to high, bits with 0 set outputs to low.
+    void add_set(double offset, uint32_t signal_value);
+
+    /// \brief Append event which flips specified lines.
+    /// \param offset - offset, in seconds, from the last signal change.
+    /// \param affected_signals - signals to flip: bits with 1 are flipped, bits with 0 are not changed.
+    void add_flip(double offset, uint32_t affected_signals);
+
+    /// \brief Append pulse to the specified lines (using flipping).
+    /// \param offset - offset, in seconds, from the last signal change.
+    /// \param period - pulse period, in seconds
+    /// \param affected_signals - signals to flip: bits with 1 are flipped, bits with 0 are not changed.
+    void add_pulse(double offset, double period, uint32_t affected_signals);
+
+
+    /// \brief Append pulse to the specified lines (using flipping).
+    /// \param offset - offset, in seconds, from the last signal change.
+    /// \param period - period, in seconds
+    /// \param pwm_value - PWM value, from 0 to 1. 0 means signal lines will not change.
+    /// \param count - number of pulses.
+    /// \param affected_signals - signals to flip: bits with 1 are affected, bits with 0 are not affected.
+    void add_pwm(double offset, double period, double pwm_value, size_t count, uint32_t affected_signals);
+
+    /// \brief Append clock to the specified lines (using flipping).
+    /// \param offset - offset, in seconds, from the last signal change.
+    /// \param period - period, in seconds
+    /// \param count - number of pulses.
+    /// \param affected_signals - signals to flip: bits with 1 are affected, bits with 0 are not affected.
+    void add_clock(double offset, double period, size_t count, uint32_t affected_signals);
+
+    /// \brief Append return signals to default.
+    /// \param offset - offset, in seconds, from the last signal change.
+    void add_default(double offset);
+
+    uint32_t all_signals_mask() const;
 };
 
 /// @}

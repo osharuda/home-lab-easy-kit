@@ -345,50 +345,51 @@ def customize_libhlek():
     else:
         print("libhlek didn't change.")
 
-#try:
-KEY_VERBOSE = "--verbose"
-KEY_IGNORE_CACHE = "--ignore-cache"
-KEY_LIBHLEK = "--libhlek"
-KEY_UPDATE_GLOBAL_CACHE = "--update-global"
-KEY_JSON_FILENAME = "--json"
 
-defaults = {
-    # KEY                       VALUE   INCOMPATIBLE ARGUMENT LIST
-    KEY_VERBOSE:                [False, []],
-    KEY_IGNORE_CACHE:           [False, [KEY_UPDATE_GLOBAL_CACHE]],
-    KEY_LIBHLEK:                [False, [KEY_JSON_FILENAME, KEY_UPDATE_GLOBAL_CACHE]],
-    KEY_UPDATE_GLOBAL_CACHE:    [False, [KEY_IGNORE_CACHE, KEY_LIBHLEK, KEY_JSON_FILENAME]],
-    KEY_JSON_FILENAME:          ["",    [KEY_LIBHLEK, KEY_UPDATE_GLOBAL_CACHE]]
-}
+try:
+    KEY_VERBOSE = "--verbose"
+    KEY_IGNORE_CACHE = "--ignore-cache"
+    KEY_LIBHLEK = "--libhlek"
+    KEY_UPDATE_GLOBAL_CACHE = "--update-global"
+    KEY_JSON_FILENAME = "--json"
 
-parsed_args = parse_cmd_line(sys.argv[1:], defaults)
-opt_verbose = parsed_args[KEY_VERBOSE][0]
-opt_ignore_cache = parsed_args[KEY_IGNORE_CACHE][0]
-opt_update_global_cache = parsed_args[KEY_UPDATE_GLOBAL_CACHE][0]
-opt_libhlek = parsed_args[KEY_LIBHLEK][0]
-json_file_name = parsed_args[KEY_JSON_FILENAME][0]
+    defaults = {
+        # KEY                       VALUE   INCOMPATIBLE ARGUMENT LIST
+        KEY_VERBOSE:                [False, []],
+        KEY_IGNORE_CACHE:           [False, [KEY_UPDATE_GLOBAL_CACHE]],
+        KEY_LIBHLEK:                [False, [KEY_JSON_FILENAME, KEY_UPDATE_GLOBAL_CACHE]],
+        KEY_UPDATE_GLOBAL_CACHE:    [False, [KEY_IGNORE_CACHE, KEY_LIBHLEK, KEY_JSON_FILENAME]],
+        KEY_JSON_FILENAME:          ["",    [KEY_LIBHLEK, KEY_UPDATE_GLOBAL_CACHE]]
+    }
 
-project_dir = os.path.abspath(get_env_var("PROJECTDIR"))
+    parsed_args = parse_cmd_line(sys.argv[1:], defaults)
+    opt_verbose = parsed_args[KEY_VERBOSE][0]
+    opt_ignore_cache = parsed_args[KEY_IGNORE_CACHE][0]
+    opt_update_global_cache = parsed_args[KEY_UPDATE_GLOBAL_CACHE][0]
+    opt_libhlek = parsed_args[KEY_LIBHLEK][0]
+    json_file_name = parsed_args[KEY_JSON_FILENAME][0]
 
-GLOBAL_HASH_KEY = "global"
-GLOBAL_JSON = os.path.join(project_dir, "global.json")
-global_config, global_hash = load_json(GLOBAL_JSON)
+    project_dir = os.path.abspath(get_env_var("PROJECTDIR"))
 
-HASHES_JSON = os.path.join(project_dir, "hashes")
-if not os.path.isfile(HASHES_JSON):
-    write_text_file(HASHES_JSON, """{
-}""")
-hashes, hashes_hash = load_json(HASHES_JSON)
+    GLOBAL_HASH_KEY = "global"
+    GLOBAL_JSON = os.path.join(project_dir, "global.json")
+    global_config, global_hash = load_json(GLOBAL_JSON)
 
-if opt_libhlek:
-    customize_libhlek()
-elif json_file_name:
-    customize_firmware(json_file_name)
+    HASHES_JSON = os.path.join(project_dir, "hashes")
+    if not os.path.isfile(HASHES_JSON):
+        write_text_file(HASHES_JSON, """{
+    }""")
+    hashes, hashes_hash = load_json(HASHES_JSON)
 
-if opt_update_global_cache:
-    update_caches(GLOBAL_HASH_KEY, global_hash)
+    if opt_libhlek:
+        customize_libhlek()
+    elif json_file_name:
+        customize_firmware(json_file_name)
 
-#except Exception as ex:
-#    print(f"Error occured: {str(ex)}")
-#    quit(1)
+    if opt_update_global_cache:
+        update_caches(GLOBAL_HASH_KEY, global_hash)
+
+except Exception as ex:
+    print(f"Error occured: {str(ex)}")
+    quit(1)
 

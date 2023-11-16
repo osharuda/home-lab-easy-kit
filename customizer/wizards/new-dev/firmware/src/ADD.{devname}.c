@@ -52,6 +52,11 @@ void {devname}_init_vdev(volatile {DevName}Instance* dev, uint16_t index) {
     devctx->on_command   = {devname}_execute;
     devctx->on_read_done = {devname}_read_done;
 
+#if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_LINIAR_BUFFER
+    devctx->buffer       = dev->buffer;
+    devctx->bytes_available = dev->buffer_size;
+#endif
+
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
     volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);

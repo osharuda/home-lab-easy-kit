@@ -39,6 +39,15 @@ extern int g_assert_param_count;
 #include <limits.h>
 #include "stm32f10x_conf.h"
 
+/// \struct tag_GPIO_descr
+/// \brief Structure that describes a pin
+typedef struct tag_GPIO_descr {
+    GPIOMode_TypeDef type;          /// Input/Output type
+    GPIO_TypeDef*    port;          /// Port
+    uint8_t          pin_number;    /// Number of the pin
+    uint8_t          default_val;   /// Default pin state (depends on type)
+} GPIO_descr;
+
 /// \defgroup group_utools uTools
 /// \brief Multipurpose micro tools library
 /// @{
@@ -174,10 +183,19 @@ extern volatile uint8_t g_irq_disabled;
 /// \brief This macro will remap pin(s) specified by port and pin if they have to be used as GPIO.
 /// \param port - GPIO port
 /// \param pin - pin mask (see GPIO_Pin_XX values in CMSIS)
-#define REMAP_GPIO_PIN(port, pin)   if (((port)==GPIOB && (pin)==(1<<3)) || \
-                                        ((port)==GPIOB && (pin)==(1<<4)) || \
-                                        ((port)==GPIOA && (pin)==(1<<15)))  \
-                                        { GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE); }
+#define REMAP_GPIO_PIN(port, pin)                                       \
+    if ( ((port)==GPIOB && (pin)==(1<<4)) ) {                           \
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
+        GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);        \
+    }                                                                   \
+                                                                        \
+    if ( ((port)==GPIOB && (pin)==(1<<3)) ||                            \
+         ((port)==GPIOA && (pin)==(1<<13)) ||                           \
+         ((port)==GPIOA && (pin)==(1<<14)) ||                           \
+         ((port)==GPIOA && (pin)==(1<<15)) ) {                          \
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
+        GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);        \
+    }
 
 
 /// \brief Defines GPIO pin.

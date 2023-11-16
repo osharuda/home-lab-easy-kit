@@ -79,7 +79,7 @@ void ADCDev::clear() {
 }
 
 void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t, uint8_t>& sampling) {
-    static const char* const func_name = "ADCDev::configure";
+    static const char* const func_name = "ADCDev::set_data";
     std::vector<uint8_t> adc_config_buffer(sizeof(ADCDevConfig) + config->input_count, 0);
     ADCDevConfig* adc_config = reinterpret_cast<ADCDevConfig*>(adc_config_buffer.data());
     uint8_t* adc_channel_sampling = adc_config_buffer.data() + sizeof(ADCDevConfig);

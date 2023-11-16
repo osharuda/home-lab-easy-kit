@@ -51,6 +51,30 @@
 /// \brief Defines memory blocks used for PaceMakerDev circular buffers as data storage
 #define PACEMAKERDEV_FW_BUFFERS {__PACEMAKERDEV_FW_BUFFERS__}
 
+/// \def PACEMAKERDEV_FW_SET_GPIO_HEADERS
+/// \brief Defines headers for set signals functions which set actual gpio
+#define PACEMAKERDEV_FW_SET_GPIO_HEADERS   {__PACEMAKERDEV_FW_SET_GPIO_HEADERS__}
+
+/// \def PACEMAKERDEV_FW_SET_GPIO_FUNCTIONS
+/// \brief Defines macro with functions to set signals (gpio)
+#define PACEMAKERDEV_FW_SET_GPIO_FUNCTIONS {__PACEMAKERDEV_FW_SET_GPIO_FUNCTIONS__}
+
+/// \def PACEMAKERDEV_FW_INIT_GPIO_HEADERS
+/// \brief Defines headers for initialization signals functions which set actual gpio
+#define PACEMAKERDEV_FW_INIT_GPIO_HEADERS   {__PACEMAKERDEV_FW_INIT_GPIO_HEADERS__}
+
+/// \def PACEMAKERDEV_FW_INIT_GPIO_FUNCTIONS
+/// \brief Defines macro with functions to set signals (gpio)
+#define PACEMAKERDEV_FW_INIT_GPIO_FUNCTIONS {__PACEMAKERDEV_FW_INIT_GPIO_FUNCTIONS__}
+
+/// \def PACEMAKERDEV_FW_MAIN_TIMER_IRQ_HANDLERS
+/// \brief Defines PaceMakerDev Main TIMER irq handlers
+#define PACEMAKERDEV_FW_MAIN_TIMER_IRQ_HANDLERS {__PACEMAKERDEV_FW_MAIN_TIMER_IRQ_HANDLERS__}
+
+/// \def PACEMAKERDEV_FW_INTERNAL_TIMER_IRQ_HANDLERS
+/// \brief Defines PaceMakerDev Internal TIMER irq handlers
+#define PACEMAKERDEV_FW_INTERNAL_TIMER_IRQ_HANDLERS {__PACEMAKERDEV_FW_INTERNAL_TIMER_IRQ_HANDLERS__}
+
 /// @}}
 
 

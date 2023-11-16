@@ -14,6 +14,7 @@
 #   limitations under the License.
 
 from DeviceCustomizer import *
+from keywords import *
 from tools import *
 
 
@@ -35,121 +36,134 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
 
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
-        return
-
 
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
+        fw_device_pin_descriptors = []
+        sw_device_pin_descriptors = []
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
         fw_device_buffers = []          # these buffers are used to be internal buffers for all configured devices on firmware side
         sw_configs = []
         sw_config_declarations = []
         sw_config_array_name = "pacemakerdev_configs"
+        fw_set_gpio_functions = []
+        fw_set_gpio_headers = []
+        fw_init_gpio_headers = []
+        fw_init_gpio_functions = []
+        sw_dev_namespace_declarations = []
+        sw_dev_namespace_values = []
+        main_timer_irq_handler_list = []
+        internal_timer_irq_handler_list = []
 
         index = 0
         for dev_name, dev_config in self.device_list:
+            check_items(dev_config,
+                       {KW_REQUIRES: dict, KW_DEV_ID: int, KW_MAX_SAMPLES: int, KW_SIGNALS: dict})
 
-            dev_requires = dev_config["requires"]
-            dev_id       = dev_config["dev_id"]
-            buffer_size  = dev_config["buffer_size"]
+            dev_requires = dev_config[KW_REQUIRES]
+            dev_id       = dev_config[KW_DEV_ID]
+            max_samples = dev_config[KW_MAX_SAMPLES]
+            signals      = dev_config[KW_SIGNALS]
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
+            sw_dev_namespace_declarations.append(f"{self.tab}namespace {dev_name} {{")
+            sw_dev_namespace_values.append(f"{self.tab}namespace {dev_name} {{")
 
-            for rdecl, ritem in dev_requires.items():
-                rtype, rname = self.get_resource(ritem)
+            sw_signal_descriptors_array_name = f'signal_descriptors'
+            sw_signal_descriptors = []
 
-                # Custom resource handling
-                if rtype == "gpio":
-                    # process gpio resources here
-                    pass
-                elif rtype == "irq_handler":
-                    # process IRQ handlers here
-                    pass
-                elif rtype == "exti_line":
-                    # process EXTI lines
-                    pass
-                elif rtype == "bkp":
-                    # process backup registers
-                    pass
-                elif rtype == "timer":
-                    # process timers
-                    pass
-                elif rtype == "usart":
-                    # process usart
-                    pass
-                elif rtype == "i2c":
-                    # process i2c
-                    pass
-                elif rtype == "dma":
-                    # process dma
-                    pass
-                elif rtype == "dma_channel":
-                    # process dma_channel
-                    pass
-                elif rtype == "adc":
-                    # process ADC
-                    pass
-                elif rtype == "adc_input":
-                    # process ADC input
-                    pass
-                elif rtype == "spi":
-                    # process SPI
-                    pass
-                else:
-                    raise RuntimeError('Wrong resource specified in {0} requirements: "{1}"'.format(dev_name, rdecl))
+            check_items(dev_requires, {KW_MAIN_TIMER: dict, KW_INT_TIMER: dict})
+            rtype, main_timer = self.unpack_resource(self.get_requirement(dev_requires, KW_MAIN_TIMER, RT_TIMER))
+            main_time_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(main_timer)
+            main_timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(main_time_irq_handler)
+            main_timer_irq_handler_list.append(
+                "MAKE_ISR_WITH_INDEX({0}, PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(main_time_irq_handler, index))
+            dev_requires["MAIN_TIMER_IRQ"] = {"irq_handlers": main_time_irq_handler}
 
-            # Do not forget to add IRQs, DMA and other related resources
-            if "DEV_LINIAR_BUFFER" == "DEV_NO_BUFFER":
-                # No buffers
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {0} }}".format(
-                    dev_id))
+            rtype, internal_timer = self.unpack_resource(self.get_requirement(dev_requires, KW_INT_TIMER, RT_TIMER))
+            internal_time_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(internal_timer)
+            internal_timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(internal_time_irq_handler)
+            internal_timer_irq_handler_list.append(
+                "MAKE_ISR_WITH_INDEX({0}, PACEMAKER_INTERNAL_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(internal_time_irq_handler, index))
+            dev_requires["INTERNAL_TIMER_IRQ"] = {"irq_handlers": internal_time_irq_handler}
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", 0}}'.format(
-                    dev_id, dev_name))
+            signal_index = 0
+            default_pin_state = 0;
+            data_to_pin = dict()
+            for s in signals.items():
+                sig_name, sig_pin, sig_pin_type, sig_pin_default = self.get_out_signal(s)
+                sig_port = self.mcu_hw.GPIO_to_port(sig_pin)
+                sig_pin_num = self.mcu_hw.GPIO_to_pin_number(sig_pin)
 
-                fw_device_buffers = []
-            elif "DEV_LINIAR_BUFFER" == "DEV_LINIAR_BUFFER":
-                # Buffer is present
-                fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
+                # Software signal descriptions
+                sw_signal_descriptors.append(f'{{ signal_{sig_name}_mask, signal_{sig_name}_default, signal_{sig_name}_name }}')
+                sw_dev_namespace_declarations.append(f'{self.tab*2}constexpr size_t signal_{sig_name}_index = {signal_index};')
+                sw_dev_namespace_declarations.append(f'{self.tab*2}constexpr size_t signal_{sig_name}_mask = {1 << signal_index};')
+                sw_dev_namespace_declarations.append(f'{self.tab*2}constexpr int signal_{sig_name}_default = {sig_pin_default};')
+                sw_dev_namespace_declarations.append(f'{self.tab*2}extern const char* signal_{sig_name}_name;')
+                sw_dev_namespace_values.append(f'{self.tab*2}const char* signal_{sig_name}_name = "{sig_name}";')
+                default_pin_state |= (sig_pin_default << signal_index)
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
-                    dev_id, dev_name, buffer_size))
+                # Add pin to set pin generation dictionary used to generate set gpio function
+                data_to_pin[signal_index] = (sig_port, sig_pin_num, sig_pin_type, sig_pin_default)
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
-            elif "DEV_LINIAR_BUFFER" == "DEV_CIRCULAR_BUFFER":
-                # Buffer is present
-                fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
+                # Add pin requirement and increment pin index
+                self.add_requirement(dev_requires, {sig_name: {RT_GPIO: sig_pin}})
+                signal_index += 1
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
-                    dev_id, dev_name, buffer_size))
+            # Add number of the signals and default state
+            sw_dev_namespace_declarations.append(f'{self.tab*2}constexpr size_t signals_number = {signal_index};')
+            sw_dev_namespace_declarations.append(f'{self.tab * 2}constexpr size_t signals_default_state = {default_pin_state};')
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+            # Generate functions to set gpio
+            set_gpio_func_name = f"pacemaker_set_gpio_{index}"
+            header, macro = self.mcu_hw.generate_set_gpio_bus_function(f"{set_gpio_func_name}",
+                                                                       "uint32_t",
+                                                                       "uint16_t",
+                                                                       data_to_pin)
+            fw_set_gpio_headers.append(header)
+            fw_set_gpio_functions.append(macro)
 
-            sw_config_name = "pacemakerdev_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const PaceMakerDevConfig* {sw_config_name};")
+            init_gpio_func_name = f"pacemaker_init_gpio_{index}"
+            header, macro = self.mcu_hw.generate_init_gpio_bus_function(f"{init_gpio_func_name}",
+                                                                       "uint16_t",
+                                                                       data_to_pin)
+            fw_init_gpio_headers.append(header)
+            fw_init_gpio_functions.append(macro)
+
+
+            fw_buffer_name = "g_{0}_buffer".format(dev_name)
+
+            buffer_size  = f"( sizeof(PaceMakerStatus) + {max_samples}*sizeof(PaceMakerTransition) )"
+            fw_device_descriptors.append(f"{{ {{0}}, {{0}}, {init_gpio_func_name}, {set_gpio_func_name}, {fw_buffer_name}, {main_timer}, {internal_timer}, {default_pin_state}, {main_timer_irqn}, {internal_timer_irqn}, {buffer_size}, {dev_id} }}")
+            fw_device_buffers.append("volatile uint8_t {0}[{1} + sizeof(PaceMakerStatus)];\\".format(fw_buffer_name, buffer_size))
+
+            sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size}, {self.mcu_hw.get_TIMER_freq(main_timer)}, {self.mcu_hw.get_TIMER_freq(internal_timer)}, {signal_index}, {default_pin_state}, {max_samples} }}')
+            sw_config_name = f'pacemaker_{dev_name}_config'
+            sw_config_declarations.append(f"{self.tab}extern const PaceMakerDevConfig* {sw_config_name};")
             sw_configs.append(
                 f"const PaceMakerDevConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
+            sw_dev_namespace_declarations.append(f"{self.tab}}}")
+            sw_dev_namespace_values.append(f"{self.tab}}}")
             index += 1
 
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
                       "__PACEMAKERDEV_DEVICE_COUNT__": len(fw_device_descriptors),
                       "__PACEMAKERDEV_FW_DEV_DESCRIPTOR__": ", ".join(fw_device_descriptors),
+                      "__PACEMAKERDEV_SW_DEV_NAMESPACE_DECLARATIONS__": self.newline.join(sw_dev_namespace_declarations),
+                      "__PACEMAKERDEV_SW_DEV_NAMESPACE_VALUES__": self.newline.join(sw_dev_namespace_values),
                       "__PACEMAKERDEV_SW_DEV_DESCRIPTOR__": ", ".join(sw_device_desсriptors),
                       "__PACEMAKERDEV_FW_BUFFERS__": concat_lines(fw_device_buffers)[:-1],
                       "__PACEMAKERDEV_CONFIGURATION_DECLARATIONS__": concat_lines(sw_config_declarations),
                       "__PACEMAKERDEV_CONFIGURATIONS__": concat_lines(sw_configs),
-                      "__PACEMAKERDEV_CONFIGURATION_ARRAY_NAME__": sw_config_array_name
+                      "__PACEMAKERDEV_CONFIGURATION_ARRAY_NAME__": sw_config_array_name,
+                      "__PACEMAKERDEV_FW_SET_GPIO_HEADERS__": ("\\" + self.newline).join(fw_set_gpio_headers),
+                      "__PACEMAKERDEV_FW_SET_GPIO_FUNCTIONS__": ("\\" + self.newline).join(fw_set_gpio_functions),
+                      "__PACEMAKERDEV_FW_INIT_GPIO_HEADERS__": ("\\" + self.newline).join(fw_init_gpio_headers),
+                      "__PACEMAKERDEV_FW_INIT_GPIO_FUNCTIONS__": ("\\" + self.newline).join(fw_init_gpio_functions),
+                      "__PACEMAKERDEV_FW_MAIN_TIMER_IRQ_HANDLERS__": concat_lines(main_timer_irq_handler_list)[:-1],
+                      "__PACEMAKERDEV_FW_INTERNAL_TIMER_IRQ_HANDLERS__": concat_lines(internal_timer_irq_handler_list)[:-1]
         }
 
         self.patch_templates()

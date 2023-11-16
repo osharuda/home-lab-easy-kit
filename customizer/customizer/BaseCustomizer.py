@@ -60,6 +60,23 @@ class BaseCustomizer:
 
             self.shared_code[token] = template[indx+len(header_separator):]
 
+    def extracted_from_file(self, in_file: str, open_token: str, close_token) -> str:
+        with open(os.path.abspath(in_file), 'r') as f:
+            source = f.read()
+            begin_index = source.find(open_token) + len(open_token)
+            if begin_index < 0:
+                raise RuntimeError(f'Open token "{open_token}" was not found')
+            end_index = source.find(close_token, begin_index)
+            if end_index < 0:
+                raise RuntimeError(f'Open token "{close_token}" was not found')
+
+            return source[begin_index: end_index]
+
+            # cut the file header
+            indx = template.find(header_separator)
+
+            self.shared_code[token] = template[indx+len(header_separator):]
+
     def patch_templates(self):
 
         for in_file, out_file_list in self.template_list.items():

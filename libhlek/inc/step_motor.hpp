@@ -50,7 +50,7 @@
 /// 3. Use these methods in order to program stepper motors behaviour:
 ///    - StepMotorDev#enable()
 ///    - StepMotorDev#sleep()
-///    - StepMotorDev#configure()
+///    - StepMotorDev#set_data()
 ///    - StepMotorDev#set_software_endstop()
 ///    - StepMotorDev#reset()
 ///    - StepMotorDev#wait()

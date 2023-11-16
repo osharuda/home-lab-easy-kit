@@ -43,7 +43,7 @@ class ADCDevCustomizer(DeviceCustomizer):
         analog_inputs_names = set()
         analog_inputs = set()
         for rname, ritem in adcdev_requires.items():
-            rtype, res = self.get_resource(ritem)
+            rtype, res = self.unpack_resource(ritem)
             if rtype == "adc_input":
                 analog_inputs_names.add(rname)
                 analog_inputs.add(res)
@@ -129,7 +129,7 @@ class ADCDevCustomizer(DeviceCustomizer):
 
             for rname, ritem in adcdev_requires.items():
 
-                rtype, res = self.get_resource(ritem)
+                rtype, res = self.unpack_resource(ritem)
                 if rtype == "adc_input":
                     adc_input_number += 1
                     try:

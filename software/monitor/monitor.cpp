@@ -47,6 +47,7 @@
 #include <libhlek/i2c_proto.h>
 #include "handlers.hpp"
 #include <libhlek/texttools.hpp>
+#include <libhlek/tools.hpp>
 #include <libhlek/ekit_error.hpp>
 #include <termui.hpp>
 #define I2C_BUS_NAME "/dev/i2c-0"
@@ -240,6 +241,13 @@ void HLEKMON::message_handler(int index, wint_t ch, int err) {
 
 int main(int argc, char* argv[])
 {
+    // Create a pid file
+    bool singlton = tools::make_pid_file();
+    if (!singlton) {
+        std::cout << "This program is already running." << std::endl;
+        return 1;
+    }
+
     // Main TUI
     size_t cmd_index = 0;
     std::shared_ptr<HLEKMON> ui(new HLEKMON());
@@ -614,6 +622,10 @@ int main(int argc, char* argv[])
     struct PaceMakerDevCommandHandlers {
         std::shared_ptr<PaceMakerDev> dev;
         std::shared_ptr<CommandHandler> pacemakerdev_info_handler;
+        std::shared_ptr<CommandHandler> pacemakerdev_start_handler;
+        std::shared_ptr<CommandHandler> pacemakerdev_stop_handler;
+        std::shared_ptr<CommandHandler> pacemakerdev_reset_handler;
+        std::shared_ptr<CommandHandler> pacemakerdev_add_transition_handler;
     };
 
     std::vector<PaceMakerDevCommandHandlers> pacemakerdev_handlers(LIBCONFIG_NAMESPACE::pacemakerdev_configs_number);
@@ -626,7 +638,16 @@ int main(int argc, char* argv[])
 
         h.dev.reset(new PaceMakerDev(firmware, descr));
         h.pacemakerdev_info_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        ui->add_command(cmd_index++, h.pacemakerdev_info_handler);  
+        h.pacemakerdev_start_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.pacemakerdev_stop_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.pacemakerdev_reset_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevResetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.pacemakerdev_add_transition_handler.reset(dynamic_cast<CommandHandler*>(new PaceMakerDevSetDataHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+
+        ui->add_command(cmd_index++, h.pacemakerdev_info_handler);
+        ui->add_command(cmd_index++, h.pacemakerdev_start_handler);
+        ui->add_command(cmd_index++, h.pacemakerdev_stop_handler);
+        ui->add_command(cmd_index++, h.pacemakerdev_reset_handler);
+        ui->add_command(cmd_index++, h.pacemakerdev_add_transition_handler);
     }
 #endif  
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613

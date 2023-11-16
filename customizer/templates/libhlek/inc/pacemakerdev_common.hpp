@@ -28,17 +28,33 @@
 
 #include <cstddef>
 
+#include "ekit_error.hpp"
+
 {__PACEMAKERDEV_SHARED_HEADER__}
 
 /// \addtogroup group_pacemakerdev
 /// @{{
 
+
+/// \struct tag_PaceMakerSignal
+/// \brief PaceMakerDev signal descriptor.
+typedef struct tag_PaceMakerSignal {{
+    size_t      signal_mask;   ///< Bitmask which defines state of the signals state
+    int         default_value; ///< Default value (may not be intermediate state, either 0 or 1)
+    const char* name;          ///< Name of the signal
+}} PaceMakerSignal;
+
 /// \struct PaceMakerDevConfig
 /// \brief PaceMakerDev configuration structure.
 typedef struct tag_PaceMakerDevConfig{{
-    uint8_t         dev_id;             ///< Device ID for PaceMakerDev virtual device
-    const char*     dev_name;           ///< Name of the PaceMakerDev virtual device as given in JSON configuration file
+    uint8_t         dev_id;             ///< Device ID for PaceMakerDev virtual device.
+    const char*     dev_name;           ///< Name of the PaceMakerDev virtual device as given in JSON configuration file.
     size_t          dev_buffer_len;     ///< Length of the PaceMakerDev internal buffer, 0 if no buffer is used.
+    uint32_t        main_timer_freq;    ///< Main timer frequency.
+    uint32_t        internal_timer_freq;///< Internal timer frequency.
+    size_t          signals_number;     ///< Number of signals being used.
+    uint32_t        default_signals;    ///< Number of signals being used.
+    uint32_t        max_samples;        ///< Maximum number of the samples allowed by buffer capacity.
 }} PaceMakerDevConfig;
 
 /// @}}

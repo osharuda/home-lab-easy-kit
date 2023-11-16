@@ -28,6 +28,8 @@
 
 #include <cstddef>
 
+#include <ekit_error.hpp>
+
 {__{DEVNAME}_SHARED_HEADER__}
 
 /// \addtogroup group_{devname}

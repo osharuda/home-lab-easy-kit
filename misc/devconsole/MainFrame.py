@@ -44,6 +44,9 @@ class MainFrame(wx.Frame):
         wx.Frame.__init__(self, *args, **kwds)
         self.SetSize((2560, 1440))
         self.SetTitle("HLEK Developer Console")
+        _icon = wx.NullIcon
+        _icon.CopyFromBitmap(wx.Bitmap("icons/icon.png", wx.BITMAP_TYPE_ANY))
+        self.SetIcon(_icon)
 
         self.frame_statusbar = self.CreateStatusBar(1, wx.STB_ELLIPSIZE_END)
         self.frame_statusbar.SetStatusWidths([-1])
@@ -90,7 +93,8 @@ class MainFrame(wx.Frame):
         self.button_new_config.SetBitmap(wx.Bitmap("icons/plus_48.png", wx.BITMAP_TYPE_ANY))
         sizer_5.Add(self.button_new_config, 0, wx.EXPAND | wx.RIGHT, 0)
 
-        self.btn_deploy_software = wx.Button(self, wx.ID_ANY, "DEPLOY SOFTWARE")
+        self.btn_deploy_software = wx.Button(self, wx.ID_ANY, "")
+        self.btn_deploy_software.SetBitmap(wx.Bitmap("icons/install_48.png", wx.BITMAP_TYPE_ANY))
         sizer_5.Add(self.btn_deploy_software, 0, wx.EXPAND | wx.RIGHT, 0)
 
         self.btn_deploy = wx.Button(self, wx.ID_ANY, "PROJECT")
@@ -122,10 +126,30 @@ class MainFrame(wx.Frame):
 
         self.choice_last_json = wx.Choice(self, wx.ID_ANY, choices=["choice 1"])
         self.choice_last_json.SetSelection(0)
-        sizer_2.Add(self.choice_last_json, 0, 0, 0)
+        sizer_2.Add(self.choice_last_json, 0, wx.EXPAND | wx.RIGHT, 0)
 
-        self.btn_flash = wx.Button(self, wx.ID_ANY, "FLASH")
+        self.btn_flash = wx.Button(self, wx.ID_ANY, "")
+        self.btn_flash.SetBitmap(wx.Bitmap("icons/chip_48.png", wx.BITMAP_TYPE_ANY))
         sizer_2.Add(self.btn_flash, 0, wx.EXPAND, 20)
+
+        self.btn_Kill = wx.Button(self, wx.ID_ANY, "")
+        self.btn_Kill.SetBitmap(wx.Bitmap("icons/cross_48.png", wx.BITMAP_TYPE_ANY))
+        sizer_2.Add(self.btn_Kill, 0, 0, 0)
+
+        sizer_6 = wx.BoxSizer(wx.HORIZONTAL)
+        sizer_1.Add(sizer_6, 1, wx.EXPAND, 0)
+
+        self.btn_debug_fw = wx.Button(self, wx.ID_ANY, "")
+        self.btn_debug_fw.SetBitmap(wx.Bitmap("icons/chip_debug_48.png", wx.BITMAP_TYPE_ANY))
+        sizer_6.Add(self.btn_debug_fw, 0, 0, 0)
+
+        self.btn_run_monitor = wx.Button(self, wx.ID_ANY, "")
+        self.btn_run_monitor.SetBitmap(wx.Bitmap("icons/monitor.png", wx.BITMAP_TYPE_ANY))
+        sizer_6.Add(self.btn_run_monitor, 0, 0, 0)
+
+        self.btn_debug_monitor = wx.Button(self, wx.ID_ANY, "")
+        self.btn_debug_monitor.SetBitmap(wx.Bitmap("icons/monitor_debug.png", wx.BITMAP_TYPE_ANY))
+        sizer_6.Add(self.btn_debug_monitor, 0, 0, 0)
 
         static_line_2 = wx.StaticLine(self, wx.ID_ANY)
         sizer_1.Add(static_line_2, 0, wx.EXPAND, 0)
@@ -152,6 +176,10 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_build, self.btn_build)
         self.Bind(wx.EVT_CHOICE, self.on_last_json_select, self.choice_last_json)
         self.Bind(wx.EVT_BUTTON, self.on_flash, self.btn_flash)
+        self.Bind(wx.EVT_BUTTON, self.on_kill, self.btn_Kill)
+        self.Bind(wx.EVT_BUTTON, self.on_debug_fw, self.btn_debug_fw)
+        self.Bind(wx.EVT_BUTTON, self.on_run_monitor, self.btn_run_monitor)
+        self.Bind(wx.EVT_BUTTON, self.on_debug_monitor, self.btn_debug_monitor)
         self.Bind(wx.EVT_SIZE, self.on_resize, self)
         # end wxGlade
         self.disabled_controls = []
@@ -298,11 +326,16 @@ class MainFrame(wx.Frame):
                     self.on_remote_config_changed(event)
         event.Skip()
 
+    def update_config(self):
+        evt = wx.PyCommandEvent(wx.EVT_CHOICE.typeId, self.choice_remote_config.GetId())
+        wx.PostEvent(self, evt)
+
     def on_new_config(self, event):  # wxGlade: MainFrame.<event_handler>
         with RemoteConfigDlg(self.app_logic, True, self) as dlg:
             if dlg.ShowModal()==wx.ID_OK:
                 idx = self.choice_remote_config.Append(dlg.ConfigName)
                 self.choice_remote_config.Selection = idx
+        self.update_config()
         event.Skip()
 
     def on_delete_remote_config(self, event):  # wxGlade: MainFrame.<event_handler>
@@ -316,7 +349,7 @@ class MainFrame(wx.Frame):
                 self.choice_remote_config.Selection = idx
 
             self.app_logic.save_config()
-
+        self.update_config()
         event.Skip()
 
     def on_build_type_choise(self, event):  # wxGlade: MainFrame.<event_handler>
@@ -388,4 +421,27 @@ class MainFrame(wx.Frame):
         self.select_last_json(newjson)
 
         event.Skip()
+
+    def on_kill(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.app_logic.kill_current_tasks()
+        event.Skip()
+
+    def on_debug_fw(self, event):  # wxGlade: MainFrame.<event_handler>
+        try:
+            self.app_logic.debug_fw()
+        except Exception as ex:
+            wx_tools.show_error(self, f"Can't start debugging: {str(ex)}")
+        event.Skip()
+
+    def on_run_monitor(self, event):  # wxGlade: MainFrame.<event_handler>
+        try:
+            self.app_logic.run_monitor()
+        except Exception as ex:
+            wx_tools.show_error(self, f"Can't start debugging: {str(ex)}")
+        event.Skip()
+
+    def on_debug_monitor(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.app_logic.debug_monitor()
+        event.Skip()
+
 # end of class MainFrame

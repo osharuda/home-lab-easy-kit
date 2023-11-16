@@ -39,13 +39,16 @@
 /// public interfaces throw exceptions.
 ///
 
-/// \typedef EKIT_ERROR
-/// \brief Allias for error codes.
-typedef int EKIT_ERROR;
+
 
 #define ERRNO_TO_EKIT_ERROR(x) ((x)*-1)
 
 extern thread_local char last_error_descr[];
+
+// <__LIBHLEK_ERROR_DEFINES__>
+/// \typedef EKIT_ERROR
+/// \brief Allias for error codes.
+typedef int32_t EKIT_ERROR;
 
 #define EKIT_OK                   0 ///< OK.
 #define EKIT_FAIL                 1 ///< Failure.
@@ -77,6 +80,10 @@ extern thread_local char last_error_descr[];
 #define EKIT_PARITY               27 ///< Parity error.
 #define EKIT_COLLISION            28 ///< Collision detected.
 #define EKIT_UNALIGNED            29 ///< Data is not aligned.
+#define EKIT_TOO_FAST             30 ///< Selected speed is too fast for the device.
+#define EKIT_NOT_STARTED          31 ///< Device is not started.
+#define EKIT_NOT_STOPPED          32 ///< Device is not stopped.
+// <\__LIBHLEK_ERROR_DEFINES__>
 
 /// \brief Translates EKIT_ERROR to string for error message formatting purposes.
 /// \param err - error code

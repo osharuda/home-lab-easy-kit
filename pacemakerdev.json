@@ -13,16 +13,37 @@
     "PaceMakerDevCustomizer": {
       "pacemakerdev_0" : {
         "dev_id" : 1,
-        "buffer_size" : 64,
+        "max_samples" : 512,
+	"signals" : {
+          "signal_0"   : {"type": "GPIO_Mode_Out_PP",
+		          "default": 0,
+			  "pin": {"gpio" :  "PB_3"}},
+          "signal_1"   : {"type": "GPIO_Mode_Out_PP",
+		          "default": 0,
+			  "pin": {"gpio" :  "PB_4"}},
+          "signal_2"   : {"type": "GPIO_Mode_Out_PP",
+		          "default": 0,
+			  "pin": {"gpio" :  "PB_5"}},
+          "signal_3"   : {"type": "GPIO_Mode_Out_PP",
+		          "default": 1,
+			  "pin": {"gpio" :  "PB_6"}}
+	},
         "requires" :  {
           "main_timer": { "timer" : "TIM2"},
-          "internal_timer": { "timer" : "TIM3"},
-          "signal_0"   : {"gpio" :  "PB_1"},
-          "signal_1"   : {"gpio" :  "PB_2"},
-          "signal_2"   : {"gpio" :  "PB_3"},
-          "signal_3"   : {"gpio" :  "PB_4"}
-        }
+          "internal_timer": { "timer" : "TIM3"}
+       }
       }
-    }
+    },
+    "GPIODevCustomizer": {
+      "gpio" : {
+        "dev_id" : 6,
+        "description" : {
+            "in" : {
+                           "type" : "GPIO_Mode_IPU",
+                           "gpio" : "PA_11"},
+            "out" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PC_13",
+                           "default" : 1 }}}}
   }
 }

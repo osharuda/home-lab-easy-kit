@@ -133,8 +133,6 @@ class SPIDACCustomizer(DeviceCustomizer):
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
                              self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name: str):
-        return
 
     def read_ld_configuration(self, dev_config: dict, dev_requires: dict, dev_name: str):
         ld_port = "0"
@@ -213,8 +211,6 @@ class SPIDACCustomizer(DeviceCustomizer):
                     f"Number of samples for device {dev_name} may not be zero")
             buffer_size = int((samples_number + 1)*frames_per_sample*(frame_size+1))*channels_count
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
-
             # LD line configuration
             ld_port, ld_pin, ld_rise = self.read_ld_configuration(dev_config, dev_requires, dev_name)
 
@@ -270,7 +266,6 @@ class SPIDACCustomizer(DeviceCustomizer):
                 f"volatile uint8_t {init_frames_default_value_name}[] = {{ {init_frames_default_value_initialization} }};\\")
 
             self.check_requirements(spi_confg_dev, dev_requires, "dev_{0}".format(dev_name), exclude_resources)
-            self.sanity_checks(dev_config, dev_requires, dev_name)
 
             fw_buffer_name = "g_spidac_{0}_buffer".format(str(index))
             fw_device_buffers.append(

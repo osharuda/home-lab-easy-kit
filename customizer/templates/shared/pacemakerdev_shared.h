@@ -20,21 +20,38 @@
 /// \addtogroup group_pacemakerdev
 /// @{{
 
-/// \def PACEMAKERDEV_RESERVED_2
-/// \brief Defines PaceMakerDev command specific flag 2
-#define PACEMAKERDEV_RESERVED_2             128
+/// \def PACEMAKERDEV_START
+/// \brief Instructs to start signal sequence generation
+#define PACEMAKERDEV_START                  128
 
-/// \def PACEMAKERDEV_RESERVED_1
-/// \brief Defines PaceMakerDev command specific flag 1
-#define PACEMAKERDEV_RESERVED_1             64
+/// \def PACEMAKERDEV_STOP
+/// \brief Instructs to stop signal sequence generation
+#define PACEMAKERDEV_STOP                   64
 
-/// \def PACEMAKERDEV_RESERVED_0
-/// \brief Defines PaceMakerDev command specific flag 0
-#define PACEMAKERDEV_RESERVED_0             32
+/// \def PACEMAKERDEV_RESET
+/// \brief Instructs to reset device (sequence generation will be stopped if started)
+#define PACEMAKERDEV_RESET                  (PACEMAKERDEV_STOP | PACEMAKERDEV_START)
+
+/// \def PACEMAKERDEV_DATA
+/// \brief Data transfer to the internal buffer
+#define PACEMAKERDEV_DATA                   0
 
 /// \struct tag_PaceMakerDevCommand
 /// \brief This structure describes PaceMakerDev command
 #pragma pack(push, 1)
+
+/// \struct tag_PaceMakerStatus
+/// \brief Structure that describes status of the PaceMaker device
+typedef struct tag_PaceMakerStatus {{
+    uint32_t main_counter;                        /// Number of main cycles remains to the finish. If zero and started
+                                                  /// is set, then infinite cycling is used.
+    EKIT_ERROR last_error;                        /// Last error code
+    struct {{
+        uint16_t started        : 1;              /// If set, signal generation is running, otherwise cleared.
+        uint16_t internal_index : 15;             /// Index of the current internal transition
+    }};
+}} PaceMakerStatus;
+typedef volatile PaceMakerStatus* PPaceMakerStatus;
 
 /// \struct tag_PaceMakerTransition
 /// \brief Structure that describes signal transition
@@ -44,13 +61,18 @@ typedef struct tag_PaceMakerTransition {{
     uint16_t counter;        /// Prescaller for the wait timer
 }} PaceMakerTransition;
 
+/// \struct tag_PaceMakerStartCommand
+/// \brief Structure that describes signal transition
+typedef struct tag_PaceMakerStartCommand {{
+    uint32_t main_cycles_number;  /// Amount of main cycles until generation is stopped. If zero infinite cycling is used.
+    uint16_t main_prescaller;     /// Main cycle prescaller.
+    uint16_t main_counter;        /// Main cycle counter.
+}} PaceMakerStartCommand;
+
 /// \struct tag_PaceMakerDevData
 /// \brief Structure that describes command for PaceMakerDev
 typedef struct tag_PaceMakerDevData {{
-    uint32_t default_mask;      /// Default state of the pins
-    uint16_t cycle_prescaller;  /// Cycle period for the wait timer
-    uint16_t cycle_counter;     /// Cycle counter for the wait timer
-    uint16_t transition_number; /// Amount of described transitions
+    uint32_t transition_number; /// Amount of described transitions, may not be a zero.
     PaceMakerTransition transitions[];
 }} PaceMakerDevData;
 

@@ -35,10 +35,6 @@ class AD9850DevCustomizer(DeviceCustomizer):
 
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header), self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
-        return
-
-
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
@@ -55,69 +51,67 @@ class AD9850DevCustomizer(DeviceCustomizer):
             dev_id       = dev_config["dev_id"]
             clock_freq = frequency_to_int(dev_config["clock_frequency"])
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
-
-            rtype, d0 = self.get_resource(dev_requires["D0"])
+            rtype, d0 = self.unpack_resource(dev_requires["D0"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d0} specified in {dev_name}. Must be gpio.")
 
-            rtype, d1 = self.get_resource(dev_requires["D1"])
+            rtype, d1 = self.unpack_resource(dev_requires["D1"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d1} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d2 = self.get_resource(dev_requires["D2"])
+            rtype, d2 = self.unpack_resource(dev_requires["D2"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d2} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d3 = self.get_resource(dev_requires["D3"])
+            rtype, d3 = self.unpack_resource(dev_requires["D3"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d3} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d4 = self.get_resource(dev_requires["D4"])
+            rtype, d4 = self.unpack_resource(dev_requires["D4"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d4} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d5 = self.get_resource(dev_requires["D5"])
+            rtype, d5 = self.unpack_resource(dev_requires["D5"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d5} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d6 = self.get_resource(dev_requires["D6"])
+            rtype, d6 = self.unpack_resource(dev_requires["D6"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d6} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, d7 = self.get_resource(dev_requires["D7"])
+            rtype, d7 = self.unpack_resource(dev_requires["D7"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {d7} specified in {dev_name}. Must be gpio.")
 
 
-            rtype, w_clk = self.get_resource(dev_requires["W_CLK"])
+            rtype, w_clk = self.unpack_resource(dev_requires["W_CLK"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {w_clk} specified in {dev_name}. Must be gpio.")
 
-            rtype, fq_ud = self.get_resource(dev_requires["FQ_UD"])
+            rtype, fq_ud = self.unpack_resource(dev_requires["FQ_UD"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {fq_ud} specified in {dev_name}. Must be gpio.")
 
-            rtype, reset = self.get_resource(dev_requires["RESET"])
+            rtype, reset = self.unpack_resource(dev_requires["RESET"])
             if rtype != "gpio":
                 raise ValueError(f"Invalid resource {reset} specified in {dev_name}. Must be gpio.")
 
             # generate gpio update function for device
             set_gpio_data_func_name = f"ad9850_set_data_gpio_{index}"
-            data_to_pin = { 0: (self.mcu_hw.GPIO_to_port(d0), self.mcu_hw.GPIO_to_pin_number(d0)),
-                            1: (self.mcu_hw.GPIO_to_port(d1), self.mcu_hw.GPIO_to_pin_number(d1)),
-                            2: (self.mcu_hw.GPIO_to_port(d2), self.mcu_hw.GPIO_to_pin_number(d2)),
-                            3: (self.mcu_hw.GPIO_to_port(d3), self.mcu_hw.GPIO_to_pin_number(d3)),
-                            4: (self.mcu_hw.GPIO_to_port(d4), self.mcu_hw.GPIO_to_pin_number(d4)),
-                            5: (self.mcu_hw.GPIO_to_port(d5), self.mcu_hw.GPIO_to_pin_number(d5)),
-                            6: (self.mcu_hw.GPIO_to_port(d6), self.mcu_hw.GPIO_to_pin_number(d6)),
-                            7: (self.mcu_hw.GPIO_to_port(d7), self.mcu_hw.GPIO_to_pin_number(d7))}
+            data_to_pin = { 0: (self.mcu_hw.GPIO_to_port(d0), self.mcu_hw.GPIO_to_pin_number(d0), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            1: (self.mcu_hw.GPIO_to_port(d1), self.mcu_hw.GPIO_to_pin_number(d1), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            2: (self.mcu_hw.GPIO_to_port(d2), self.mcu_hw.GPIO_to_pin_number(d2), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            3: (self.mcu_hw.GPIO_to_port(d3), self.mcu_hw.GPIO_to_pin_number(d3), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            4: (self.mcu_hw.GPIO_to_port(d4), self.mcu_hw.GPIO_to_pin_number(d4), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            5: (self.mcu_hw.GPIO_to_port(d5), self.mcu_hw.GPIO_to_pin_number(d5), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            6: (self.mcu_hw.GPIO_to_port(d6), self.mcu_hw.GPIO_to_pin_number(d6), self.mcu_hw.PIN_OUT_PUSH_PULL, 0),
+                            7: (self.mcu_hw.GPIO_to_port(d7), self.mcu_hw.GPIO_to_pin_number(d7), self.mcu_hw.PIN_OUT_PUSH_PULL, 0)}
             header, macro = self.mcu_hw.generate_set_gpio_bus_function(f"{set_gpio_data_func_name}", "uint8_t", "uint16_t", data_to_pin)
 
             fw_set_gpio_headers.append(header)

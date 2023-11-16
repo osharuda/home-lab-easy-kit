@@ -363,6 +363,11 @@ namespace tools {
     /// \brief Detects if system is little endian
     /// \return true if little endian, otherwise false.
     bool is_little_endian();
+
+    /// \brief Makes pid file
+    /// \return true if success, false if file is already created and can't be overwritten (likely another such program
+    ///         is running).
+    bool make_pid_file();
 }
 
 /// @}

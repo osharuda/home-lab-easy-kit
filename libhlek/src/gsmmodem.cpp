@@ -580,7 +580,7 @@ void GSMModem::configure_sms(bool ascii, EKitTimeout& to, unsigned int& status_m
 }
 
 void GSMModem::configure(int timeout_ms) {
-    static const char* const func_name = "GSMModem::configure";
+    static const char* const func_name = "GSMModem::set_data";
     unsigned int status = 0;
     std::vector<std::string> lines;
     set_timeout(timeout_ms);
@@ -595,14 +595,14 @@ void GSMModem::configure(int timeout_ms) {
         at("AT", lines, to, status);
     } while ((status & GSMModem::AT_STATUS_OK)==0);
 
-    // setup line terminator
+    // set_data line terminator
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     at("ATS3=13", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {
         throw_at_error(func_name, status, "ATS3=13 failed");
     }
 
-    // setup default echo mode
+    // set_data default echo mode
     status = GSMModem::AT_STATUS_OK | GSMModem::AT_STATUS_ERROR;
     at("ATE0", lines, to, status);
     if (status & GSMModem::AT_STATUS_ERROR) {

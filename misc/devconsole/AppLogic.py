@@ -5,11 +5,16 @@ import wx_tools as wx_tools
 from typing import Callable
 import time as time
 import threading as threading
-
+import re
 from directory_structure import ProjectBuilder
 from enum import IntFlag, auto
+import pathlib
+import Tasks
+import inspect
 
 class AppLogic:
+
+# region CONSTRUCTOR
     def __init__(self,
                  make_log: Callable[[str], None],
                  make_relog: Callable[[str], None],
@@ -40,17 +45,34 @@ class AppLogic:
         self.KEY_JSONS = 'json'
         self.KEY_LAST_JSON = 'last_json'
 
+        self.BUILD_CONFIG_DEBUG = "Debug"
+        self.BUILD_CONFIG_RELEASE = "Release"
+
+        self.killed = False     # Used to kill current tasks
+
         self.last_configuration = None
         self.make_release = False
         self.data_lock = threading.Lock()
         self.thread_result = dict()
+        self.min_cmake_version = (3, 20)
+        self.cmake_install_package = "misc/devconsole/packages/cmake_3.22.3-release_20230821-1_armhf.deb"
+        self.udev_fix_script_script = "misc/devconsole/udev_fix.sh"
+        self.ssh_client = None
+        filename = inspect.getframeinfo(inspect.currentframe()).filename
+        self.current_path = os.path.dirname(os.path.abspath(filename))
+        self.key_file_name = '.rsa_key'
+        self.pub_key_file_name = self.key_file_name + '.pub'
+
+        self.debug_fw_task = None
+        self.run_monitor_task = None
+        self.debug_monitor_task = None
 
         if os.path.isfile(self.app_path):
             try:
                 self.load()
             except RuntimeError as e:
                 pass
-
+#endregion
 # region CONFIGURATION VARIABLES
 
     def save_config(self):
@@ -237,30 +259,34 @@ class AppLogic:
 
     @property
     def BuildType(self):
-        return "Release" if self.make_release else "Debug"
+        return self.BUILD_CONFIG_RELEASE if self.make_release else self.BUILD_CONFIG_DEBUG
 
     @BuildType.setter
     def BuildType(self, value: str):
         self.make_release = value.upper() == "RELEASE"
 
 # endregion
-
 # region MUTLITHREADING
 
+    def kill_current_tasks(self):
+        with self.data_lock:
+            self.killed = True
+
     def get_thread_result(self, id):
-        self.data_lock.acquire()
-        result = self.thread_result.get(id, None)
-        del self.thread_result[id]
-        self.data_lock.release()
+        with self.data_lock:
+            result = self.thread_result.get(id, None)
+            if result is None:
+                result = False, "Canceled"
+            else:
+                del self.thread_result[id]
         return result
 
     def set_thread_result(self, success: bool, message: str):
         id = threading.current_thread().native_id
-        self.data_lock.acquire()
-        if id in self.thread_result:
-            raise RuntimeError("Element should'n be among thread results")
-        self.thread_result[id] = (success, message)
-        self.data_lock.release()
+        with self.data_lock:
+            if id in self.thread_result:
+                raise RuntimeError("Element should'n be among thread results")
+            self.thread_result[id] = (success, message)
 
     def task_thread(self, task: Callable[[], str]):
         message = ""
@@ -298,24 +324,22 @@ class AppLogic:
         return run_thread
 
     def get_estimation(self, names: tuple):
-        self.data_lock.acquire()
-        if names[1] in self.TimeEstimations:
-            value = float(self.TimeEstimations[names[1]])
-        elif names[0] in self.TimeEstimations:
-            value = float(self.TimeEstimations[names[0]])
-        else:
-            value = 60.0
-        self.data_lock.release()
+        with self.data_lock:
+            if names[1] in self.TimeEstimations:
+                value = float(self.TimeEstimations[names[1]])
+            elif names[0] in self.TimeEstimations:
+                value = float(self.TimeEstimations[names[0]])
+            else:
+                value = 60.0
         return value
 
     def update_estimation(self, names: tuple, value: float):
         common_task_name, targeted_task_name = names
-        self.data_lock.acquire()
-        if targeted_task_name not in self.TimeEstimations or value > self.TimeEstimations[targeted_task_name]:
-            self.TimeEstimations[names[1]] = value
-        if common_task_name not in self.TimeEstimations or value > self.TimeEstimations[common_task_name]:
-            self.TimeEstimations[names[0]] = value
-        self.data_lock.release()
+        with self.data_lock:
+            if targeted_task_name not in self.TimeEstimations or value > self.TimeEstimations[targeted_task_name]:
+                self.TimeEstimations[names[1]] = value
+            if common_task_name not in self.TimeEstimations or value > self.TimeEstimations[common_task_name]:
+                self.TimeEstimations[names[0]] = value
 
     def run_task_internal(self,
                           opname: tuple,
@@ -323,11 +347,14 @@ class AppLogic:
                           on_complete: Callable[[tuple[bool, str]], None],
                           on_progress: Callable[[float], None]):
         estimation = self.get_estimation(opname)
-        check_interval = estimation / 100
+        check_interval = 0.1
         start_time = time.monotonic()
         task_thread = threading.Thread(target=self.task_thread, args=[task])
         task_thread.start()
         task_thread_id = task_thread.native_id
+        with self.data_lock:
+            self.killed = False
+            kill_task = self.killed
 
         task_thread.join(check_interval)
         while task_thread.is_alive():
@@ -335,6 +362,17 @@ class AppLogic:
             if int(progress) < 100:
                 on_progress(progress)
             task_thread.join(check_interval)
+            with self.data_lock:
+                if self.killed:
+                    break
+                    ewfwqf
+                kill_task = self.killed and self.ssh_client != None
+
+        if kill_task:
+            with self.data_lock:
+                self.killed = False
+                self.ssh_client.close()
+                self.ssh_client = None
 
         on_progress(100.0)
         duration = time.monotonic()-start_time
@@ -345,22 +383,28 @@ class AppLogic:
         on_complete(result)
 
 # endregion
-
 # region HLEK TASKS
-    def test_task(self, somearg: str):
-        with self.data_lock:
-            mp = self.mount_point
-        time.sleep(5)
-        return f"completed: somearg={mp}"
-
     def append_error_and_raise(self, errortext, message, stdout, stderr):
         message += f"{os.linesep}{errortext}:{os.linesep}"
         message += f'STDOUT:{os.linesep}-------------------------------{os.linesep}{stdout}{os.linesep}'
         message += f'STDERR:{os.linesep}-------------------------------{os.linesep}{stderr}{os.linesep}'
         raise RuntimeError(message)
 
+    def make_connection(self):
+        with self.data_lock:
+            config = self.LastConfiguration
+            host = config[self.KEY_HOST]
+            login = config[self.KEY_USER_NAME]
+            password = config[self.KEY_PASSWORD]
+
+            if self.killed:
+                raise RuntimeError("Canceled")
+            else:
+                self.ssh_client = pytools.ssh_connect(host, login, password)
+
     def flash_firmware(self, fw_json: str):
         message = ""
+        sub_proj_dir = pathlib.Path(fw_json).stem
 
         with self.data_lock:
             self.sanitize_config()
@@ -372,8 +416,14 @@ class AppLogic:
             password = config[self.KEY_PASSWORD]
             log_len = self.log_len
             config_name = self.LastConfigName
+            build_release = self.make_release
 
-        flash_cmd = f"cd {mount_point}{os.path.sep}{config_name}{os.path.sep}{fw_json}{os.path.sep}firmware; ./flash.sh"
+        if build_release:
+            build_configuration = self.BUILD_CONFIG_RELEASE
+        else:
+            build_configuration = self.BUILD_CONFIG_DEBUG
+
+        flash_cmd = f"cd {mount_point}{os.path.sep}{config_name}{os.path.sep}{sub_proj_dir}{os.path.sep}firmware; ./flash.sh {build_configuration}"
 
         try:
             message += f"------ Flashing firmware for ({fw_json}) on {host} ------{os.linesep}"
@@ -383,20 +433,25 @@ class AppLogic:
             s = pytools.normalize_string_length(f"Connecting {host} __DOTS__ ", log_len)
             message += s + os.linesep
 
-            with pytools.ssh_connect(host, login, password) as ssh_conn:
-                try:
-                    # Flash
-                    message += pytools.normalize_string_length(f"Flashing __DOTS__ ", log_len) + os.linesep
-                    exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, flash_cmd)
-                    message += f'STDOUT:{os.linesep}-------------------------------{os.linesep}{stdout}{os.linesep}'
-                    message += f'STDERR:{os.linesep}-------------------------------{os.linesep}{stderr}{os.linesep}'
-                    if exit_code != 0:
-                        raise RuntimeError(message)
-                except Exception as iex:
-                    raise RuntimeError(str(iex))
+            self.make_connection()
+
+            try:
+                message += f' [ OK ]{os.linesep}'
+
+                # Flash
+                message += pytools.normalize_string_length(f"Flashing __DOTS__ ", log_len) + os.linesep
+                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, flash_cmd)
+                if exit_code != 0:
+                    self.append_error_and_raise("Unable to flash.", message, stdout, stderr)
+
+            except Exception as iex:
+                raise RuntimeError(str(iex))
 
         except Exception as ex:
             raise RuntimeError(str(ex))
+        finally:
+            with self.data_lock:
+                self.ssh_client = None
 
         return message
 
@@ -418,9 +473,11 @@ class AppLogic:
         message = ""
 
         build_cmd = f"cd {project_root}; "
+        build_configuration = "Debug"
         build_cmd += "./build.sh " + " ".join(config[self.KEY_JSONS])
         if build_release:
-            build_cmd += ' "Release"'
+            build_configuration = self.BUILD_CONFIG_RELEASE
+            build_cmd += f' "{build_configuration}"'
 
         try:
             message += f"------ Building HLEK on {host} ------{os.linesep}"
@@ -430,32 +487,39 @@ class AppLogic:
             s = pytools.normalize_string_length(f"Connecting {host} __DOTS__ ", log_len)
             message += s + os.linesep
 
-            with pytools.ssh_connect(host, login, password) as ssh_conn:
-                try:
-                    message += f' [ OK ]{os.linesep}'
+            self.make_connection()
 
-                    # Clear cache if rebuild is requested
-                    if rebuild:
-                        message += pytools.normalize_string_length(f"Clearing the cache __DOTS__ ", log_len) + os.linesep
-                        exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, f"rm -f {os.path.join(project_root,'hashes')}")
-                        message += f'STDOUT:{os.linesep}-------------------------------{os.linesep}{stdout}{os.linesep}'
-                        message += f'STDERR:{os.linesep}-------------------------------{os.linesep}{stderr}{os.linesep}'
-                        if exit_code != 0:
-                            raise RuntimeError(message)
+            try:
+                message += f' [ OK ]{os.linesep}'
 
-                    # build
-                    message += pytools.normalize_string_length(f"Building __DOTS__ ", log_len) + os.linesep
-                    exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, build_cmd)
-                    message += f'STDOUT:{os.linesep}-------------------------------{os.linesep}{stdout}{os.linesep}'
-                    message += f'STDERR:{os.linesep}-------------------------------{os.linesep}{stderr}{os.linesep}'
+                # Clear cache if rebuild is requested
+                if rebuild:
+                    message += pytools.normalize_string_length(f"Clearing the cache __DOTS__ ", log_len) + os.linesep
+                    exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"rm -f {os.path.join(project_root,'hashes')}")
                     if exit_code != 0:
-                        raise RuntimeError(message)
-                except Exception as iex:
-                    raise RuntimeError(str(iex))
+                        self.append_error_and_raise("Failed to clear the cache", message, stdout, stderr)
+
+                    message += pytools.normalize_string_length(f"Clearing existing build directory __DOTS__ ",
+                                                               log_len) + os.linesep
+                    exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
+                                                                f"rm -rf {os.path.join(project_root, 'libhlek', build_configuration)}")
+                    if exit_code != 0:
+                        self.append_error_and_raise("Failed to delete libhlek build directory", message, stdout, stderr)
+
+                # build
+                message += pytools.normalize_string_length(f"Building __DOTS__ ", log_len) + os.linesep
+                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, build_cmd)
+                if exit_code != 0:
+                    self.append_error_and_raise("Failed to build project", message, stdout, stderr)
+            except Exception as iex:
+                raise RuntimeError(str(iex))
 
         except Exception as ex:
             message += f"{os.linesep}{os.linesep}Error: {str(ex)}{os.linesep}"
             raise RuntimeError(message)
+        finally:
+            with self.data_lock:
+                self.ssh_client = None
 
         return message
 
@@ -484,28 +548,30 @@ class AppLogic:
             # Connect
             s = pytools.normalize_string_length(f"Connecting {host} __DOTS__ ", log_len)
             message += s + os.linesep
-            with pytools.ssh_connect(host, login, password) as ssh_conn:
+
+            self.make_connection()
+
+            # Create project tree with sym links
+            try:
                 message += f' [ OK ]{os.linesep}'
+                message += pytools.normalize_string_length(f"Creating {config_name} __DOTS__ ", log_len)
+                pb = ProjectBuilder(dir_hlek, dir_cmsis, mount_point, config_name)
+                pb_cmds = pb.make_project_tree()
+                for cmd in pb_cmds:
+                    message += cmd + os.linesep
+                    exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, cmd)
+                    if exit_code != 0:
+                        self.append_error_and_raise("Failed to build project tree", message, stdout, stderr)
 
-                # Create project tree with sym links
-                try:
-                    message += pytools.normalize_string_length(f"Creating {config_name} __DOTS__ ", log_len)
-                    pb = ProjectBuilder(dir_hlek, dir_cmsis, mount_point, config_name)
-                    pb_cmds = pb.make_project_tree()
-                    for cmd in pb_cmds:
-                        message += cmd + os.linesep
-                        exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, cmd)
-                        message += f'STDOUT:{os.linesep}-------------------------------{os.linesep}{stdout}{os.linesep}'
-                        message += f'STDERR:{os.linesep}-------------------------------{os.linesep}{stderr}{os.linesep}'
-                        if exit_code != 0:
-                            raise RuntimeError(message)
-
-                except Exception as iex:
-                    raise RuntimeError(str(iex))
+            except Exception as iex:
+                raise RuntimeError(str(iex))
 
         except Exception as ex:
             message += f"{os.linesep}{os.linesep}Error: {str(ex)}{os.linesep}"
             raise RuntimeError(message)
+        finally:
+            with self.data_lock:
+                self.ssh_client = None
 
         return message
 
@@ -522,78 +588,182 @@ class AppLogic:
             nfs_uri = self.NfsURI
 
         message = ""
-
         try:
             message += f"------ Deploying HLEK ({self.LastConfigName}) to {host} ------{os.linesep}"
 
             # Connect
             s = pytools.normalize_string_length(f"Connecting {host} __DOTS__ ", self.log_len)
             message += s
-            with pytools.ssh_connect(host, login, password) as ssh_conn:
-                message += f' [ OK ]{os.linesep}'
 
-                # Get local (geoip) timezone
-                message += pytools.normalize_string_length(f"Requesting geoip timezone __DOTS__ ", self.log_len)
-                #command = """wget -O - -q http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/ p'"""
-                command = """wget -O - -q http://geoip.ubuntu.com/lookup"""
-                exit_code, timezone, stderr = pytools.ssh_run(ssh_conn, command)
+            self.make_connection()
+
+            message += f' [ OK ]{os.linesep}'
+
+            # Get local (geoip) timezone
+            message += pytools.normalize_string_length(f"Requesting geoip timezone __DOTS__{os.linesep}", self.log_len)
+            #command = """wget -O - -q http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/ p'"""
+            command = """wget -O - -q http://geoip.ubuntu.com/lookup"""
+            exit_code, timezone, stderr = pytools.ssh_run(self.ssh_client, command)
+            if exit_code != 0:
+                self.append_error_and_raise("Unable to get local time zone", message, timezone, stderr)
+            timezone, i = pytools.extract_between_markers(timezone, "<TimeZone>", "</TimeZone>")
+
+            # Asjust time zone
+            message += pytools.normalize_string_length(f"Adjusting time zone __DOTS__{os.linesep}", self.log_len)
+            command = f"""echo {timezone} | sudo tee /etc/timezone > /dev/null; sudo dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1; sudo timedatectl set-timezone {timezone}"""
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, command)
+            if exit_code != 0:
+                self.append_error_and_raise("Unable to adjust time zone", message, stdout, stderr)
+
+            # apt update
+            message += pytools.normalize_string_length(f"Updating repositories __DOTS__{os.linesep}", self.log_len)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt-get update")
+            if exit_code != 0:
+                self.append_error_and_raise("Can't update repositories", message, stdout, stderr)
+
+            # apt upgrade
+            message += pytools.normalize_string_length(f"Updating repositories __DOTS__{os.linesep}", self.log_len)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt -y full-upgrade")
+            if exit_code != 0:
+                self.append_error_and_raise("Can't update repositories", message, stdout, stderr)
+
+            # install packages
+            package_list = ["libicu-dev", "binutils-arm-none-eabi", "gcc-arm-none-eabi", "gdb-multiarch", "openocd",
+                            "stlink-tools", "i2c-tools", "doxygen", "libncurses-dev", "vim", "git", "mc", "nfs-kernel-server",
+                            "nfs-common", "autofs", "ninja-build", "cmake"]
+
+            for p in package_list:
+                message += pytools.normalize_string_length(f"Installing {p} __DOTS__{os.linesep}", log_len)
+                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo apt-get --yes install {p}")
                 if exit_code != 0:
-                    self.append_error_and_raise("Unable to get local time zone", message, timezone, stderr)
-                timezone, i = pytools.extract_between_markers(timezone, "<TimeZone>", "</TimeZone>")
+                    self.append_error_and_raise(f"Can't install {p}", message, stdout, stderr)
 
-                # Asjust time zone
-                message += pytools.normalize_string_length(f"Adjusting time zone __DOTS__ ", self.log_len)
-                command = f"""echo {timezone} | sudo tee /etc/timezone > /dev/null; dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1; timedatectl set-timezone {timezone}"""
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, command)
+            # Check CMake version
+            #                3.22.3
+            message += pytools.normalize_string_length(f"Verifying CMake version __DOTS__{os.linesep}", self.log_len)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "cmake --version")
+            if exit_code != 0:
+                self.append_error_and_raise("Can't check CMake version", message, stdout, stderr)
+
+            cmake_version_re = re.compile(r'.*(\d)\.(\d+)\.(\d+).*')
+            if g := cmake_version_re.match(stdout):
+                ver_mj = g.group(1)
+                ver_mn = g.group(2)
+                ver_build = g.group(3)
+            else:
+                raise RuntimeError("Can't get CMake version")
+
+            if ver_mj != self.min_cmake_version[0] or ver_mn != self.min_cmake_version[1]:
+                # Uninstall cmake from repo
+                message += pytools.normalize_string_length(f"Uninstalling CMake __DOTS__{os.linesep}", self.log_len)
+                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt -y purge cmake")
                 if exit_code != 0:
-                    self.append_error_and_raise("Unable to adjust time zone", message, stdout, stderr)
+                    self.append_error_and_raise("Can't uninstall cmake", message, stdout, stderr)
 
-                # apt update
-                message += pytools.normalize_string_length(f"Updating repositories __DOTS__ ", self.log_len)
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, "sudo apt-get update")
+                # Install cmake from devconsole packages
+                message += pytools.normalize_string_length(f"Installing CMake from devconsole packages __DOTS__{os.linesep}", self.log_len)
+                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f'sudo dpkg -i "{os.path.join(self.dir_hlek, self.cmake_install_package)}"')
                 if exit_code != 0:
-                    self.append_error_and_raise("Can't update repositories", message, stdout, stderr)
+                    self.append_error_and_raise("Can't install cmake from devconsole", message, stdout, stderr)
 
-                # install packages
-                package_list = ["libicu-dev", "binutils-arm-none-eabi", "gcc-arm-none-eabi", "gdb-multiarch", "openocd",
-                                "stlink-tools", "i2c-tools", "doxygen", "libncurses-dev", "vim", "git", "mc", "nfs-kernel-server",
-                                "nfs-common", "autofs", "ninja-build", "cmake"]
+            # Patch udev rules
+            message += pytools.normalize_string_length(f"Patching udev rules __DOTS__{os.linesep}", self.log_len)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f'sudo "{os.path.join(self.dir_hlek, self.udev_fix_script_script)}"')
+            if exit_code != 0:
+                self.append_error_and_raise("Can't patch udev rules", message, stdout, stderr)
 
-                for p in package_list:
-                    message += pytools.normalize_string_length(f"Installing {p} __DOTS__ ", log_len)
-                    exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, f"sudo apt-get --yes install {p}")
-                    if exit_code != 0:
-                        self.append_error_and_raise(f"Can't install {p}", message, stdout, stderr)
 
-                # Setup NFS share using autofs
-                message += pytools.normalize_string_length(f"Configuring NFS share __DOTS__ ", log_len)
+            # Setup NFS share using autofs
+            message += pytools.normalize_string_length(f"Configuring NFS share __DOTS__{os.linesep}", log_len)
 
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn,
-                    f"sudo /bin/bash -c 'echo \"/-  /etc/auto.nfs --ghost\" >> /etc/auto.master'")
-                if exit_code != 0:
-                    self.append_error_and_raise(f"Can't change /etc/auto.master {p}", message, stdout, stderr)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
+                f"sudo /bin/bash -c 'echo \"/-  /etc/auto.nfs --ghost\" >> /etc/auto.master'")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't change /etc/auto.master {p}", message, stdout, stderr)
 
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn,
-                    f"sudo /bin/bash -c 'echo \"{mount_point} {nfs_uri}\" > /etc/auto.nfs'")
-                if exit_code != 0:
-                    self.append_error_and_raise(f"Can't change /etc/auto.nfs {p}", message, stdout, stderr)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
+                f"sudo /bin/bash -c 'echo \"{mount_point} {nfs_uri}\" > /etc/auto.nfs'")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't change /etc/auto.nfs {p}", message, stdout, stderr)
 
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, f"sudo service autofs reload")
-                if exit_code != 0:
-                    self.append_error_and_raise(f"Can't reload autofs {p}", message, stdout, stderr)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo service autofs reload")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't reload autofs {p}", message, stdout, stderr)
 
-                exit_code, stdout, stderr = pytools.ssh_run(ssh_conn, f"sudo systemctl restart autofs")
-                if exit_code != 0:
-                    self.append_error_and_raise(f"Can't restart autofs {p}", message, stdout, stderr)
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo systemctl restart autofs")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't restart autofs {p}", message, stdout, stderr)
+
+            pytools.install_ssh_key(os.path.join(self.current_path, self.key_file_name),
+                                    os.path.join(self.current_path, self.pub_key_file_name),
+                                    host, login, password)
 
         except Exception as ex:
             message = f"{os.linesep}{os.linesep}Error: {str(ex)}"
             raise RuntimeError(message)
+        finally:
+            with self.data_lock:
+                self.ssh_client = None
 
         return message
 
+    def debug_fw(self):
+        with self.data_lock:
+            mount_point = self.MountPoint
+            config = self.LastConfiguration
+            host = config[self.KEY_HOST]
+            login = config[self.KEY_USER_NAME]
 
+            if self.debug_fw_task is not None and self.debug_fw_task.pid is not None:
+                raise RuntimeError("Already running.")
+
+            keyfile = os.path.join(self.current_path, self.key_file_name)
+            scriptfile = os.path.join(mount_point, self.LastConfigName, "debug.sh")
+            workdir = os.path.join(mount_point, self.LastConfigName, os.path.splitext(self.LastJson)[0], "firmware", self.BuildType)
+            self.debug_fw_task = Tasks.RemoteShellTask('Debug Firmware', host, login, keyfile, ["/bin/bash", scriptfile, workdir])
+            self.debug_fw_task.start()
+
+    def run_monitor(self):
+        with self.data_lock:
+            mount_point = self.MountPoint
+            config = self.LastConfiguration
+            host = config[self.KEY_HOST]
+            login = config[self.KEY_USER_NAME]
+
+            if self.run_monitor_task is not None and self.run_monitor_task.pid is not None:
+                raise RuntimeError("Already running.")
+
+            keyfile = os.path.join(self.current_path, self.key_file_name)
+            scriptfile = os.path.join(mount_point, self.LastConfigName, "monitor.sh")
+            workdir = os.path.join(mount_point, self.LastConfigName, os.path.splitext(self.LastJson)[0], "monitor", self.BuildType, "build", self.BuildType.lower())
+            self.run_monitor_task = Tasks.RemoteShellTask('Monitor', host, login, keyfile, ["/bin/bash", scriptfile, workdir])
+            self.run_monitor_task.start()
+
+    def debug_monitor(self):
+        with self.data_lock:
+            mount_point = self.MountPoint
+            config = self.LastConfiguration
+            host = config[self.KEY_HOST]
+            login = config[self.KEY_USER_NAME]
+
+            if self.debug_monitor_task is not None and self.debug_monitor_task.pid is not None:
+                raise RuntimeError("Already running.")
+
+            keyfile = os.path.join(self.current_path, self.key_file_name)
+            scriptfile = os.path.join(mount_point, self.LastConfigName, "debug_monitor.sh")
+            workdir = os.path.join(mount_point, self.LastConfigName, os.path.splitext(self.LastJson)[0], "monitor", self.BuildType, "build", self.BuildType.lower())
+            self.run_monitor_task = Tasks.RemoteShellTask('Monitor', host, login, keyfile, ["/bin/bash", scriptfile, workdir])
+            self.run_monitor_task.start()
+        pass
 # endregion
+
+
+# region MISC
+
+
+
+
+
 
     def add_json(self, name: str):
         self.configurations
@@ -666,7 +836,5 @@ class AppLogic:
         if not self.LastConfiguration:
             raise RuntimeError("Configuration is not set")
 
-
-
-
+# endregion
 

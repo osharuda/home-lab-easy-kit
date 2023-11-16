@@ -20,7 +20,18 @@ from tools import *
 import operator
 
 mcu_name = "stm32f103"
-mcu_gpio_pin_types = {"GPIO_Mode_IN_FLOATING", "GPIO_Mode_IPU", "GPIO_Mode_IPD", "GPIO_Mode_Out_OD", "GPIO_Mode_Out_PP"}
+
+# Pin type declaration
+PIN_IN_FLOAT        = "GPIO_Mode_IN_FLOATING"
+PIN_IN_PULLED_UP    = "GPIO_Mode_IPU"
+PIN_IN_PULLED_DOWN  = "GPIO_Mode_IPD"
+PIN_OUT_OPEN_DRAIN  = "GPIO_Mode_Out_OD"
+PIN_OUT_PUSH_PULL   = "GPIO_Mode_Out_PP"
+
+mcu_gpio_pin_types        = {PIN_IN_FLOAT, PIN_IN_PULLED_UP, PIN_IN_PULLED_DOWN, PIN_OUT_OPEN_DRAIN, PIN_OUT_PUSH_PULL}
+mcu_gpio_input_pin_types  = {PIN_IN_FLOAT, PIN_IN_PULLED_UP, PIN_IN_PULLED_DOWN}
+mcu_gpio_output_pin_types = {PIN_OUT_OPEN_DRAIN, PIN_OUT_PUSH_PULL}
+
 
 AHB_BUS = {"RCC_AHBPeriph_DMA1", "RCC_AHBPeriph_DMA2", "RCC_AHBPeriph_SRAM", "RCC_AHBPeriph_FLITF", "RCC_AHBPeriph_CRC",
            "RCC_AHBPeriph_FSMC", "RCC_AHBPeriph_SDIO"}
@@ -551,7 +562,6 @@ def is_remaped(obj: str):
     else:
         return (obj, remap_required)
 
-
 def get_GPIO(port: str, pin_number: int) -> str:
     if pin_number >= GPIO_PORT_LEN:
         raise RuntimeError("Invalid pin number")
@@ -599,18 +609,13 @@ def check_ADC_sample_time(st: str) -> bool:
 def is_GPIO_input(intype: str) -> bool:
     if intype not in mcu_gpio_pin_types:
         raise RuntimeError("{0} is not valid input type")
-
-    if intype == "GPIO_Mode_Out_OD" or intype == "GPIO_Mode_Out_PP":
-        return False
-    else:
-        return True
-
+    return intype in mcu_gpio_input_pin_types
 
 def is_GPIO_open_drain(intype: str) -> bool:
     if intype not in mcu_gpio_pin_types:
         raise RuntimeError("{0} is not valid input type")
 
-    return "GPIO_Mode_Out_OD" == intype
+    return PIN_OUT_OPEN_DRAIN == intype
 
 
 def GPIO_to_AFIO_EXTICR(gpio: str) -> str:
@@ -766,6 +771,34 @@ def check_errata(config):
     if i2c1_re.match(config) and spi1_remap_re.match(config):
         raise RuntimeError(f"ERRATA detected: {errata}")
 
+def generate_init_gpio_bus_function(func_name: str, port_type: str, pins : dict) -> str:
+    tab = "    "
+    if port_type != "uint16_t":
+        raise ValueError("Invalid port_type")
+    header = f"""{tab}void {func_name}();
+"""
+    result = f"""{tab}void {func_name}() {{ \\
+"""
+    result += f"""{tab}START_PIN_DECLARATION; \\
+"""
+    result += f"""{tab}{port_type} pin_mask; \\
+"""
+
+    for pin_index, (pin_port, pin_number, pin_mode, pin_default) in pins.items():
+        result += f"""{tab}pin_mask = (({port_type})1) << {pin_number}; \\
+"""
+        result += f"""{tab}DECLARE_PIN({pin_port}, pin_mask, {pin_mode}); \\
+"""
+
+        if pin_default == 0:
+            result += f"""{tab}GPIO_ResetBits({pin_port}, pin_mask); \\
+"""
+        else:
+            result += f"""{tab}GPIO_SetBits({pin_port}, pin_mask); \\
+"""
+    result += """}
+"""
+    return (header, result)
 
 def generate_set_gpio_bus_function(func_name: str, inp_type: str, port_type: str, pins : dict) -> str:
     allowed_types = {"uint8_t", "uint16_t", "uint32_t"}
@@ -780,12 +813,11 @@ def generate_set_gpio_bus_function(func_name: str, inp_type: str, port_type: str
     {port_type} port_mask = 0;\\"""
 
     ports = dict()
-    for data_bit,v in pins.items():
-        port, pin = v
-        if port not in ports:
-            ports[port] = [(data_bit, pin, data_bit-pin)]
+    for data_bit, (pin_port, pin_number, pin_mode, pin_default) in pins.items():
+        if pin_port not in ports:
+            ports[pin_port] = [(data_bit, pin_number, data_bit-pin_number)]
         else:
-            ports[port].append((data_bit, pin, data_bit-pin))
+            ports[pin_port].append((data_bit, pin_number, data_bit-pin_number))
 
     port_counter = 0
     for port, v in ports.items():

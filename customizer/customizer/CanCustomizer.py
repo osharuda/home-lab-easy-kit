@@ -36,8 +36,6 @@ class CanCustomizer(DeviceCustomizer):
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
                              self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
-        return
 
     def get_can_timings(self, bitrate: int):
         timings = {
@@ -125,7 +123,6 @@ class CanCustomizer(DeviceCustomizer):
 
             (can_prescaller, can_seg1, can_sample_point, can_seg2) = self.get_can_timings(bitrate)
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
             can = dev_requires["can"]
             can_name, remap = self.mcu_hw.is_remaped(can)
             self.check_requirements(can, dev_requires, "dev_{0}".format(dev_name))

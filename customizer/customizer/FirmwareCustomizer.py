@@ -46,6 +46,12 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.sw_libconfig_name = "libconfig.hpp"
         self.sw_lib_inc_templ = os.path.join(self.sw_lib_inc_templ_path, self.sw_libconfig_name)
 
+        # Get error codes constants from libhlek (ekit_error.hpp) to the firmware header (fw.h)
+        self.libhlek_error_header = "ekit_error.hpp"
+        self.error_codes = self.extracted_from_file(os.path.join(self.project_dir, self.libhlek_name, "inc", self.libhlek_error_header),
+                                                    "// <__LIBHLEK_ERROR_DEFINES__>",
+                                                    "// <\__LIBHLEK_ERROR_DEFINES__>")
+
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
 
@@ -124,7 +130,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__LIBHLEK_INSTALL_PATH__": self.libhlek_install_path,
                       "__LIBCONFIG_NAME__": self.config_name,
                       "__LIBCONFIG_INSTALL_PATH__": self.libconfig_install_path,
-                      "__STDPERIF_PATH__": self.cmsis_path
+                      "__STDPERIF_PATH__": self.cmsis_path,
+                      "__LIBHLEK_ERROR_DEFINES__": self.error_codes
                       }
 
         self.vocabulary.update(self.make_feature_macroses())

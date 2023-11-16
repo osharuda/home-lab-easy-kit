@@ -17,6 +17,7 @@ import os
 from tools import *
 from shutil import copy2
 from BaseCustomizer import *
+from keywords import *
 
 
 class BaseDeviceCustomizer(BaseCustomizer):
@@ -59,8 +60,7 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc")
         self.sw_lib_src_templ_path = os.path.join(self.sw_lib_templ_path, "src")
         self.flash_script = "flash.sh"
-        self.fw_base_header = "fw.h"
-        self.fw_header = self.fw_base_header
+        self.fw_header = "fw.h"
 
         self.libhlek_dest_path = os.path.join(self.project_dir, "libhlek")
         self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
@@ -88,16 +88,54 @@ class BaseDeviceCustomizer(BaseCustomizer):
     def add_copy(self, in_file: str, out_file_list: list):
         self.file_copy_list[in_file] = out_file_list
 
+    def get_signal(self, item: tuple[str, dict]) -> tuple[str, str, str, str, str]:
+        sig_name, sig_data = item
+        check_items(sig_data, {KW_TYPE: str, KW_PIN: dict},
+                    optional_items={KW_DEFAULT: int})
+        sig_type = sig_data[KW_TYPE]
+        sig_pin = sig_data[KW_PIN]
+        sig_default = None
+
+        if not self.mcu_hw.is_GPIO_input(sig_type):
+            # output signals must have default state
+            check_items(sig_data, {KW_TYPE: str, KW_PIN: dict, KW_DEFAULT: int})
+
+            if KW_DEFAULT not in sig_data:
+                raise RuntimeError(f'output signal "{sig_default}" requires "{KW_DEFAULT}" value.')
+            sig_default = sig_data[KW_DEFAULT]
+
+            if sig_default not in {0, 1}:
+                raise RuntimeError(f'signal "{sig_default}" must be either 0 or 1. ({sig_default})')
+
+        gpio = self.get_gpio(sig_pin)
+
+        return sig_name, gpio, sig_type, sig_default
+
+    def get_out_signal(self, item: tuple[str, dict]) -> tuple[str, str, str, int]:
+        sig_name, gpio, sig_type, sig_default = self.get_signal(item)
+
+        if self.mcu_hw.is_GPIO_input(sig_type):
+            raise RuntimeError(f'signal type "{sig_type}" is not output')
+
+        return sig_name, gpio, sig_type, sig_default
+
+    def get_input_signal(self, item: tuple[str, dict]) -> tuple[str, str, str, int]:
+        sig_name, gpio, sig_type, sig_default = self.get_signal(item)
+
+        if not self.mcu_hw.is_GPIO_input(sig_type):
+            raise RuntimeError(f'signal type "{sig_type}" is not input')
+
+        return sig_name, gpio, sig_type
 
     def get_gpio(self, d: dict) -> str:
-        if (d is None) or ("gpio" not in d):
+        if (d is None) or (RT_GPIO not in d):
             raise RuntimeError("gpio resource is not specified")
-        gpio = d["gpio"]
-        self.check_resource(gpio, "gpio")
+        gpio = d[RT_GPIO]
+        self.check_resource(gpio, RT_GPIO)
         return gpio
 
     def get_gpio_with_default(self, d: dict, default=None) -> str:
-        if (d is None) or ("gpio" not in d):
+        if (d is None) or (RT_GPIO not in d):
             return default
         return self.get_gpio(d)
 
@@ -148,14 +186,12 @@ class BaseDeviceCustomizer(BaseCustomizer):
                 t[subtype]))
         return timer
 
-    def get_resource(self, d: dict) -> tuple:
-        if len(d) != 1:
+    def unpack_resource(self, item: dict[str, str]) -> tuple:
+        if len(item) != 1:
             raise RuntimeError("There should be single element")
 
-        rtype, res = next(iter(d.items()))
-
+        rtype, res = next(iter(item.items()))
         self.check_resource(res, rtype)
-
         return rtype, res
 
     def get_resource_by_name(self, name: str) -> tuple:
@@ -163,6 +199,27 @@ class BaseDeviceCustomizer(BaseCustomizer):
             raise RuntimeError("Unknown resource {0}".format(name))
 
         return (self.mcu_hw.mcu_resources[name]["type"], name)
+
+    def get_requirement(self, dev_requires: dict[str, dict], item_name, resource_type=None) -> dict[str, dict]:
+        if item_name not in dev_requires:
+            raise RuntimeError(f'Resource {item_name} is not listed as required')
+
+        item = dev_requires[item_name]
+        rtype, rname = self.unpack_resource(item)
+        if resource_type and rtype != resource_type:
+            raise RuntimeError(f'Unexpected resource type: "{rtype}". "{resource_type}" is expected.')
+        return item
+
+    def add_requirement(self, dev_requires: dict[str, dict], item: dict[str, dict]):
+        if len(item) != 1:
+            raise RuntimeError("There should be two elements in touple")
+        item_name, item_resource = next(iter(item.items()))
+
+        rtype, rname = self.unpack_resource(item_resource)
+        if item_name in dev_requires:
+            raise RuntimeError("Resource is already added")
+
+        dev_requires[item_name] = item_resource
 
     def get_required_resource(self, res: str, dep_res: str, dep_res_type: str) -> tuple:
         if res not in self.mcu_hw.mcu_resources:

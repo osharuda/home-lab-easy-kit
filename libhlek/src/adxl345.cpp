@@ -345,7 +345,7 @@ void ADXL345::enable(bool enabled) {
 void ADXL345::configure(uint8_t rate,
                         uint8_t watermark_samples,
                         uint8_t range) {
-    static const char* const func_name = "ADXL345::configure";
+    static const char* const func_name = "ADXL345::set_data";
 
     // Set maximum range
     res_scale = 1.0L / static_cast<double>(INT16_MAX);

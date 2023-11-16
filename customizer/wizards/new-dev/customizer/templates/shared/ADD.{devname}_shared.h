@@ -20,17 +20,21 @@
 /// \addtogroup group_{devname}
 /// @{{
 
+/// \def {DEVNAME}_RESERVED_3
+/// \brief Defines {DevName} command specific flag 3
+#define {DEVNAME}_RESERVED_3             128
+
 /// \def {DEVNAME}_RESERVED_2
 /// \brief Defines {DevName} command specific flag 2
-#define {DEVNAME}_RESERVED_2             128
+#define {DEVNAME}_RESERVED_2             64
 
 /// \def {DEVNAME}_RESERVED_1
 /// \brief Defines {DevName} command specific flag 1
-#define {DEVNAME}_RESERVED_1             64
+#define {DEVNAME}_RESERVED_1             32
 
 /// \def {DEVNAME}_RESERVED_0
 /// \brief Defines {DevName} command specific flag 0
-#define {DEVNAME}_RESERVED_0             32
+#define {DEVNAME}_RESERVED_0             16
 
 /// \struct tag_{DevName}Command
 /// \brief This structure describes {DevName} command

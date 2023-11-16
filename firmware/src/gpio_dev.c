@@ -28,12 +28,7 @@
 
 #ifdef GPIODEV_DEVICE_ENABLED
 
-typedef struct tag_GPIO_descr {
-    GPIOMode_TypeDef type;
-    GPIO_TypeDef* port;
-    uint8_t pin_number;
-    uint8_t default_val;
-} GPIO_descr;
+
 
 GPIO_descr gpio_descriptor[] = GPIO_DESCRIPTOR;
 

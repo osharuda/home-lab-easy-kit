@@ -35,9 +35,6 @@ class SPIProxyCustomizer(DeviceCustomizer):
         self.add_shared_code(os.path.join(self.shared_templ, self.shared_header),
                              self.shared_token)
 
-    def sanity_checks(self, dev_config: dict, dev_requires: dict, dev_name : str):
-        #raise "Not implemented"
-        return
 
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmware side
@@ -58,7 +55,6 @@ class SPIProxyCustomizer(DeviceCustomizer):
             dev_id       = dev_config["dev_id"]
             dev_requires = dev_config["requires"]
 
-            self.sanity_checks(dev_config, dev_requires, dev_name)
             use_dma = dev_config["use_dma"] != 0
             bidirectional = dev_config["bidirectional"] != 0
             spi_confg_dev = self.get_spi(dev_requires["SPI"])
@@ -141,8 +137,6 @@ class SPIProxyCustomizer(DeviceCustomizer):
             clock_polarity = self.mcu_hw.spi_get_clock_polarity(dev_config["clock_polarity"])
             frame_format = self.mcu_hw.spi_get_frame_format(dev_config["frame_format"])
             frame_size = self.mcu_hw.spi_get_frame_size(dev_config["frame_size"])
-
-            self.sanity_checks(dev_config, dev_requires, dev_name)
 
             # Do not forget to add IRQs, DMA and other related resources
 
