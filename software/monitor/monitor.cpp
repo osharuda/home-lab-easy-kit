@@ -304,7 +304,7 @@ int main(int argc, char* argv[])
         }
 
         if (add_uart_dev) {
-            std::shared_ptr<UARTDev> uart_dev(new UARTDev(firmware, config));
+            std::shared_ptr<UARTProxyDev> uart_dev(new UARTProxyDev(firmware, config));
             std::shared_ptr<CommandHandler> uart_info_handler(dynamic_cast<CommandHandler*>(new UartDevInfo(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_read_handler(dynamic_cast<CommandHandler*>(new UartDevRead(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_write_handler(dynamic_cast<CommandHandler*>(new UartDevWrite(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));

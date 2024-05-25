@@ -16,7 +16,7 @@
  */
 
 /*!  \file
- *   \brief UARTDev software implementation
+ *   \brief UARTProxyDev software implementation
  *   \author Oleh Sharuda
  */
 
@@ -24,20 +24,20 @@
 #include "ekit_error.hpp"
 #include "ekit_firmware.hpp"
 
-UARTDev::UARTDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* cfg) :
+UARTProxyDev::UARTProxyDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* cfg) :
     EKitBus(EKitBusType::BUS_UART),
     super(ebus, cfg->dev_id, cfg->dev_name),
     config(cfg) {
-    static const char* const func_name = "UARTDev::UARTDev";
+    static const char* const func_name = "UARTProxyDev::UARTProxyDev";
     ebus->check_bus(EKitBusType::BUS_I2C_FIRMWARE);
 }
 
-UARTDev::~UARTDev() {
+UARTProxyDev::~UARTProxyDev() {
 }
 /*
-void UARTDev::read(std::vector<uint8_t>& data) {
+void UARTProxyDev::read(std::vector<uint8_t>& data) {
     EKIT_ERROR err;
-    static const char* const func_name = "UARTDev::read";
+    static const char* const func_name = "UARTProxyDev::read";
 
     // Lock bus
     BusLocker blocker(bus, to);
@@ -49,9 +49,9 @@ void UARTDev::read(std::vector<uint8_t>& data) {
     }
 }
 
-void UARTDev::write(const std::vector<uint8_t>& data) {
+void UARTProxyDev::write(const std::vector<uint8_t>& data) {
     EKIT_ERROR err;
-    static const char* const func_name = "UARTDev::write";
+    static const char* const func_name = "UARTProxyDev::write";
     // Lock bus
     BusLocker blocker(bus, to);
 
@@ -63,15 +63,15 @@ void UARTDev::write(const std::vector<uint8_t>& data) {
 }
 */
 
-EKIT_ERROR UARTDev::read(void *ptr, size_t len, EKitTimeout& to) {
-    static const char* const func_name = "UARTDev::read";
+EKIT_ERROR UARTProxyDev::read(void *ptr, size_t len, EKitTimeout& to) {
+    static const char* const func_name = "UARTProxyDev::read";
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
     assert(false); // MUST BE IMPLEMENTED
     return EKIT_NOT_SUPPORTED;
 }
 
-EKIT_ERROR UARTDev::write(const void *ptr, size_t len, EKitTimeout& to) {
-    static const char* const func_name = "UARTDev::write";
+EKIT_ERROR UARTProxyDev::write(const void *ptr, size_t len, EKitTimeout& to) {
+    static const char* const func_name = "UARTProxyDev::write";
 
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
@@ -79,8 +79,8 @@ EKIT_ERROR UARTDev::write(const void *ptr, size_t len, EKitTimeout& to) {
     return bus->write(ptr, len, to);
 }
 
-EKIT_ERROR UARTDev::read_all(std::vector<uint8_t> &buffer, EKitTimeout& to) {
-    static const char* const func_name = "UARTDev::read_all";
+EKIT_ERROR UARTProxyDev::read_all(std::vector<uint8_t> &buffer, EKitTimeout& to) {
+    static const char* const func_name = "UARTProxyDev::read_all";
 
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
@@ -88,13 +88,13 @@ EKIT_ERROR UARTDev::read_all(std::vector<uint8_t> &buffer, EKitTimeout& to) {
     return bus->read_all(buffer, to);
 }
 
-EKIT_ERROR UARTDev::write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to) {
-    static const char* const func_name = "UARTDev::write_read";
+EKIT_ERROR UARTProxyDev::write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to) {
+    static const char* const func_name = "UARTProxyDev::write_read";
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
     assert(false); // MUST BE IMPLEMENTED
     return EKIT_NOT_SUPPORTED;
 }
 
-EKIT_ERROR UARTDev::lock(EKitTimeout& to) {
+EKIT_ERROR UARTProxyDev::lock(EKitTimeout& to) {
     return std::dynamic_pointer_cast<EKitFirmware>(bus)->lock(get_addr(), to);
 }

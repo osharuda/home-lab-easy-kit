@@ -36,7 +36,7 @@
 ///
 /// GSMModem is not a typical virtual device for Home Lab Easy Kit project. The big difference between GSMModem and other
 /// devices is that it is not utilize any of STM32F103x peripherals directly. GSMModem is a separate class that allows
-/// to use GSM modem through the #UARTDev virtual device configured with #INFO_DEV_HINT_GSM_MODEM specified in JSON
+/// to use GSM modem through the #UARTProxyDev virtual device configured with #INFO_DEV_HINT_GSM_MODEM specified in JSON
 /// configuration file. There are a lot of GSM modems on the market. This implementation was designed and somewhat tested
 /// with SIM800L module. Possibly it will work with other modems.
 ///
@@ -58,7 +58,7 @@
 ///    You just need to pass reference to std::shared_ptr<EKitBus> and enjoy. On practice it will work with two implementations
 ///    of EKitBus: EKitFirmware and hypothetical implementation of serial port, which currently is not available, but easily
 ///    may be implemented. The second case may work without firmware at all.
-/// 1. Create GSMModem object and specify device id of the corresponding #UARTDev virtual device which is connected to GSM
+/// 1. Create GSMModem object and specify device id of the corresponding #UARTProxyDev virtual device which is connected to GSM
 ///    modem.
 /// 2. Constructor configures GSM modem, note, some time may be required for modem to initialize.
 /// 3. GSMModem#at() executes some AT command.
@@ -200,7 +200,7 @@ enum GSM_CMEE_MODE {
 };
 
 /// \class GSMModem
-/// \brief GSMModem implementation. Use this class in order to control #UARTDev virtual devices which is connected to GSM
+/// \brief GSMModem implementation. Use this class in order to control #UARTProxyDev virtual devices which is connected to GSM
 ///        modem.
 class GSMModem final : public EKitDeviceBase {
 
@@ -251,7 +251,7 @@ private:
     std::unique_ptr<RegexPattern> re_list_call; ///< Regular expression to parse call listing
 
     bool sms_ascii_mode = false;                ///< true if sms in ASCII mode
-    std::string modem_name;                     ///< UARTDev virtual device name associated with this GSMModem
+    std::string modem_name;                     ///< UARTProxyDev virtual device name associated with this GSMModem
     const std::string at_terminator = "\r\n";   ///< AT line terminator
 
     /// \brief Private delegating constructor

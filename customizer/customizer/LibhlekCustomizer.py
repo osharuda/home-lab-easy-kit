@@ -28,8 +28,6 @@ class LibhlekCustomizer(BaseCustomizer):
         self.install_path = common_config["global"]["install_path"]
         self.libhlek_name = "lib" + self.hlek_name
         self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
-        self.libhlek_dest_path = os.path.join(self.project_dir, "libhlek")
-        self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
         self.sw_inc_templ = os.path.join(self.template_dir, "libhlek/inc")
         self.libhlek_cmakelists_path = os.path.join(self.libhlek_dest_path, self.cmake_script)
 

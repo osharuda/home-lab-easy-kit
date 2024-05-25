@@ -21,6 +21,7 @@ from tools import *
 import shutil
 
 from LibhlekCustomizer import *
+from HLEKIOCustomizer import *
 from InfoCustomizer import *
 from DeskDevCustomizer import *
 from IRRCCustomizer import *
@@ -131,9 +132,7 @@ def get_shared_headers_dict():
 def customize_firmware(json_file_name: str):
     json_base_name = os.path.basename(json_file_name)
     hash_key = f'{json_base_name}_hash'
-
     customizer_path = os.path.join(project_dir, "customizer/customizer")
-
     configuration, configuration_hash = load_json(json_file_name)
 
 
@@ -152,7 +151,7 @@ def customize_firmware(json_file_name: str):
     if 'mcu_model' not in firmware_conf_section:
         raise RuntimeError('mcu_model is not specified in "firmware" section')
 
-    # Generate file adn directories paths
+    # Generate file and directories paths
     libconfig_name = f'lib{devname}'
     dev_target_path = os.path.join(get_project_root(), devname)
     libconfig_path = os.path.join(dev_target_path, libconfig_name)
@@ -345,51 +344,91 @@ def customize_libhlek():
     else:
         print("libhlek didn't change.")
 
+def customize_hlekio(json_file_name: str):
+    json_base_name = os.path.basename(json_file_name)
+    hash_key = f'{json_base_name}_hash'
+    customizer_path = os.path.join(project_dir, "customizer/customizer")
+    configuration, configuration_hash = load_json(json_file_name)
 
-try:
-    KEY_VERBOSE = "--verbose"
-    KEY_IGNORE_CACHE = "--ignore-cache"
-    KEY_LIBHLEK = "--libhlek"
-    KEY_UPDATE_GLOBAL_CACHE = "--update-global"
-    KEY_JSON_FILENAME = "--json"
+    configuration["global"] = global_config
 
-    defaults = {
-        # KEY                       VALUE   INCOMPATIBLE ARGUMENT LIST
-        KEY_VERBOSE:                [False, []],
-        KEY_IGNORE_CACHE:           [False, [KEY_UPDATE_GLOBAL_CACHE]],
-        KEY_LIBHLEK:                [False, [KEY_JSON_FILENAME, KEY_UPDATE_GLOBAL_CACHE]],
-        KEY_UPDATE_GLOBAL_CACHE:    [False, [KEY_IGNORE_CACHE, KEY_LIBHLEK, KEY_JSON_FILENAME]],
-        KEY_JSON_FILENAME:          ["",    [KEY_LIBHLEK, KEY_UPDATE_GLOBAL_CACHE]]
-    }
+    # region CHECK_CONFIG
+    if KW_BOARD not in configuration:
+        raise RuntimeError(f'"{KW_BOARD}" section is not specified.')
+    if KW_DISTRO not in configuration:
+        raise RuntimeError(f'"{KW_DISTRO}" section is not specified.')
+    if KW_INPUTS not in configuration:
+        raise RuntimeError(f'"{KW_INPUTS}" section is not specified.')
+    if KW_OUTPUTS not in configuration:
+        raise RuntimeError(f'"{KW_OUTPUTS}" section is not specified.')
+    # endregion
 
-    parsed_args = parse_cmd_line(sys.argv[1:], defaults)
-    opt_verbose = parsed_args[KEY_VERBOSE][0]
-    opt_ignore_cache = parsed_args[KEY_IGNORE_CACHE][0]
-    opt_update_global_cache = parsed_args[KEY_UPDATE_GLOBAL_CACHE][0]
-    opt_libhlek = parsed_args[KEY_LIBHLEK][0]
-    json_file_name = parsed_args[KEY_JSON_FILENAME][0]
+    # Check if customization is actually required
+    if not is_outdated(hash_key, configuration_hash):
+        print(f'No changes for {json_file_name} detected, exiting ...')
+        return
 
-    project_dir = os.path.abspath(get_env_var("PROJECTDIR"))
+    hlekio_customizer = HLEKIOCustomizer(configuration)
+    hlekio_customizer.customize()
 
-    GLOBAL_HASH_KEY = "global"
-    GLOBAL_JSON = os.path.join(project_dir, "global.json")
-    global_config, global_hash = load_json(GLOBAL_JSON)
+    config_text = json.dumps(configuration, indent=4, cls=Sorted_JSON_Encoder)
 
-    HASHES_JSON = os.path.join(project_dir, "hashes")
-    if not os.path.isfile(HASHES_JSON):
-        write_text_file(HASHES_JSON, """{
-    }""")
-    hashes, hashes_hash = load_json(HASHES_JSON)
+    update_caches(hash_key, configuration_hash)
 
-    if opt_libhlek:
-        customize_libhlek()
-    elif json_file_name:
-        customize_firmware(json_file_name)
+    if opt_verbose:
+        print(config_text)
 
-    if opt_update_global_cache:
-        update_caches(GLOBAL_HASH_KEY, global_hash)
+#try:
+KEY_VERBOSE = "--verbose"
+KEY_IGNORE_CACHE = "--ignore-cache"
+KEY_LIBHLEK = "--libhlek"
+KEY_HLEKIO = "--hlekio"
+KEY_UPDATE_GLOBAL_CACHE = "--update-global"
+KEY_JSON_FILENAME = "--json"
 
-except Exception as ex:
-    print(f"Error occured: {str(ex)}")
-    quit(1)
+defaults = {
+    # KEY                       VALUE   INCOMPATIBLE ARGUMENT LIST
+    KEY_VERBOSE:                [False, []],
+    KEY_IGNORE_CACHE:           [False, [KEY_UPDATE_GLOBAL_CACHE]],
+    KEY_LIBHLEK:                [False, [KEY_JSON_FILENAME, KEY_UPDATE_GLOBAL_CACHE]],
+    KEY_HLEKIO:                 ["",    [KEY_LIBHLEK, KEY_JSON_FILENAME, KEY_UPDATE_GLOBAL_CACHE]],
+    KEY_UPDATE_GLOBAL_CACHE:    [False, [KEY_IGNORE_CACHE, KEY_LIBHLEK, KEY_JSON_FILENAME]],
+    KEY_JSON_FILENAME:          ["",    [KEY_LIBHLEK, KEY_UPDATE_GLOBAL_CACHE]]
+}
+
+parsed_args = parse_cmd_line(sys.argv[1:], defaults)
+opt_verbose = parsed_args[KEY_VERBOSE][0]
+opt_ignore_cache = parsed_args[KEY_IGNORE_CACHE][0]
+opt_update_global_cache = parsed_args[KEY_UPDATE_GLOBAL_CACHE][0]
+opt_libhlek = parsed_args[KEY_LIBHLEK][0]
+json_hlekio = parsed_args[KEY_HLEKIO][0]
+json_file_name = parsed_args[KEY_JSON_FILENAME][0]
+
+project_dir = os.path.abspath(get_env_var("PROJECTDIR"))
+
+GLOBAL_HASH_KEY = "global"
+GLOBAL_JSON = os.path.join(project_dir, "global.json")
+global_config, global_hash = load_json(GLOBAL_JSON)
+
+HASHES_JSON = os.path.join(project_dir, "hashes")
+if not os.path.isfile(HASHES_JSON):
+    write_text_file(HASHES_JSON, """{
+}""")
+hashes, hashes_hash = load_json(HASHES_JSON)
+
+if opt_libhlek:
+    customize_libhlek()
+elif json_hlekio:
+    customize_hlekio(json_hlekio)
+elif json_file_name:
+    customize_firmware(json_file_name)
+
+if opt_update_global_cache:
+    update_caches(GLOBAL_HASH_KEY, global_hash)
+
+#except Exception as ex:
+#    print(
+#f"""Error occured: {str(ex)}
+#{sys.exc_info()[2].tb_frame.f_code}""")
+#    quit(1)
 

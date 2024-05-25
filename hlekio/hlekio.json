@@ -1,0 +1,34 @@
+{
+	"board": "Raspberry Pi Zero",
+	"distro": "Raspberry Pi OS",
+	"inputs": {
+		"hlekin0"     : {
+			"pin"     : "GPIO_8",
+			"pull"    : "up",
+			"trigger" : "rise"
+		},
+		"hlekin1"     : {
+			"pin"     : "GPIO_7",
+			"pull"    : "up",
+			"trigger" : "edge"
+		}
+	},
+	"outputs": {
+		"hlek_green"    : {
+			"pin"     : "GPIO_10",
+			"pin-type": "push-pull",
+			"default" : "high"
+		},
+		"hlek_yellow"    : {
+			"pin"     : "GPIO_9",
+			"pin-type": "push-pull",
+			"default" : "low"
+		},
+		"hlek_red"    : {
+			"pin"     : "GPIO_11",
+			"pin-type": "push-pull",
+			"default" : "high"
+		}
+
+	}
+}

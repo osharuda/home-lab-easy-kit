@@ -16,7 +16,7 @@
  */
 
 /*!  \file
- *   \brief UARTDev software implementation header
+ *   \brief UARTProxyDev software implementation header
  *   \author Oleh Sharuda
  */
 
@@ -27,26 +27,26 @@
 #include "tools.hpp"
 #include "uart_proxy_common.hpp"
 
-/// \defgroup group_uart_proxy_dev UARTDev
+/// \defgroup group_uart_proxy_dev UARTProxyDev
 /// \brief UART proxy support
 /// @{
 /// \page page_uart_proxy_dev
 /// \tableofcontents
 ///
-/// \section sect_uart_proxy_dev_01 Work with UARTDev
-/// #UARTDev allows to read and write data from UART device connected to STM32F103x.
+/// \section sect_uart_proxy_dev_01 Work with UARTProxyDev
+/// #UARTProxyDev allows to read and write data from UART device connected to STM32F103x.
 /// In order to access connected device use the following scenario:
-/// 1. Create instance of the #UARTDev class.
-/// 2. Call UARTDev#read() in order to read all the data available from UARTDev circular buffer.
-/// 3. Call UARTDev#write() in order to write data to device.
+/// 1. Create instance of the #UARTProxyDev class.
+/// 2. Call UARTProxyDev#read() in order to read all the data available from UARTProxyDev circular buffer.
+/// 3. Call UARTProxyDev#write() in order to write data to device.
 ///
-/// Note, dislike #GSMModem, #UARTDev may be used with #EKitFirmware only.
+/// Note, dislike #GSMModem, #UARTProxyDev may be used with #EKitFirmware only.
 ///
 
-/// \class UARTDev
-/// \brief UARTDev implementation.
-class UARTDev final : public EKitVirtualDevice,
-                      public EKitBus {
+/// \class UARTProxyDev
+/// \brief UARTProxyDev implementation.
+class UARTProxyDev final : public EKitVirtualDevice,
+                           public EKitBus {
 
     /// \typedef super
     /// \brief Defines parent class
@@ -57,21 +57,21 @@ public:
     const UARTProxyConfig* config;    ///< Pointer to the device descriptor structure.
 
     /// \brief No default constructor
-    UARTDev() = delete;
+    UARTProxyDev() = delete;
 
     /// \brief Copy construction is forbidden
-    UARTDev(const UARTDev&) = delete;
+    UARTProxyDev(const UARTProxyDev&) = delete;
 
     /// \brief Assignment is forbidden
-    UARTDev& operator=(const UARTDev&) = delete;
+    UARTProxyDev& operator=(const UARTProxyDev&) = delete;
 
     /// \brief Constructor to be used
     /// \param ebus - reference to shared pointer with EKitBus. This bus must support FIRMWARE_OPT_FLAGS
     /// \param config - actual configuration of the device taken from generated configuration library.
-    UARTDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* config);
+    UARTProxyDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* config);
 
     /// Destructor (virtual)
-    ~UARTDev() override;
+    ~UARTProxyDev() override;
 
     /// \brief Implementation of the EKitBus#lock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.

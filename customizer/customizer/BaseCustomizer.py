@@ -28,6 +28,8 @@ class BaseCustomizer:
         self.template_dir = os.path.join(self.customizer_dir, "templates")
         self.shared_templ = os.path.join(self.template_dir, "shared")
         self.libhlek_templ_path = os.path.join(self.template_dir, "libhlek")
+        self.libhlek_dest_path = os.path.join(self.project_dir, "libhlek")
+        self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
         self.proto_header = "i2c_proto.h"
         self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
 
@@ -72,13 +74,8 @@ class BaseCustomizer:
 
             return source[begin_index: end_index]
 
-            # cut the file header
-            indx = template.find(header_separator)
-
-            self.shared_code[token] = template[indx+len(header_separator):]
 
     def patch_templates(self):
-
         for in_file, out_file_list in self.template_list.items():
             # read in_file
             with open(os.path.abspath(in_file), 'r') as f:

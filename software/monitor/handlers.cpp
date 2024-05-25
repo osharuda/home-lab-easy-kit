@@ -592,7 +592,7 @@ std::string UartDevInfo::help() const {
                                 get_command_name());
 }
 void UartDevInfo::handle(const std::vector<std::string>& args) {
-    auto uart = dynamic_cast<UARTDev*>(device.get());
+    auto uart = dynamic_cast<UARTProxyDev*>(device.get());
     const UARTProxyConfig* descr = uart->config;
 
     ui->log(tools::str_format("UART Proxy for: \"%s\" (%d)", descr->dev_name, descr->dev_id));
@@ -609,7 +609,7 @@ std::string UartDevRead::help() const {
                                 get_command_name());
 }
 void UartDevRead::handle(const std::vector<std::string>& args) {
-    auto uart = dynamic_cast<UARTDev*>(device.get());
+    auto uart = dynamic_cast<UARTProxyDev*>(device.get());
 
     std::vector<uint8_t> data;
     EKitTimeout to(EKIT_STD_TIMEOUT);
@@ -630,7 +630,7 @@ std::string UartDevWrite::help() const {
                                 get_command_name());
 }
 void UartDevWrite::handle(const std::vector<std::string>& args) {
-    auto uart = dynamic_cast<UARTDev*>(device.get());
+    auto uart = dynamic_cast<UARTProxyDev*>(device.get());
     std::string in = args[0];
     std::vector<uint8_t> data(in.begin(), in.end());
 

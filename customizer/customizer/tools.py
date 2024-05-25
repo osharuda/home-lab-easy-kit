@@ -45,9 +45,6 @@ def get_leaf_values(d) -> list:
 
     return res
 
-
-
-
 def get_duplicates(l: list) -> list:
     uniq = set()
     dups = set()
@@ -60,16 +57,11 @@ def get_duplicates(l: list) -> list:
 
     return list(dups)
 
-
 def int_to_bool(x: int) -> str:
     if x == 0:
         return "false"
     else:
         return "true"
-
-
-
-
 
 def add_to_values(d: dict, prefix=None, suffix=None):
     for k, v in d.items():
@@ -78,7 +70,6 @@ def add_to_values(d: dict, prefix=None, suffix=None):
         if suffix:
             v = v + suffix
         d[k] = v
-
 
 def set_to_ordered_list(st: set) -> list:
     l = list(st)
@@ -132,8 +123,6 @@ def hash_merge_digests(dl: list[bytes]):
             result[i] = result[i] ^ d[i]
 
     return result
-
-
 
 def hash_string(s: str) -> str:
     hsh = hashlib.sha1()
@@ -373,13 +362,46 @@ def check_buffer_size_multiplicity(bsize: int, factor: int) -> bool:
 def check_duplicates(l: list) -> bool:
     return len(l) != len(set(l))
 
-def check_instance_count(dev_name: str, dev_data_list: list, count: int) -> bool:
-    dev_cnt = len(dev_data_list)
-    if dev_cnt == 0:
-        return False
-    elif dev_cnt > count:
-        raise RuntimeError(
-            "Error: {0} doesn't support {1} devices per mcu. {2} devices are supported".format(devname, dev_cnt, count))
-    return True
+#def check_instance_count(dev_name: str, dev_data_list: list, count: int) -> bool:
+#    dev_cnt = len(dev_data_list)
+#    if dev_cnt == 0:
+#        return False
+#    elif dev_cnt > count:
+#        raise RuntimeError(
+#            "Error: {0} doesn't support {1} devices per mcu. {2} devices are supported".format(devname, dev_cnt, count))
+#    return True
 
+
+def get_param(data: dict, param: str, suffix: str, translate_map: dict = None):
+    if param not in data:
+        raise RuntimeError(f'"{param}" is not specified{suffix}.')
+    val = data[param]
+
+    if translate_map and val not in translate_map.keys():
+        raise RuntimeError(f'''
+"{param}" has invalid value "{val}"{suffix}.
+Possible values are: {', '.join(translate_map.keys())}
+''')
+
+    if translate_map:
+        return translate_map[val]
+
+    return val
+
+
+def get_opt_param(data: dict, param: str, suffix: str, translate_map: list = None):
+    if param not in data:
+        return None
+    val = data[param]
+
+    if translate_map and val not in translate_map:
+        raise RuntimeError(f'''
+"{param}" has invalid value "{val}"{suffix}.
+Possible values are: {', '.join(translate_map)}
+''')
+
+    if translate_map:
+        return translate_map[val]
+
+    return val
 #endregion
