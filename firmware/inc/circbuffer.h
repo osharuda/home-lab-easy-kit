@@ -115,6 +115,10 @@ typedef struct tag_CircBuffer {
     volatile uint16_t free_size;    ///< Precalculated value that can be used to check if there is free space in buffer
                                     ///< (free_size>=data_len)
 
+    volatile uint16_t warn_low_thr;///< Low warning check threshold
+
+    volatile uint16_t warn_high_thr; ///< High warning check threshold
+
     volatile uint16_t block_size;   ///< Circular buffer block size. If block size is more than 1 circular buffer works
                                     ///< in block mode. When block mode is enabled block mode functions only should be
                                     ///< used to put data. In this case circbuf_put_byte() must not be used. When block
@@ -124,6 +128,8 @@ typedef struct tag_CircBuffer {
     volatile uint8_t block_mode;    ///< Switches on block mode. 0: block mode disabled, non-zero block mode enabled.
 
     volatile uint8_t ovf;           ///< indicates overflow, cleared by circbuf_clear_ovf()
+
+    volatile uint8_t wrn;           ///< warning status
 } CircBuffer, *PCircBuffer;
 
 /// \brief Initializes circular buffer.
@@ -141,6 +147,35 @@ void circbuf_init(volatile PCircBuffer circ, uint8_t *buffer, uint16_t length);
 ///       data like extended device data or error codes to the software. It is somewhat allows to use usual buffer and
 ///       circular buffer as one object.
 void circbuf_init_status(volatile PCircBuffer circ, volatile uint8_t* status, uint16_t length);
+
+/// \brief Initializes warning check thresholds.
+/// \param circ - pointer to the circular buffer structure
+/// \param low_thr  - low threshold value. When size of accumulated data is lower than low_thr,
+///        warning check returns zero.
+/// \param high_thr - high threshold value. When size of accumulated data is greater than high_thr,
+///        warning check returns non zero.
+/// \note By default, low_thr and high_thr values are zero, and maximum capacity of the buffer.
+///       Therefore, if circular buffer warning check is not initialized properly, warning check
+///       will always return zero.
+/// \note Warning check works as hysteresis.
+void circbuf_init_warning(volatile PCircBuffer circ, uint16_t low_thr, uint16_t high_thr);
+
+/// \brief Performs circular buffer warning check.
+/// \param circ - pointer to the circular buffer structure
+/// \return Zero if size of accumulated data is lower than low threshold, non zero, if size of acccumulated data is
+///         greater than high threshold. Hysteresis behaviour, if size of accumulated data is between low and high
+///         thresholds.
+/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
+///          use this function when interrupts are disabled.
+uint8_t circbuf_check_warning(volatile PCircBuffer circ);
+
+/// \brief Performs circular buffer warning check.
+/// \param circ - pointer to the circular buffer structure
+/// \return Zero if size of accumulated data is lower than low threshold, non zero, if size of acccumulated data is
+///         greater than high threshold. Hysteresis behaviour, if size of accumulated data is between low and high
+///         thresholds.
+/// \warning This function doesn't disable interrupts with #DISABLE_IRQ macro. Synchronization is responsibility of the caller.
+uint8_t circbuf_check_warning_no_irq(volatile PCircBuffer circ);
 
 
 /// \brief Resets content of the buffer

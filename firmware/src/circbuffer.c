@@ -37,10 +37,8 @@ void circbuf_init(volatile PCircBuffer circ, uint8_t* buffer, uint16_t length) {
 	circ->buffer = buffer;
 	circ->buffer_size = length;
     circ->free_size = length - 1; // Byte mode by default
-    circ->block_mode = 0;
     circ->block_size = 1;
-    circ->status = 0;
-    circ->status_size = 0;
+    circ->warn_high_thr = circ->buffer_size;
 }
 
 void circbuf_init_status(volatile PCircBuffer circ, volatile uint8_t* status, uint16_t length) {
@@ -225,13 +223,7 @@ static inline void circbuf_init_block_mode_no_irq_inline(volatile PCircBuffer ci
     circ->buffer_size = (circ->buffer_size / bs) * bs; // make buffer multiply by dma_block_size anyway
 
     // all the data existed in circular buffer is discarded
-    circ->put_pos = 0;
-    circ->start_pos = 0;
-    circ->data_len = 0;
-    circ->read_pos = 0;
-    circ->bytes_read = 0;
-    circ->ovf = 0;
-    circ->free_size = circ->buffer_size - circ->block_size;
+    circbuf_reset_no_irq_inline(circ);
     circ->block_mode = 1;
 }
 
@@ -308,4 +300,30 @@ void circbuf_cancel_block(volatile PCircBuffer circ) {
     circ->current_block = 0;
 
     ENABLE_IRQ
+}
+
+void circbuf_init_warning(volatile PCircBuffer circ, uint16_t low_thr, uint16_t high_thr) {
+    assert_param(low_thr < high_thr);
+    assert_param(high_thr <= circ->buffer_size);
+    circ->warn_low_thr = low_thr;
+    circ->warn_high_thr = high_thr;
+    circ->wrn = (circ->data_len > circ->warn_high_thr);
+    circbuf_check_warning_no_irq(circ);
+}
+
+uint8_t circbuf_check_warning(volatile PCircBuffer circ) {
+    uint8_t res;
+    DISABLE_IRQ
+    res = circbuf_check_warning_no_irq(circ);
+    ENABLE_IRQ
+    return res;
+}
+
+uint8_t circbuf_check_warning_no_irq(volatile PCircBuffer circ) {
+    if (circ->data_len <= circ->warn_low_thr) {
+        circ->wrn = 0;
+    } else if (circ->data_len > circ->warn_high_thr) {
+        circ->wrn = 1;
+    }
+    return circ->wrn;
 }
