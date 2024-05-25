@@ -18,6 +18,9 @@ build.log
 **/Release
 **/__pycache__
 
+# Linux kernel
+**/linux
+
 # Ignore libhlek generated files
 libhlek/inc/*_common.hpp
 libhlek/inc/i2c_proto.h

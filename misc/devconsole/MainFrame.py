@@ -139,17 +139,29 @@ class MainFrame(wx.Frame):
         sizer_6 = wx.BoxSizer(wx.HORIZONTAL)
         sizer_1.Add(sizer_6, 1, wx.EXPAND, 0)
 
-        self.btn_debug_fw = wx.Button(self, wx.ID_ANY, "")
+        self.btn_debug_fw = wx.Button(self, wx.ID_ANY, "Debug FW")
         self.btn_debug_fw.SetBitmap(wx.Bitmap("icons/chip_debug_48.png", wx.BITMAP_TYPE_ANY))
         sizer_6.Add(self.btn_debug_fw, 0, 0, 0)
 
-        self.btn_run_monitor = wx.Button(self, wx.ID_ANY, "")
+        self.btn_run_monitor = wx.Button(self, wx.ID_ANY, "Run Mon")
         self.btn_run_monitor.SetBitmap(wx.Bitmap("icons/monitor.png", wx.BITMAP_TYPE_ANY))
         sizer_6.Add(self.btn_run_monitor, 0, 0, 0)
 
-        self.btn_debug_monitor = wx.Button(self, wx.ID_ANY, "")
+        self.btn_debug_monitor = wx.Button(self, wx.ID_ANY, "Debug Mon")
         self.btn_debug_monitor.SetBitmap(wx.Bitmap("icons/monitor_debug.png", wx.BITMAP_TYPE_ANY))
         sizer_6.Add(self.btn_debug_monitor, 0, 0, 0)
+
+        self.btn_deploy_dts = wx.Button(self, wx.ID_ANY, "Deploy DTS")
+        sizer_6.Add(self.btn_deploy_dts, 0, 0, 0)
+
+        self.btn_build_mod = wx.Button(self, wx.ID_ANY, "Build KO")
+        sizer_6.Add(self.btn_build_mod, 0, 0, 0)
+
+        self.btn_ins_mod = wx.Button(self, wx.ID_ANY, "Ins Mod")
+        sizer_6.Add(self.btn_ins_mod, 0, 0, 0)
+
+        self.btn_reboot = wx.Button(self, wx.ID_ANY, "Reboot")
+        sizer_6.Add(self.btn_reboot, 0, 0, 0)
 
         static_line_2 = wx.StaticLine(self, wx.ID_ANY)
         sizer_1.Add(static_line_2, 0, wx.EXPAND, 0)
@@ -292,12 +304,12 @@ class MainFrame(wx.Frame):
         else:
             self.app_logic.LastConfigName = config_name
 
-        enable = True if config_name else False
+        enable_json = True if config_name else False
 
-        if enable:
+        if enable_json:
             self.select_last_json()
 
-        enable_controls(affected_controls, enable)
+        enable_controls(affected_controls, enable_json)
 
     def select_last_json(self, newjson: str = None):
         if newjson:
@@ -389,7 +401,6 @@ class MainFrame(wx.Frame):
         idx = self.choice_remote_config.GetSelection()
         config_name = self.choice_remote_config.GetString(idx)
         self.on_config_selected(config_name)
-
         event.Skip()
 
     def on_resize(self, event):  # wxGlade: MainFrame.<event_handler>

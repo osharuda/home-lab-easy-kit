@@ -51,11 +51,15 @@ def show_error(parent, message: str):
 def set_choise( control: wx.Choice, s: str):
     items = control.GetItems()
     indx = 0
-    for i in items:
-        if s == i:
-            control.SetSelection(indx)
-            return
-        indx += 1
+    if s is None:
+        control.Clear()
+        return
+    else:
+        for i in items:
+            if s == i:
+                control.SetSelection(indx)
+                return
+            indx += 1
 
-    raise RuntimeError(f"String {s} is not found in choice.")
+    raise RuntimeError(f"String {str(s)} is not found in choice.")
 

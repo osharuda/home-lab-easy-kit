@@ -173,7 +173,7 @@ class AppLogic:
 
     @property
     def Host(self):
-        result = None
+        result = "HOSTNAME"
         if self.LastConfiguration:
             result = self.LastConfiguration[self.KEY_HOST]
         return result
@@ -181,14 +181,14 @@ class AppLogic:
 
     @property
     def UserName(self):
-        result = None
+        result = "<USER>"
         if self.LastConfiguration:
             result = self.LastConfiguration[self.KEY_USER_NAME]
         return result
 
     @property
     def Password(self):
-        result = None
+        result = "<PASSWORD>"
         if self.LastConfiguration:
             result = self.LastConfiguration[self.KEY_PASSWORD]
         return result
@@ -638,6 +638,32 @@ class AppLogic:
                 if exit_code != 0:
                     self.append_error_and_raise(f"Can't install {p}", message, stdout, stderr)
 
+
+            # Setup NFS share using autofs
+            message += pytools.normalize_string_length(f"Configuring NFS share __DOTS__{os.linesep}", log_len)
+
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
+                f"sudo /bin/bash -c 'echo \"/-  /etc/auto.nfs --ghost\" >> /etc/auto.master'")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't change /etc/auto.master {p}", message, stdout, stderr)
+
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
+                f"sudo /bin/bash -c 'echo \"{mount_point} {nfs_uri}\" > /etc/auto.nfs'")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't change /etc/auto.nfs {p}", message, stdout, stderr)
+
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo service autofs reload")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't reload autofs {p}", message, stdout, stderr)
+
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo systemctl restart autofs")
+            if exit_code != 0:
+                self.append_error_and_raise(f"Can't restart autofs {p}", message, stdout, stderr)
+
+            pytools.install_ssh_key(os.path.join(self.current_path, self.key_file_name),
+                                    os.path.join(self.current_path, self.pub_key_file_name),
+                                    host, login, password)
+
             # Check CMake version
             #                3.22.3
             message += pytools.normalize_string_length(f"Verifying CMake version __DOTS__{os.linesep}", self.log_len)
@@ -671,32 +697,6 @@ class AppLogic:
             exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f'sudo "{os.path.join(self.dir_hlek, self.udev_fix_script_script)}"')
             if exit_code != 0:
                 self.append_error_and_raise("Can't patch udev rules", message, stdout, stderr)
-
-
-            # Setup NFS share using autofs
-            message += pytools.normalize_string_length(f"Configuring NFS share __DOTS__{os.linesep}", log_len)
-
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
-                f"sudo /bin/bash -c 'echo \"/-  /etc/auto.nfs --ghost\" >> /etc/auto.master'")
-            if exit_code != 0:
-                self.append_error_and_raise(f"Can't change /etc/auto.master {p}", message, stdout, stderr)
-
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client,
-                f"sudo /bin/bash -c 'echo \"{mount_point} {nfs_uri}\" > /etc/auto.nfs'")
-            if exit_code != 0:
-                self.append_error_and_raise(f"Can't change /etc/auto.nfs {p}", message, stdout, stderr)
-
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo service autofs reload")
-            if exit_code != 0:
-                self.append_error_and_raise(f"Can't reload autofs {p}", message, stdout, stderr)
-
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f"sudo systemctl restart autofs")
-            if exit_code != 0:
-                self.append_error_and_raise(f"Can't restart autofs {p}", message, stdout, stderr)
-
-            pytools.install_ssh_key(os.path.join(self.current_path, self.key_file_name),
-                                    os.path.join(self.current_path, self.pub_key_file_name),
-                                    host, login, password)
 
         except Exception as ex:
             message = f"{os.linesep}{os.linesep}Error: {str(ex)}"
@@ -794,7 +794,7 @@ class AppLogic:
                           last_json: str,
                           jsons: list):
         if last_json not in jsons:
-            last_json = jsons[0]
+            last_json = jsons[0] if jsons else None
 
         self.configurations[name] = {self.KEY_HOST: host,
                                      self.KEY_USER_NAME: user_name,
