@@ -25,16 +25,9 @@ class HLEKIOCustomizer(BaseCustomizer):
 
         self.dts_template_dir = os.path.join(self.template_dir, "hlekio")
         self.dts_template = os.path.join(self.dts_template_dir, "hlekio.dts")
-
-        self.hlekio_ioctl_header_src = os.path.join(self.libhlek_inc_dest_path, "hlekio_ioctl.h")
-        self.hlekio_ioctl_header_dst = os.path.join(self.hlekio_dir, "hlekio_ioctl.h")
-
         self.config = hlekio_config
-
         self.init_hardware_info()
-
         self.add_template(self.dts_template, [self.dts_source])
-        self.add_copy(self.hlekio_ioctl_header_src, [self.hlekio_ioctl_header_dst])
         self.device_names = set([str])
         self.pin_numbers = dict[str, str]() # key - pin_number(str), device name
 
