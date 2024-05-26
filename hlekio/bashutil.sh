@@ -46,6 +46,10 @@ check_env () {
         echo ${EP}'env_rpi4.sh'
         echo ${EP}'env_rpi3_64.sh'
         echo ${EP}'env_rpi5_64.sh'
+        echo ${EP}
+        echo ${EP}'Please run the following command to create corresponding symlink:'
+        echo ${EP}'ln -s environments/<env file script> env.sh'
+
         exit 1
     fi
 }
