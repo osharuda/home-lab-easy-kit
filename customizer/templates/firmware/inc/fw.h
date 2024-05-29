@@ -78,6 +78,10 @@
 #define I2C_BUS_ER_ISR                {__I2C_BUS_ER_ISR__}
 #define I2C_BUS_ER_IRQ                {__I2C_BUS_ER_IRQ__}
 
+#define SYS_TICK_PERIPH               {__SYS_TICK_PERIPH__}
+#define SYS_TICK_ISR                  {__SYS_TICK_ISR__}
+#define SYS_TICK_IRQ                  {__SYS_TICK_IRQ__}
+
 // LibHLEK error codes extracted from ekit_error.hpp. Are used to return device errors.
 {__LIBHLEK_ERROR_DEFINES__}
 

@@ -7,6 +7,7 @@ KW_TYPE         = "type"
 KW_DEFAULT      = "default"
 KW_PIN          = "pin"
 KW_PULL         = "pull"
+KW_TIMER_IRQ_HANDLER = "timer_handler"
 
 KW_MAIN_TIMER   = "main_timer"
 KW_INT_TIMER    = "internal_timer"
@@ -14,6 +15,12 @@ KW_INT_TIMER    = "internal_timer"
 RT_GPIO         = "gpio"
 RT_TIMER        = "timer"
 
+# Firmware JSON keywords
+FW_FIRMWARE     = "firmware"
+FW_I2C          = "i2c_bus"
+FW_SYS_TICK     = "sys_tick"
+
+# HLEKIO Json keys
 KW_BOARD        = "board"
 KW_DISTRO       = "distro"
 KW_RASPBERRY_PI_OS = "Raspberry Pi OS"

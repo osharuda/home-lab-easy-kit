@@ -243,7 +243,33 @@ void test_stm32_timer_params() {
         int res = tools::stm32_timer_params(freq, s, prescaller, period, expected);
 
         assert(res==1);
-    }    
+    }
+
+    REPORT_CASE
+    {
+        uint32_t freq = 72000000; // 72MHz
+        uint16_t prescaller = 0;
+        uint16_t period = 0;
+        double expected = 0.0;
+        double s = 1.0e-6; // 1us
+
+        int res = tools::stm32_timer_params(freq, s, prescaller, period, expected);
+
+        assert(res==0);
+    }
+
+    REPORT_CASE
+    {
+        uint32_t freq = 72000000; // 72MHz
+        uint16_t prescaller = 0;
+        uint16_t period = 0;
+        double expected = 0.0;
+        double s = 1.0e-6; // 1us
+
+        int res = tools::stm32_timer_params(freq, s, prescaller, period, expected);
+
+        assert(res==0);
+    }
 }
 
 void test_circbuffer_single_byte() {

@@ -48,11 +48,11 @@ class EXTIHubCustomizer(BaseDeviceCustomizer):
         if not self.enabled():
             return
 
-        configuration["devices"]["EXTIHubCustomizer"] = {self.device_name: {"requires": dict()}}
+        configuration["devices"]["EXTIHubCustomizer"] = {self.device_name: {KW_REQUIRES: dict()}}
         config_dict = configuration["devices"]["EXTIHubCustomizer"]
         self.require_feature("SYSTICK", config_dict)
 
-        dev_requires = config_dict[self.device_name]["requires"]
+        dev_requires = config_dict[self.device_name][KW_REQUIRES]
         irq_handlers = set()
         exti_irq_defines = []
 

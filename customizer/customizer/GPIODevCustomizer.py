@@ -41,7 +41,7 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
         cpp_pin_defs = []
         c_pin_defs = []
         gpio_requires = dict()
-        self.dev_config["requires"] = gpio_requires
+        self.dev_config[KW_REQUIRES] = gpio_requires
         index = 0
         for pin_name, pin_cfg in self.dev_config["description"].items():
             gpio = self.get_gpio(pin_cfg)

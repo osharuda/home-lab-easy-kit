@@ -268,7 +268,7 @@ void debug_checks_init(void);
 void delay_loop(uint32_t n);
 
 #if ENABLE_SYSTICK!=0
-
+/*
 /// \brief Inittializes SysTick interrupt.
 /// \details Main purpose of SysTick interrupt is maintain 64 bit tick counter, which is intensively used by firmware.
 void systick_init(void);
@@ -299,7 +299,7 @@ uint64_t get_us_clock(void);
 /// \param ev_2 - second event timestamp expressed in microseconds.
 /// \return 64 bit value represent absolute (always positive) time offset between two events expressed in microseconds.
 uint64_t get_tick_diff_64(uint64_t ev_1, uint64_t ev_2);
-
+*/
 #endif
 
 /// \brief Initialize TIMER to generate single update event using prescaller and period values.

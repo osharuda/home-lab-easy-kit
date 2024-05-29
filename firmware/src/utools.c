@@ -50,7 +50,7 @@ void delay_loop(uint32_t n) {
         g_no_var = n;
     }
 }
-
+/*
 #if ENABLE_SYSTICK!=0
 
 /// \brief This global variable is used by #delay_us() in order to provide required wait.
@@ -111,7 +111,7 @@ void delay_ms(uint32_t ms) {
 }
 
 #endif
-
+*//
 
 void timer_start_ex(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority, uint8_t force_first_call) {
     // Check timer is disabled
@@ -143,7 +143,6 @@ void timer_disable_ex(TIM_TypeDef* timer) {
 
 void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority) {
     TIM_TimeBaseInitTypeDef init_struct;
-
     TIM_Cmd(timer, DISABLE);
 
     // Prepare timer
@@ -163,7 +162,6 @@ void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_
 
 void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority) {
     TIM_TimeBaseInitTypeDef init_struct;
-
     TIM_Cmd(timer, DISABLE);
 
     // Prepare timer
@@ -172,6 +170,7 @@ void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t peri
     init_struct.TIM_Period            = period;
     init_struct.TIM_ClockDivision     = TIM_CKD_DIV1;
     init_struct.TIM_RepetitionCounter = 0;
+
 
     // Setup interrupt and enable timer
     NVIC_SetPriority(irqn, priority);

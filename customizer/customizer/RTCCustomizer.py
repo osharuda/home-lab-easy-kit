@@ -36,7 +36,7 @@ class RTCCustomizer(ExclusiveDeviceCustomizer):
                              self.shared_token)
 
     def customize(self):
-        rtc_requires = self.dev_config["requires"]
+        rtc_requires = self.dev_config[KW_REQUIRES]
         rtc = self.get_rtc(rtc_requires)
         br = self.get_backup_reg(rtc_requires)
         self.vocabulary = self.vocabulary | {

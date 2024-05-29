@@ -46,7 +46,7 @@ class UartProxyCustomizer(DeviceCustomizer):
         sw_configs = []
 
         for dev_name, dev_config in self.device_list:
-            uart_proxy_requires = dev_config["requires"]
+            uart_proxy_requires = dev_config[KW_REQUIRES]
 
             uart_port = self.get_usart(uart_proxy_requires)
             baud_rate = dev_config["baud_rate"];

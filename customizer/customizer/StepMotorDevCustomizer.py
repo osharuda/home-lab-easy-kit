@@ -59,7 +59,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             self.require_feature("SYSTICK", dev_config)
             dev_id = dev_config["dev_id"]
             motors_cfg = dev_config["motors"]
-            dev_requires = dev_config["requires"]
+            dev_requires = dev_config[KW_REQUIRES]
             motors_count = len(motors_cfg)
             timer = self.get_timer(dev_requires)
             timer_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)

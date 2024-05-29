@@ -35,7 +35,7 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
                              self.shared_token)
 
     def customize(self):
-        requires = self.dev_config["requires"]
+        requires = self.dev_config[KW_REQUIRES]
 
         btn_up = self.get_gpio(requires["up"])
         btn_down = self.get_gpio(requires["down"])

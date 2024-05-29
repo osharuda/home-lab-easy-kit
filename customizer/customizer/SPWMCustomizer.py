@@ -40,7 +40,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
         fw_pin_list = []
         sw_pin_list = []
         used_ports = dict()
-        spwm_requires = self.dev_config["requires"]
+        spwm_requires = self.dev_config[KW_REQUIRES]
         timer = self.get_timer(spwm_requires)
         pin_to_name = dict()
         spwm_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)

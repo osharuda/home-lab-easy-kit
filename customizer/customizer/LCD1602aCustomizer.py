@@ -40,7 +40,7 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
 
         self.require_feature("SYSTICK", self.dev_config)
 
-        lcd_requires = self.dev_config["requires"]
+        lcd_requires = self.dev_config[KW_REQUIRES]
         enable = self.get_gpio(lcd_requires["enable"])
         reg_sel = self.get_gpio(lcd_requires["reg_sel"])
         data4 = self.get_gpio(lcd_requires["data4"])

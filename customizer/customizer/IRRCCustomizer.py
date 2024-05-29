@@ -37,7 +37,7 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
 
     def customize(self):
         self.require_feature("SYSTICK", self.dev_config)
-        irrc_requires = self.dev_config["requires"]
+        irrc_requires = self.dev_config[KW_REQUIRES]
         data_pin = self.get_gpio(irrc_requires["data"])
         irrc_requires["exti_line_irrc"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(data_pin)}
         data_pin_number = self.mcu_hw.GPIO_to_pin_number(data_pin)

@@ -23,7 +23,7 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
         self.configuration = configuration
         dev_config = {"info": {"dev_id": 0}}
         configuration["devices"]["InfoCustomizer"] = dev_config
-        self.i2c_address = common_config["firmware"]["i2c_bus"]["address"]
+        self.i2c_address = common_config[FW_FIRMWARE][FW_I2C]["address"]
         super().__init__(mcu_hw, dev_config, common_config, "INFO")
         self.hlek_lib_common_header, self.shared_header, self.fw_header, self.sw_header, self.shared_token = common_config["generation"]["shared"][self.__class__.__name__]
         self.sw_lib_header = "info_conf.hpp"
@@ -63,7 +63,7 @@ class InfoCustomizer(ExclusiveDeviceCustomizer):
                       "__INFO_UUID_LEN__": hash_len,
                       "__INFO_DEVICES_NUMBER__": self.mcu_hw.max_address+1,
                       "__INFO_DEVICES__": ",\\\n".join(info_desciption),
-                      "__INFO_PROJECT_NAME__": self.configuration["firmware"]["device_name"],
+                      "__INFO_PROJECT_NAME__": self.configuration[FW_FIRMWARE]["device_name"],
                       "__INFO_I2C_ADDRESS__": self.i2c_address}
 
         self.patch_templates()

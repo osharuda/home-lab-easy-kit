@@ -139,17 +139,17 @@ def customize_firmware(json_file_name: str):
     configuration["global"] = global_config
 
     # Check configuration
-    configuration["firmware"]["device_name"], json_ext = os.path.splitext(os.path.basename(json_file_name))
+    configuration[FW_FIRMWARE]["device_name"], json_ext = os.path.splitext(os.path.basename(json_file_name))
     if 'firmware' not in configuration:
-        raise RuntimeError('"firmware" section is not specified.')
+        raise RuntimeError(f'"{FW_FIRMWARE}" section is not specified.')
     firmware_conf_section = configuration['firmware']
 
     if 'device_name' not in firmware_conf_section:
-        raise RuntimeError('device_name is not specified in "firmware" section')
+        raise RuntimeError(f'device_name is not specified in "{FW_FIRMWARE}" section')
     devname = firmware_conf_section['device_name']
 
     if 'mcu_model' not in firmware_conf_section:
-        raise RuntimeError('mcu_model is not specified in "firmware" section')
+        raise RuntimeError(f'mcu_model is not specified in "{FW_FIRMWARE}" section')
 
     # Generate file and directories paths
     libconfig_name = f'lib{devname}'
@@ -163,16 +163,16 @@ def customize_firmware(json_file_name: str):
     example_src_path = os.path.join(example_path, 'src')
     firmware_path = os.path.join(dev_target_path, 'firmware')
     firmware_inc_path = os.path.join(firmware_path, 'inc')
-    configuration["firmware"]["libname"] = libconfig_name
-    configuration["firmware"]["libconfig_path"] = libconfig_path
-    configuration["firmware"]["libconfig_inc_path"] = libconfig_inc_path
-    configuration["firmware"]["libconfig_src_path"] = libconfig_src_path
-    configuration["firmware"]["monitor_path"] = monitor_path
-    configuration["firmware"]["example_path"] = example_path
-    configuration["firmware"]["example_inc_path"] = example_inc_path
-    configuration["firmware"]["example_src_path"] = example_src_path
-    configuration["firmware"]["firmware_path"] = firmware_path
-    configuration["firmware"]["firmware_inc_path"] = firmware_inc_path
+    configuration[FW_FIRMWARE]["libname"] = libconfig_name
+    configuration[FW_FIRMWARE]["libconfig_path"] = libconfig_path
+    configuration[FW_FIRMWARE]["libconfig_inc_path"] = libconfig_inc_path
+    configuration[FW_FIRMWARE]["libconfig_src_path"] = libconfig_src_path
+    configuration[FW_FIRMWARE]["monitor_path"] = monitor_path
+    configuration[FW_FIRMWARE]["example_path"] = example_path
+    configuration[FW_FIRMWARE]["example_inc_path"] = example_inc_path
+    configuration[FW_FIRMWARE]["example_src_path"] = example_src_path
+    configuration[FW_FIRMWARE]["firmware_path"] = firmware_path
+    configuration[FW_FIRMWARE]["firmware_inc_path"] = firmware_inc_path
 
     configuration["generation"] = dict()
     configuration["generation"]["shared"] = get_shared_headers_dict()
@@ -204,7 +204,7 @@ def customize_firmware(json_file_name: str):
 
     required_resources = list()
     required_features = set()
-    fw_customizer = FirmwareCustomizer(mcu, configuration["firmware"], configuration, required_resources,
+    fw_customizer = FirmwareCustomizer(mcu, configuration[FW_FIRMWARE], configuration, required_resources,
                                        required_features)
 
     # Add headers to libhlek (all must be added)
@@ -295,9 +295,9 @@ def customize_firmware(json_file_name: str):
         fw_customizer.add_allocated_dev_ids(customizer.get_dev_ids())
 
         for dev_name, dev_config in config_dict.items():
-            required_resources.extend(get_leaf_values(dev_config["requires"]))
+            required_resources.extend(get_leaf_values(dev_config[KW_REQUIRES]))
             required_features.update(dev_config.get("required_features", set()))
-            extihub_customizer.register_exti(dev_name, dev_config["requires"])
+            extihub_customizer.register_exti(dev_name, dev_config[KW_REQUIRES])
 
     # Customize EXTI hub
     if extihub_customizer.enabled():

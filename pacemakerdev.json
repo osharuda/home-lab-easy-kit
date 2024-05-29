@@ -2,6 +2,8 @@
   "firmware" : {
     "mcu_model" : "stm32f103",
     "device_name" : "pacemakerdev_tester",
+    "sys_tick": {
+        "requires" : {"timer": "TIM4"}},
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,

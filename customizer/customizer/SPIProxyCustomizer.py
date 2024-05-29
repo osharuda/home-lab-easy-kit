@@ -53,7 +53,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
         index = 0
         for dev_name, dev_config in self.device_list:
             dev_id       = dev_config["dev_id"]
-            dev_requires = dev_config["requires"]
+            dev_requires = dev_config[KW_REQUIRES]
 
             use_dma = dev_config["use_dma"] != 0
             bidirectional = dev_config["bidirectional"] != 0

@@ -41,11 +41,11 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.sw_example_templ = os.path.join(self.template_dir, "example")
         self.sw_example_inc_templ = os.path.join(self.sw_example_templ , "inc")
         self.sw_example_src_templ = os.path.join(self.sw_example_templ , "src")
-        self.sw_monitor_dest = common_config["firmware"]["monitor_path"]
+        self.sw_monitor_dest = common_config[FW_FIRMWARE]["monitor_path"]
 
-        self.sw_example_dest = common_config["firmware"]["example_path"]
-        self.sw_example_inc_dest = common_config["firmware"]["example_inc_path"]
-        self.sw_example_src_dest = common_config["firmware"]["example_src_path"]
+        self.sw_example_dest = common_config[FW_FIRMWARE]["example_path"]
+        self.sw_example_inc_dest = common_config[FW_FIRMWARE]["example_inc_path"]
+        self.sw_example_src_dest = common_config[FW_FIRMWARE]["example_src_path"]
 
         #self.sw_inc_dest = os.path.join(self.project_dir, "software/inc")
         #self.sw_src_dest = os.path.join(self.project_dir, "software/src")

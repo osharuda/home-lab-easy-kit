@@ -108,11 +108,8 @@ class ADCDevCustomizer(DeviceCustomizer):
         adc_maxval = self.mcu_hw.get_ADC_MAXVAL();
         sample_size = 2         # result of averaging will be uint16_t
 
-        print(f"--------------------------------------------------------- ")
-
-
         for dev_name, dev_config in self.device_list:
-            adcdev_requires = dev_config["requires"]
+            adcdev_requires = dev_config[KW_REQUIRES]
             dev_id = dev_config["dev_id"]
             measurements_per_sample = dev_config["measurements_per_sample"]
             use_dma = dev_config["use_dma"] != 0

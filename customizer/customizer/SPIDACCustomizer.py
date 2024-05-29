@@ -178,7 +178,7 @@ class SPIDACCustomizer(DeviceCustomizer):
         for dev_name, dev_config in self.device_list:
 
             exclude_resources = {'SPI_MISO', 'SPI_RX_DMA'}  # We are not receiving anything from DAC
-            dev_requires = dev_config["requires"]
+            dev_requires = dev_config[KW_REQUIRES]
             dev_id = dev_config["dev_id"]
 
 

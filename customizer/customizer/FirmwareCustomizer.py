@@ -39,7 +39,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.libhlek_name = "lib" + self.hlek_name
         self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
 
-        self.config_name = common_config["firmware"]["device_name"]
+        self.config_name = common_config[FW_FIRMWARE]["device_name"]
         self.libconfig_name = "lib" + self.config_name
         self.libconfig_install_path = os.path.join(self.install_path, self.libconfig_name)
 
@@ -87,22 +87,30 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
 
     def customize(self):
-        buffer_size = self.dev_config["i2c_bus"]["buffer_size"]
-        address_0 = self.dev_config["i2c_bus"]["address"]
-        clock_speed = self.dev_config["i2c_bus"]["clock_speed"]
+        buffer_size = self.dev_config[FW_I2C]["buffer_size"]
+        address_0 = self.dev_config[FW_I2C]["address"]
+        clock_speed = self.dev_config[FW_I2C]["clock_speed"]
         device_name = self.dev_config["device_name"]
 
-        extender_requires = self.dev_config["i2c_bus"]["requires"]
+        extender_requires = self.dev_config[FW_I2C][KW_REQUIRES]
         i2c_periph = self.get_i2c(extender_requires)
 
         # Update requirements for I2C
-        extender_requires = {**extender_requires, **self.mcu_hw.mcu_resources[i2c_periph]["requires"]}
+        extender_requires = {**extender_requires, **self.mcu_hw.mcu_resources[i2c_periph][KW_REQUIRES]}
         sda = self.get_gpio(extender_requires["SDA"])
         scl = self.get_gpio(extender_requires["SCL"])
         ev_isr = self.get_isr(extender_requires["ev_irq_handler"])
         er_isr = self.get_isr(extender_requires["er_irq_handler"])
 
+        timer_requires = self.dev_config[FW_SYS_TICK][KW_REQUIRES]
+        systick_timer_periph = self.get_timer(timer_requires)
+        timer_requires = {**timer_requires, **self.mcu_hw.mcu_resources[systick_timer_periph][KW_REQUIRES]}
+
+        systick_isr = self.mcu_hw.TIMER_to_IRQHandler(systick_timer_periph)
+        systick_irqn = self.mcu_hw.ISRHandler_to_IRQn(systick_isr)
+
         self.required_resources.extend(get_leaf_values(extender_requires))
+        self.required_resources.extend(get_leaf_values(timer_requires))
 
         self.vocabulary = self.vocabulary | {
                       "__I2C_BUS_PERIPH__": i2c_periph,
@@ -115,6 +123,11 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__I2C_BUS_EV_IRQ__": self.mcu_hw.ISRHandler_to_IRQn(ev_isr),
                       "__I2C_BUS_ER_ISR__": er_isr,
                       "__I2C_BUS_ER_IRQ__": self.mcu_hw.ISRHandler_to_IRQn(er_isr),
+
+                      "__SYS_TICK_PERIPH__": systick_timer_periph,
+                      "__SYS_TICK_ISR__": systick_isr,
+                      "__SYS_TICK_IRQ__": systick_irqn,
+
                       "__FW_HEADERS__": concat_lines(self.fw_dev_headers),
                       "__SW_HEADERS__": concat_lines(self.sw_dev_headers),
                       "__COMM_BUFFER_LENGTH__": buffer_size,
