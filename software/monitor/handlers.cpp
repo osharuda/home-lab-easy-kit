@@ -43,6 +43,9 @@
 // -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 #include <libhlek/pacemakerdev.hpp>
 // -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+#include <libhlek/timetrackerdev.hpp>
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 // INCLUDE_HEADER
 
 #include "handlers.hpp"
@@ -2479,6 +2482,23 @@ void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
     d->add_default(inter_test_delay);
 
     d->set_data();
+}
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+//----------------------------------------------------------------------------------------------//
+//                                    TimeTrackerDevInfoHandler                                      //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevInfoHandler,"timetrackerdev::", "::info")
+std::string TimeTrackerDevInfoHandler::help() const {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    return tools::format_string("# %s shows information for %s device. No parameters are required.\n",
+                                get_command_name(), 
+                                d->get_dev_name());
+}
+
+void TimeTrackerDevInfoHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    ui->log(tools::str_format("Not implemented"));
 }
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE

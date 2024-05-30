@@ -21,21 +21,22 @@
 /// \brief Contains constants that declare more details on virtual devices to be connected
 /// @{{
 // ADD_DEV_TYPE
-#define INFO_DEV_TYPE_NONE         (uint8_t)0
-#define INFO_DEV_TYPE_INFO         (uint8_t)1
-#define INFO_DEV_TYPE_DESKDEV      (uint8_t)2
-#define INFO_DEV_TYPE_IRRC         (uint8_t)3
-#define INFO_DEV_TYPE_LCD1602a     (uint8_t)4
-#define INFO_DEV_TYPE_RTC          (uint8_t)5
-#define INFO_DEV_TYPE_UART_PROXY   (uint8_t)6
-#define INFO_DEV_TYPE_GPIO         (uint8_t)7
-#define INFO_DEV_TYPE_SPWM         (uint8_t)8
-#define INFO_DEV_TYPE_ADC          (uint8_t)9
-#define INFO_DEV_TYPE_STEP_MOTOR   (uint8_t)10
-#define INFO_DEV_TYPE_CAN          (uint8_t)11
-#define INFO_DEV_TYPE_SPIPROXY     (uint8_t)12
-#define INFO_DEV_TYPE_AD9850DEV    (uint8_t)13
-#define INFO_DEV_TYPE_SPIDAC       (uint8_t)14
-#define INFO_DEV_TYPE_PACEMAKERDEV (uint8_t)15
+#define INFO_DEV_TYPE_NONE           (uint8_t)0
+#define INFO_DEV_TYPE_INFO           (uint8_t)1
+#define INFO_DEV_TYPE_DESKDEV        (uint8_t)2
+#define INFO_DEV_TYPE_IRRC           (uint8_t)3
+#define INFO_DEV_TYPE_LCD1602a       (uint8_t)4
+#define INFO_DEV_TYPE_RTC            (uint8_t)5
+#define INFO_DEV_TYPE_UART_PROXY     (uint8_t)6
+#define INFO_DEV_TYPE_GPIO           (uint8_t)7
+#define INFO_DEV_TYPE_SPWM           (uint8_t)8
+#define INFO_DEV_TYPE_ADC            (uint8_t)9
+#define INFO_DEV_TYPE_STEP_MOTOR     (uint8_t)10
+#define INFO_DEV_TYPE_CAN            (uint8_t)11
+#define INFO_DEV_TYPE_SPIPROXY       (uint8_t)12
+#define INFO_DEV_TYPE_AD9850DEV      (uint8_t)13
+#define INFO_DEV_TYPE_SPIDAC         (uint8_t)14
+#define INFO_DEV_TYPE_PACEMAKERDEV   (uint8_t)15
+#define INFO_DEV_TYPE_TIMETRACKERDEV (uint8_t)16
 // ADD_DEV_TYPE
 /// @}}

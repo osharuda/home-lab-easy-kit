@@ -12,8 +12,7 @@ KW_TIMER_IRQ_HANDLER = "timer_handler"
 KW_MAIN_TIMER   = "main_timer"
 KW_INT_TIMER    = "internal_timer"
 
-
-#------
+# Resource types
 RT_GPIO         = "gpio"
 RT_TIMER        = "timer"
 RT_IRQ_HANDLER  = "irq_handler"
@@ -26,7 +25,7 @@ RT_DMA_CHANNEL  = "dma_channel"
 RT_ADC          = "adc"
 RT_ADC_INPUT    = "adc_input"
 RT_SPI          = "spi"
-#------
+
 
 # Firmware JSON keywords
 FW_FIRMWARE     = "firmware"

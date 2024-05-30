@@ -41,6 +41,9 @@ from SPIDACCustomizer import *
 # -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
 from PaceMakerDevCustomizer import *
 # -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
+# -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
+from TimeTrackerDevCustomizer import *
+# -> IMPORT_CUSTOMIZER | HASH: C20ADA6B43BC43E19CC5E0A90FCC37A7F0068B21
 # IMPORT_CUSTOMIZER
 
 # Load configuration file specified as parameter
@@ -123,6 +126,9 @@ def get_shared_headers_dict():
     "__UART_PROTO_SHARED_HEADER__")
 # -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
     shared_headers[PaceMakerDevCustomizer.__name__] = ("pacemakerdev_common.hpp", "pacemakerdev_shared.h", "pacemakerdev_conf.h", "pacemakerdev_conf.hpp", "__PACEMAKERDEV_SHARED_HEADER__")
+# -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
+# -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
+    shared_headers[TimeTrackerDevCustomizer.__name__] = ("timetrackerdev_common.hpp", "timetrackerdev_shared.h", "timetrackerdev_conf.h", "timetrackerdev_conf.hpp", "__TIMETRACKERDEV_SHARED_HEADER__")
 # -> ADD_SHARED_HEADER_RECORD | HASH: 251B2D30A0B3397A383906AC4ECADE7A75749EB9
     # ADD_SHARED_HEADER_RECORD
 
@@ -225,6 +231,9 @@ def customize_firmware(json_file_name: str):
 # -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
     fw_customizer.add_shared_header(configuration, PaceMakerDevCustomizer.__name__)
 # -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
+# -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
+    fw_customizer.add_shared_header(configuration, TimeTrackerDevCustomizer.__name__)
+# -> ADD_LIBHLEK_COMMON_HEADER | HASH: EE88CF0A25ABEECCB614BD607A19CCF91781A85C
     # ADD_LIBHLEK_COMMON_HEADER
 
     # InfoCustomizer - device containing all information about build
@@ -279,6 +288,11 @@ def customize_firmware(json_file_name: str):
         elif customizer_name == "PaceMakerDevCustomizer":
             dt = "INFO_DEV_TYPE_PACEMAKERDEV"
             customizer = PaceMakerDevCustomizer(mcu, config_dict, configuration)
+# -> REGISTER_CUSTOMIZER | HASH: D85113CE1E662E848F94E1C716B0F918DCD14FEC
+# -> REGISTER_CUSTOMIZER | HASH: D85113CE1E662E848F94E1C716B0F918DCD14FEC
+        elif customizer_name == "TimeTrackerDevCustomizer":
+            dt = "INFO_DEV_TYPE_TIMETRACKERDEV"
+            customizer = TimeTrackerDevCustomizer(mcu, config_dict, configuration)
 # -> REGISTER_CUSTOMIZER | HASH: D85113CE1E662E848F94E1C716B0F918DCD14FEC
         # REGISTER_CUSTOMIZER
         elif customizer_name == "InfoCustomizer":

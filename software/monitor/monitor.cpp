@@ -43,6 +43,9 @@
 // -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 #include <libhlek/pacemakerdev.hpp>
 // -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
+#include <libhlek/timetrackerdev.hpp>
+// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
 // INCLUDE_HEADER
 #include <libhlek/i2c_proto.h>
 #include "handlers.hpp"
@@ -648,6 +651,27 @@ int main(int argc, char* argv[])
         ui->add_command(cmd_index++, h.pacemakerdev_stop_handler);
         ui->add_command(cmd_index++, h.pacemakerdev_reset_handler);
         ui->add_command(cmd_index++, h.pacemakerdev_add_transition_handler);
+    }
+#endif  
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+#ifdef TIMETRACKERDEV_DEVICE_ENABLED
+    struct TimeTrackerDevCommandHandlers {
+        std::shared_ptr<TimeTrackerDev> dev;
+        std::shared_ptr<CommandHandler> timetrackerdev_info_handler;
+    };
+
+    std::vector<TimeTrackerDevCommandHandlers> timetrackerdev_handlers(LIBCONFIG_NAMESPACE::timetrackerdev_configs_number);
+
+    for (size_t index=0; index<LIBCONFIG_NAMESPACE::timetrackerdev_configs_number; index++) {
+        const TimeTrackerDevConfig* descr = LIBCONFIG_NAMESPACE::timetrackerdev_configs+index;
+        uint8_t dev_id = descr->dev_id;
+        TimeTrackerDevCommandHandlers& h = timetrackerdev_handlers.at(index);
+
+
+        h.dev.reset(new TimeTrackerDev(firmware, descr));
+        h.timetrackerdev_info_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        ui->add_command(cmd_index++, h.timetrackerdev_info_handler);  
     }
 #endif  
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
