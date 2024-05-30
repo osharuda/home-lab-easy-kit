@@ -12,8 +12,21 @@ KW_TIMER_IRQ_HANDLER = "timer_handler"
 KW_MAIN_TIMER   = "main_timer"
 KW_INT_TIMER    = "internal_timer"
 
+
+#------
 RT_GPIO         = "gpio"
 RT_TIMER        = "timer"
+RT_IRQ_HANDLER  = "irq_handler"
+RT_EXTI_LINE    = "exti_line"
+RT_BACKUP_REG   = "bkp"
+RT_UART         = "usart"
+RT_I2C          = "i2c"
+RT_DMA          = "dma"
+RT_DMA_CHANNEL  = "dma_channel"
+RT_ADC          = "adc"
+RT_ADC_INPUT    = "adc_input"
+RT_SPI          = "spi"
+#------
 
 # Firmware JSON keywords
 FW_FIRMWARE     = "firmware"

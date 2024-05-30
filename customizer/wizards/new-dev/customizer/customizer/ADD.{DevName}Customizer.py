@@ -15,6 +15,7 @@
 
 from DeviceCustomizer import *
 from tools import *
+from keywords import *
 
 
 class {DevName}Customizer(DeviceCustomizer):
@@ -47,48 +48,48 @@ class {DevName}Customizer(DeviceCustomizer):
         index = 0
         for dev_name, dev_config in self.device_list:
 
-            dev_requires = dev_config["requires"]
-            dev_id       = dev_config["dev_id"]
-            buffer_size  = dev_config["buffer_size"]
+            dev_requires = dev_config[KW_REQUIRES]
+            dev_id       = dev_config[KW_DEV_ID]
+            buffer_size  = dev_config[KW_BUFFER_SIZE]
 
             for rdecl, ritem in dev_requires.items():
                 rtype, rname = self.unpack_resource(ritem)
 
                 # Custom resource handling
-                if rtype == "gpio":
+                if rtype == RT_GPIO:
                     # process gpio resources here
                     pass
-                elif rtype == "irq_handler":
+                elif rtype == RT_IRQ_HANDLER:
                     # process IRQ handlers here
                     pass
-                elif rtype == "exti_line":
+                elif rtype == RT_EXTI_LINE:
                     # process EXTI lines
                     pass
-                elif rtype == "bkp":
+                elif rtype == RT_BACKUP_REG:
                     # process backup registers
                     pass
-                elif rtype == "timer":
+                elif rtype == RT_TIMER:
                     # process timers
                     pass
-                elif rtype == "usart":
+                elif rtype == RT_UART:
                     # process usart
                     pass
-                elif rtype == "i2c":
+                elif rtype == RT_I2C:
                     # process i2c
                     pass
-                elif rtype == "dma":
+                elif rtype == RT_DMA:
                     # process dma
                     pass
-                elif rtype == "dma_channel":
+                elif rtype == RT_DMA_CHANNEL:
                     # process dma_channel
                     pass
-                elif rtype == "adc":
+                elif rtype == RT_ADC:
                     # process ADC
                     pass
-                elif rtype == "adc_input":
+                elif rtype == RT_ADC_INPUT:
                     # process ADC input
                     pass
-                elif rtype == "spi":
+                elif rtype == RT_SPI:
                     # process SPI
                     pass
                 else:

@@ -2,7 +2,7 @@
   "firmware" : {
     "mcu_model" : "stm32f103",
     "sys_tick": {
-        "requires" : {"timer": "TIM4"}},
+        "requires" : {"timer": "TIM1"}},
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,

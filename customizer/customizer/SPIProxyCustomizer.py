@@ -73,7 +73,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
 
             exclude_resources = set()
 
-            spi_irq_handler = self.get_required_resource(spi_confg_dev, "SPI_IRQ", "irq_handler")
+            spi_irq_handler = self.get_required_resource(spi_confg_dev, "SPI_IRQ", RT_IRQ_HANDLER)
             spi_irqn = self.mcu_hw.ISRHandler_to_IRQn(spi_irq_handler)
 
             spi_miso_port = "NULL"
@@ -82,7 +82,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
             rx_dma_irq_handler = "NULL"
             rx_dma_irqn = 0
             if bidirectional > 0:
-                spi_miso = self.get_required_resource(spi_confg_dev, "SPI_MISO", "gpio")
+                spi_miso = self.get_required_resource(spi_confg_dev, "SPI_MISO", RT_GPIO)
                 spi_miso_port = self.mcu_hw.GPIO_to_port(spi_miso)
                 spi_miso_pin = self.mcu_hw.GPIO_to_pin_number(spi_miso)
                 rx_dma_channel = self.mcu_hw.get_DMA_Channel(spi + "_RX")
@@ -118,15 +118,15 @@ class SPIProxyCustomizer(DeviceCustomizer):
                 exclude_resources.add('SPI_RX_DMA')  # We are not using DMA
                 exclude_resources.add('SPI_TX_DMA')  # We are not using DMA
 
-            spi_mosi = self.get_required_resource(spi_confg_dev, "SPI_MOSI", "gpio")
+            spi_mosi = self.get_required_resource(spi_confg_dev, "SPI_MOSI", RT_GPIO)
             spi_mosi_port = self.mcu_hw.GPIO_to_port(spi_mosi)
             spi_mosi_pin = self.mcu_hw.GPIO_to_pin_number(spi_mosi)
 
-            spi_sck = self.get_required_resource(spi_confg_dev, "SPI_SCK", "gpio")
+            spi_sck = self.get_required_resource(spi_confg_dev, "SPI_SCK", RT_GPIO)
             spi_sck_port = self.mcu_hw.GPIO_to_port(spi_sck)
             spi_sck_pin = self.mcu_hw.GPIO_to_pin_number(spi_sck)
 
-            spi_nss = self.get_required_resource(spi_confg_dev, "SPI_NSS", "gpio")
+            spi_nss = self.get_required_resource(spi_confg_dev, "SPI_NSS", RT_GPIO)
             spi_nss_port = self.mcu_hw.GPIO_to_port(spi_nss)
             spi_nss_pin = self.mcu_hw.GPIO_to_pin_number(spi_nss)
 

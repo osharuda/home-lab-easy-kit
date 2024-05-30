@@ -52,55 +52,55 @@ class AD9850DevCustomizer(DeviceCustomizer):
             clock_freq = frequency_to_int(dev_config["clock_frequency"])
 
             rtype, d0 = self.unpack_resource(dev_requires["D0"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d0} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d0} specified in {dev_name}. Must be {RT_GPIO}.")
 
             rtype, d1 = self.unpack_resource(dev_requires["D1"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d1} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d1} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d2 = self.unpack_resource(dev_requires["D2"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d2} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d2} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d3 = self.unpack_resource(dev_requires["D3"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d3} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d3} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d4 = self.unpack_resource(dev_requires["D4"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d4} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d4} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d5 = self.unpack_resource(dev_requires["D5"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d5} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d5} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d6 = self.unpack_resource(dev_requires["D6"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d6} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d6} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, d7 = self.unpack_resource(dev_requires["D7"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {d7} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {d7} specified in {dev_name}. Must be {RT_GPIO}.")
 
 
             rtype, w_clk = self.unpack_resource(dev_requires["W_CLK"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {w_clk} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {w_clk} specified in {dev_name}. Must be {RT_GPIO}.")
 
             rtype, fq_ud = self.unpack_resource(dev_requires["FQ_UD"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {fq_ud} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {fq_ud} specified in {dev_name}. Must be {RT_GPIO}.")
 
             rtype, reset = self.unpack_resource(dev_requires["RESET"])
-            if rtype != "gpio":
-                raise ValueError(f"Invalid resource {reset} specified in {dev_name}. Must be gpio.")
+            if rtype != RT_GPIO:
+                raise ValueError(f"Invalid resource {reset} specified in {dev_name}. Must be {RT_GPIO}.")
 
             # generate gpio update function for device
             set_gpio_data_func_name = f"ad9850_set_data_gpio_{index}"

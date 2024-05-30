@@ -82,9 +82,9 @@ class DeskDevCustomizer(ExclusiveDeviceCustomizer):
 
         self.patch_templates()
 
-        requires["exti_line_btn_up"] = {"exti_line" : self.mcu_hw.GPIO_to_EXTI_line(btn_up)}
-        requires["exti_line_btn_down"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(btn_down)}
-        requires["exti_line_btn_left"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(btn_left)}
-        requires["exti_line_btn_right"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(btn_right)}
-        requires["exti_line_enc_a"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(enc_a)}
-        requires["exti_line_enc_b"] = {"exti_line": self.mcu_hw.GPIO_to_EXTI_line(enc_b)}
+        requires["exti_line_btn_up"] = {RT_EXTI_LINE : self.mcu_hw.GPIO_to_EXTI_line(btn_up)}
+        requires["exti_line_btn_down"] = {RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(btn_down)}
+        requires["exti_line_btn_left"] = {RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(btn_left)}
+        requires["exti_line_btn_right"] = {RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(btn_right)}
+        requires["exti_line_enc_a"] = {RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(enc_a)}
+        requires["exti_line_enc_b"] = {RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(enc_b)}

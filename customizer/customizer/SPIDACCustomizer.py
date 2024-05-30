@@ -139,7 +139,7 @@ class SPIDACCustomizer(DeviceCustomizer):
         ld_pin = "0"
         ld_rise = "0"
         if "LD" in dev_requires:
-            gpio = dev_requires["LD"]["gpio"]
+            gpio = dev_requires["LD"][RT_GPIO]
             ld_port = self.mcu_hw.GPIO_to_port(gpio)
             ld_pin = self.mcu_hw.GPIO_to_pin_number(gpio)
 
@@ -236,15 +236,15 @@ class SPIDACCustomizer(DeviceCustomizer):
             dma_tx_preinit = "&" + dma_tx_preinit
             dma_tx_it = self.mcu_hw.get_DMA_IT_Flag(tx_dma_channel, "TC")
 
-            spi_mosi = self.get_required_resource(spi_confg_dev, "SPI_MOSI", "gpio")
+            spi_mosi = self.get_required_resource(spi_confg_dev, "SPI_MOSI", RT_GPIO)
             spi_mosi_port = self.mcu_hw.GPIO_to_port(spi_mosi)
             spi_mosi_pin = self.mcu_hw.GPIO_to_pin_number(spi_mosi)
 
-            spi_sck = self.get_required_resource(spi_confg_dev, "SPI_SCK", "gpio")
+            spi_sck = self.get_required_resource(spi_confg_dev, "SPI_SCK", RT_GPIO)
             spi_sck_port = self.mcu_hw.GPIO_to_port(spi_sck)
             spi_sck_pin = self.mcu_hw.GPIO_to_pin_number(spi_sck)
 
-            spi_nss = self.get_required_resource(spi_confg_dev, "SPI_NSS", "gpio")
+            spi_nss = self.get_required_resource(spi_confg_dev, "SPI_NSS", RT_GPIO)
             spi_nss_port = self.mcu_hw.GPIO_to_port(spi_nss)
             spi_nss_pin = self.mcu_hw.GPIO_to_pin_number(spi_nss)
 

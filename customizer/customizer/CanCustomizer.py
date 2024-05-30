@@ -127,8 +127,8 @@ class CanCustomizer(DeviceCustomizer):
             can_name, remap = self.mcu_hw.is_remaped(can)
             self.check_requirements(can, dev_requires, "dev_{0}".format(dev_name))
 
-            canrx = self.get_required_resource(can, "CANRX", "gpio")
-            cantx = self.get_required_resource(can, "CANTX", "gpio")
+            canrx = self.get_required_resource(can, "CANRX", RT_GPIO)
+            cantx = self.get_required_resource(can, "CANTX", RT_GPIO)
 
 
             canrx_port = self.mcu_hw.GPIO_to_port(canrx)
@@ -137,10 +137,10 @@ class CanCustomizer(DeviceCustomizer):
             cantx_port = self.mcu_hw.GPIO_to_port(cantx)
             cantx_pin = self.mcu_hw.GPIO_to_pin_number(cantx)
 
-            tx_handler = self.mcu_hw.mcu_resources[can]["irq_tx_handler"]["irq_handler"]
-            rx0_handler = self.mcu_hw.mcu_resources[can]["irq_rx0_handler"]["irq_handler"]
-            rx1_handler = self.mcu_hw.mcu_resources[can]["irq_rx1_handler"]["irq_handler"]
-            sce_handler = self.mcu_hw.mcu_resources[can]["irq_sce_handler"]["irq_handler"]
+            tx_handler = self.mcu_hw.mcu_resources[can]["irq_tx_handler"][RT_IRQ_HANDLER]
+            rx0_handler = self.mcu_hw.mcu_resources[can]["irq_rx0_handler"][RT_IRQ_HANDLER]
+            rx1_handler = self.mcu_hw.mcu_resources[can]["irq_rx1_handler"][RT_IRQ_HANDLER]
+            sce_handler = self.mcu_hw.mcu_resources[can]["irq_sce_handler"][RT_IRQ_HANDLER]
 
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             fw_device_descriptors.append("{{ {{0}}, {{0}}, {{ {{0}}, {{{{0}}}} }}, {2}, {3}, {5}, {7}, {1}, {13}, {9}, {10}, {11}, {12}, {14}, {15}, {16}, {4}, {6}, {8}, {0} }}".format(

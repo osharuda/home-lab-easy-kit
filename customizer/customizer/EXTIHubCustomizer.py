@@ -75,7 +75,7 @@ class EXTIHubCustomizer(BaseDeviceCustomizer):
             exti_irq_defines.append("EXTIHUB_IRQ_HANDLER({0}) \\".format(exti_irq_handler))
 
             # add requirement for this IRQ handler
-            dev_requires["exti_irq_{0}".format(index)] = {"irq_handler": exti_irq_handler}
+            dev_requires["exti_irq_{0}".format(index)] = {RT_IRQ_HANDLER: exti_irq_handler}
             index = index + 1
 
         self.vocabulary = self.vocabulary | {

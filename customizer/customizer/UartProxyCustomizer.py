@@ -81,9 +81,9 @@ class UartProxyCustomizer(DeviceCustomizer):
             isr_list.append("MAKE_ISR_WITH_INDEX({0}, UART_PROXY_COMMON_IRQ_HANDLER, {1}) \\".format(irq_handler, indx))
 
             # update requirements
-            uart_proxy_requires["irq_handler"] = irq_handler
-            uart_proxy_requires["rx"] = {"gpio": rx}
-            uart_proxy_requires["tx"] = {"gpio": tx}
+            uart_proxy_requires[RT_IRQ_HANDLER] = irq_handler
+            uart_proxy_requires["rx"] = {RT_GPIO: rx}
+            uart_proxy_requires["tx"] = {RT_GPIO: tx}
 
             indx+=1
 

@@ -70,7 +70,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
             timer_irq_handler_list.append(
                 "MAKE_ISR_WITH_INDEX({0}, STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(timer_irq_handler, indx))
-            dev_requires[dev_name + "_irq_handler"] = {"irq_handler": timer_irq_handler}
+            dev_requires[dev_name + "_irq_handler"] = {RT_IRQ_HANDLER: timer_irq_handler}
 
             # motor count defines
             dev_mcount_def = "STEP_MOTOR_" + dev_name.upper() + "_MOTOR_COUNT"
@@ -202,36 +202,36 @@ class StepMotorDevCustomizer(DeviceCustomizer):
         cw_endstop_pin = self.get_gpio_with_default(mcfg.get("cw_endstop"))
         ccw_endstop_pin = self.get_gpio_with_default(mcfg.get("ccw_endstop"))
 
-        dev_requires[mname + "_step_gpio"] = {"gpio": step_pin}
+        dev_requires[mname + "_step_gpio"] = {RT_GPIO: step_pin}
         if dir_pin is not None:
-            dev_requires[mname + "_dir_gpio"] = {"gpio": dir_pin}
+            dev_requires[mname + "_dir_gpio"] = {RT_GPIO: dir_pin}
 
         if ms1_pin is not None:
-            dev_requires[mname + "_ms1_gpio"] = {"gpio": ms1_pin}
+            dev_requires[mname + "_ms1_gpio"] = {RT_GPIO: ms1_pin}
 
         if ms2_pin is not None:
-            dev_requires[mname + "_ms2_gpio"] = {"gpio": ms2_pin}
+            dev_requires[mname + "_ms2_gpio"] = {RT_GPIO: ms2_pin}
 
         if ms3_pin is not None:
-            dev_requires[mname + "_ms3_gpio"] = {"gpio": ms3_pin}
+            dev_requires[mname + "_ms3_gpio"] = {RT_GPIO: ms3_pin}
 
         if enable_pin is not None:
-            dev_requires[mname + "_enable_gpio"] = {"gpio": enable_pin}
+            dev_requires[mname + "_enable_gpio"] = {RT_GPIO: enable_pin}
 
         if reset_pin is not None:
-            dev_requires[mname + "_reset_gpio"] = {"gpio": reset_pin}
+            dev_requires[mname + "_reset_gpio"] = {RT_GPIO: reset_pin}
 
         if sleep_pin is not None:
-            dev_requires[mname + "_sleep_gpio"] = {"gpio": sleep_pin}
+            dev_requires[mname + "_sleep_gpio"] = {RT_GPIO: sleep_pin}
 
         if fault_pin is not None:
-            dev_requires[mname + "_fault_gpio"] = {"gpio": fault_pin}
+            dev_requires[mname + "_fault_gpio"] = {RT_GPIO: fault_pin}
 
         if cw_endstop_pin is not None:
-            dev_requires[mname + "_cw_endstop_gpio"] = {"gpio": cw_endstop_pin}
+            dev_requires[mname + "_cw_endstop_gpio"] = {RT_GPIO: cw_endstop_pin}
 
         if ccw_endstop_pin is not None:
-            dev_requires[mname + "_ccw_endstop_gpio"] = {"gpio": ccw_endstop_pin}
+            dev_requires[mname + "_ccw_endstop_gpio"] = {RT_GPIO: ccw_endstop_pin}
 
         return (
         step_pin, dir_pin, ms1_pin, ms2_pin, ms3_pin, enable_pin, reset_pin, sleep_pin, fault_pin, cw_endstop_pin,
@@ -384,7 +384,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             self.vocabulary["__fault_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(fault_pin))
             self.vocabulary["__fault_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(fault_pin)
             dev_requires["{0}_{1}_fault_extiline".format(dev_name.lower(), mname.lower())] = {
-                "exti_line": self.mcu_hw.GPIO_to_EXTI_line(fault_pin)}
+                RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(fault_pin)}
             active_level = self.get_config_option("fault", "active_level", mname, mcfg, dev_name, None, {"high", "low"})
             if active_level == "high":
                 config_flags.append(indention + "STEP_MOTOR_FAULT_ACTIVE_HIGH |\\")
@@ -409,7 +409,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             self.vocabulary["__cw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(cw_endstop_pin))
             self.vocabulary["__cw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(cw_endstop_pin)
             dev_requires["{0}_{1}_cw_endstop_extiline".format(dev_name.lower(), mname.lower())] = {
-                "exti_line": self.mcu_hw.GPIO_to_EXTI_line(cw_endstop_pin)}
+                RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(cw_endstop_pin)}
             active_level = self.get_config_option("cw_endstop", "active_level", mname, mcfg, dev_name, None,
                                                   {"high", "low"})
             if active_level == "high":
@@ -433,7 +433,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             self.vocabulary["__ccw_endstop_pin__"] = indention + str(self.mcu_hw.GPIO_to_pin_number(ccw_endstop_pin))
             self.vocabulary["__ccw_endstop_exticr__"] = indention + self.mcu_hw.GPIO_to_AFIO_EXTICR(ccw_endstop_pin)
             dev_requires["{0}_{1}_ccw_endstop_extiline".format(dev_name.lower(), mname.lower())] = {
-                "exti_line": self.mcu_hw.GPIO_to_EXTI_line(ccw_endstop_pin)}
+                RT_EXTI_LINE: self.mcu_hw.GPIO_to_EXTI_line(ccw_endstop_pin)}
             active_level = self.get_config_option("ccw_endstop", "active_level", mname, mcfg, dev_name, None,
                                                   {"high", "low"})
             if active_level == "high":

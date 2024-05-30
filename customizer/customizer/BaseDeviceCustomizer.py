@@ -140,13 +140,13 @@ class BaseDeviceCustomizer(BaseCustomizer):
         return self.get_gpio(d)
 
     def get_i2c(self, d: dict) -> str:
-        i2c = d["i2c"]
-        self.check_resource(i2c, "i2c")
+        i2c = d[RT_I2C]
+        self.check_resource(i2c, RT_I2C)
         return i2c
 
     def get_isr(self, d: dict) -> str:
-        isr = d["irq_handler"]
-        self.check_resource(isr, "irq_handler")
+        isr = d[RT_IRQ_HANDLER]
+        self.check_resource(isr, RT_IRQ_HANDLER)
         return isr
 
     def get_rtc(self, d: dict) -> str:
@@ -155,13 +155,13 @@ class BaseDeviceCustomizer(BaseCustomizer):
         return rtc
 
     def get_spi(self, d: dict) -> str:
-        spi = d["spi"]
-        self.check_resource(spi, "spi")
+        spi = d[RT_SPI]
+        self.check_resource(spi, RT_SPI)
         return spi
 
     def get_backup_reg(self, d: dict) -> str:
-        br = d["bkp"]
-        self.check_resource(br, "bkp")
+        br = d[RT_BACKUP_REG]
+        self.check_resource(br, RT_BACKUP_REG)
         return br
 
     def get_gpio_pin_type(self, t: str):
@@ -171,13 +171,13 @@ class BaseDeviceCustomizer(BaseCustomizer):
         return t
 
     def get_usart(self, d: dict) -> str:
-        usart = d["usart"]
-        self.check_resource(usart, "usart")
+        usart = d[RT_UART]
+        self.check_resource(usart, RT_UART)
         return usart
 
     def get_timer(self, d: dict, subtype=None) -> str:
-        timer = d["timer"]
-        self.check_resource(timer, "timer")
+        timer = d[RT_TIMER]
+        self.check_resource(timer, RT_TIMER)
         t = self.mcu_hw.mcu_resources[timer]
         if subtype and t["subtype"]!=subtype:
             raise RuntimeError("Device {0} uses invalid timer with wrong subtype ({1}). subtype={2} is expected".format(

@@ -44,8 +44,8 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
         timer = self.get_timer(spwm_requires)
         pin_to_name = dict()
         spwm_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)
-        self.check_resource(spwm_irq_handler, "irq_handler")
-        spwm_requires["irq_handler"] = spwm_irq_handler
+        self.check_resource(spwm_irq_handler, RT_IRQ_HANDLER)
+        spwm_requires[RT_IRQ_HANDLER] = spwm_irq_handler
         prescaler = int(self.dev_config["prescaler"])
 
         default_freq = self.dev_config.get("frequency")
@@ -81,7 +81,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
             used_ports[port]["bitmask"] = used_ports[port]["bitmask"] | pin_mask
             used_ports[port]["n_bits"] = used_ports[port]["n_bits"] + 1
 
-            spwm_requires[pin_name] = {"gpio": gpio}
+            spwm_requires[pin_name] = {RT_GPIO: gpio}
             index += 1
 
         pin_gpio_descriptors = []

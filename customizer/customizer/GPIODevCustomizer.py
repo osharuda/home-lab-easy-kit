@@ -67,7 +67,7 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
 
             cpp_pin_defs.append("constexpr size_t {0} = {1};".format(pin_def_name, index))
             c_pin_defs.append("#define {0}  {1}".format(pin_def_name, index))
-            gpio_requires[pin_def_name] = {"gpio": gpio}
+            gpio_requires[pin_def_name] = {RT_GPIO: gpio}
             index += 1
 
         self.vocabulary = self.vocabulary | {

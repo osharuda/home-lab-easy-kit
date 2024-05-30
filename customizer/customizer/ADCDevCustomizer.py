@@ -44,10 +44,10 @@ class ADCDevCustomizer(DeviceCustomizer):
         analog_inputs = set()
         for rname, ritem in adcdev_requires.items():
             rtype, res = self.unpack_resource(ritem)
-            if rtype == "adc_input":
+            if rtype == RT_ADC_INPUT:
                 analog_inputs_names.add(rname)
                 analog_inputs.add(res)
-            elif rtype == "adc":
+            elif rtype == RT_ADC:
                 adc_count += 1
                 adc = res
 
@@ -127,7 +127,7 @@ class ADCDevCustomizer(DeviceCustomizer):
             for rname, ritem in adcdev_requires.items():
 
                 rtype, res = self.unpack_resource(ritem)
-                if rtype == "adc_input":
+                if rtype == RT_ADC_INPUT:
                     adc_input_number += 1
                     try:
                         gpio = self.mcu_hw.ADCChannel_to_GPIO(res)
@@ -136,7 +136,7 @@ class ADCDevCustomizer(DeviceCustomizer):
                         sample_time = self.get_sample_time(dev_config, dev_name, rname)
 
                         # Add requirements for GPIO pin
-                        ritem["gpio"] = gpio
+                        ritem[RT_GPIO] = gpio
                     except KeyError:
                         channel_port = "0"
                         channel_pin = "0"
@@ -145,9 +145,9 @@ class ADCDevCustomizer(DeviceCustomizer):
                     fw_analog_inputs.append("{{ {0}, {1}, {2}, {3} }}".format(channel_port, channel_pin, res, sample_time))
                     sw_analog_inputs.append('{{ "{0}", "{1}", {2}    }}'.format(rname, res, sample_time))
 
-                elif rtype == "adc":
+                elif rtype == RT_ADC:
                     adc = res
-                elif rtype == "timer":
+                elif rtype == RT_TIMER:
                     timer_count += 1
                     timer = self.get_timer(ritem)
                 else:
@@ -182,12 +182,12 @@ class ADCDevCustomizer(DeviceCustomizer):
                 dr_address = self.mcu_hw.get_DMA_DR_for_resource(adc)
                 irq_handler = self.mcu_hw.DMA_Channel_to_IRQHandler(dma_channel)
                 dma_isr_list.append("MAKE_ISR_WITH_INDEX({0}, ADC_COMMON_DMA_IRQ_HANDLER, {1}) \\".format(irq_handler, index))
-                adcdev_requires["DMA_IRQ"] = {"irq_handlers": irq_handler}
-                adcdev_requires["DMA_CHANNEL"] = {"dma_channel": dma_channel}
+                adcdev_requires["DMA_IRQ"] = {RT_IRQ_HANDLER: irq_handler}
+                adcdev_requires["DMA_CHANNEL"] = {RT_DMA_CHANNEL: dma_channel}
             else:
                 irq_handler = self.mcu_hw.ADC_to_ADCHandler(adc)
                 adc_isr_list.append("MAKE_ISR_WITH_INDEX({0}, ADC_COMMON_ADC_IRQ_HANDLER, {1}) \\".format(irq_handler, index))
-                adcdev_requires["ADC_IRQ"] = {"irq_handlers": irq_handler}
+                adcdev_requires["ADC_IRQ"] = {RT_IRQ_HANDLER: irq_handler}
                 print("Warning: device {0} will work in interrupt mode!".format(dev_name))
 
 
