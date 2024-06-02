@@ -50,68 +50,6 @@ void delay_loop(uint32_t n) {
         g_no_var = n;
     }
 }
-/*
-#if ENABLE_SYSTICK!=0
-
-/// \brief This global variable is used by #delay_us() in order to provide required wait.
-/// \warning Don't access to this variable, it's dedicated solely by #delay_us() use.
-volatile uint32_t g_usTicks = 0;
-
-/// \brief This global variable is used by #SysTick_Handler() in order to provide 64-bit timestamp.
-/// \warning Do not access to this variable directly, use #get_us_clock() instead.
-/// \note This is 64-bit variable and STM32 is 32-bit MCU. It means this variable can't be modified atomically.
-///       Atomicity is achieved by disabling interrupts in functions that read it (#get_us_clock()) and by modifying it
-///       in SysTick interrupt only.
-volatile uint64_t g_usClock __attribute__ ((aligned)) = 0;
-
-uint64_t get_us_clock(void) {
-    uint64_t res_clock;
-    DISABLE_IRQ
-        res_clock = g_usClock;
-    ENABLE_IRQ
-    return  res_clock;
-}
-
-/// \brief SysTick interrupt handler.
-/// \note This handler is modifying #g_usClock and #g_usTicks variables.
-void SysTick_Handler(void)
-{
-	g_usClock++;
-    g_usTicks++;
-}
-
-void systick_init(void)
-{
-    IS_ALIGNED(&g_usClock, sizeof(uint64_t));
-	SystemCoreClockUpdate();
-	SysTick_Config(SystemCoreClock / 1000000);
-	NVIC_SetPriority(SysTick_IRQn, IRQ_PRIORITY_SYSTICK);
-}
-
-void delay_us(uint32_t us)
-{
-    DISABLE_IRQ
-    g_usTicks = 0;
-    ENABLE_IRQ
-
-	while (g_usTicks < us);
-}
-
-uint64_t get_tick_diff_64(uint64_t ev_1, uint64_t ev_2) {
-    if (ev_2 >= ev_1) {
-        return ev_2 - ev_1;
-    } else {
-        return ULLONG_MAX - ev_1 + ev_2;
-    }
-}
-
-void delay_ms(uint32_t ms) {
-	while (ms--)
-		delay_us(1000);
-}
-
-#endif
-*//
 
 void timer_start_ex(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority, uint8_t force_first_call) {
     // Check timer is disabled

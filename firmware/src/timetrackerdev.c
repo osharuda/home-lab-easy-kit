@@ -26,6 +26,9 @@
 #include "fw.h"
 #include "timetrackerdev.h"
 #include <stm32f10x.h>
+#include "extihub.h"
+#include "sys_tick_counter.h"
+#include "circbuffer.h"
 
 
 #ifdef TIMETRACKERDEV_DEVICE_ENABLED
@@ -43,6 +46,24 @@ volatile TimeTrackerDevInstance g_timetrackerdev_devs[] = TIMETRACKERDEV_FW_DEV_
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
+uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev);
+
+
+void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
+    uint8_t dev_index = (uint32_t)(ctx);
+    volatile TimeTrackerDevInstance* dev = g_timetrackerdev_devs + dev_index;
+    volatile PCircBuffer circbuf = (volatile PCircBuffer)&dev->circ_buffer;
+
+    uint64_t* data = circbuf_reserve_block(circbuf);
+    if (data) {
+        *data = clock;
+        circbuf_commit_block(circbuf);
+
+        GPIO_WriteBit(dev->near_full_line.port,
+                      dev->near_full_line.pin_mask,
+                      circbuf_check_warning(circbuf));
+    }
+}
 
 void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t index) {
     volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
@@ -52,19 +73,37 @@ void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t ind
     devctx->on_command   = timetrackerdev_execute;
     devctx->on_read_done = timetrackerdev_read_done;
 
-#if TIMETRACKERDEV_DEVICE_BUFFER_TYPE == DEV_LINIAR_BUFFER
-    devctx->buffer       = dev->buffer;
-    devctx->bytes_available = dev->buffer_size;
-#endif
+    systick_get(&dev->privdata.status.last_reset);
+    dev->privdata.status.status = 0;
 
-#if TIMETRACKERDEV_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
     volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
     circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
     devctx->circ_buffer  = circbuf;
-#endif
+    circbuf_init_block_mode(circbuf, sizeof(uint64_t));
+    circbuf_init_status(circbuf,
+                        (volatile uint8_t*)&(dev->privdata.status),
+                        sizeof(TimeTrackerStatus));
 
     comm_register_device(devctx);
+    uint32_t di = devctx->dev_index;
+
+    exti_register_callback(dev->interrup_line.port,
+                           dev->interrup_line.pin_number,
+                           dev->interrup_line.type,
+                           dev->intrrupt_exci_cr,
+                           dev->trig_on_rise,
+                           dev->trig_on_fall,
+                           timetrackerdev_exti_handler,
+                           (volatile void*)di,
+                           1);
+
+    START_PIN_DECLARATION;
+    DECLARE_PIN(dev->near_full_line.port, dev->near_full_line.pin_number, dev->near_full_line.type);
+    PIN_RESET_SET(dev->near_full_line.port, dev->near_full_line.pin_number);
+
+    dev->privdata.status.status = 0;
+    timetrackerdev_reset(dev);
 }
 
 void timetrackerdev_init() {
@@ -74,31 +113,73 @@ void timetrackerdev_init() {
     }
 }
 
+uint8_t timetrackerdev_start(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
+    UNUSED(dev);
+    UNUSED(priv);
+
+    DISABLE_IRQ
+    priv->status.status = TIMETRACKERDEV_STATUS_STARTED;
+    ENABLE_IRQ
+
+    exti_unmask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
+    return 0;
+}
+
+uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
+    UNUSED(dev);
+    UNUSED(priv);
+
+    exti_mask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
+
+    DISABLE_IRQ
+    priv->status.status = TIMETRACKERDEV_STATUS_STOPPED;
+    ENABLE_IRQ
+
+    return 0;
+}
+
+uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev) {
+    DISABLE_IRQ
+    circbuf_reset_no_irq((volatile PCircBuffer)&dev->circ_buffer);
+    dev->privdata.status.event_number = 0;
+    ENABLE_IRQ
+    systick_get(&dev->privdata.status.last_reset);
+    return 0;
+}
+
 void timetrackerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
     volatile TimeTrackerDevInstance* dev = (volatile TimeTrackerDevInstance*)g_timetrackerdev_devs + devctx->dev_index;
     volatile TimeTrackerDevPrivData* priv = &(dev->privdata);
+    uint8_t res;
 
-    // Add command processing code here ...
+    if (cmd_byte & TIMETRACKERDEV_RESET) {
+        timetrackerdev_reset(dev);
+    }
+
+    if (cmd_byte & TIMETRACKERDEV_START) {
+        res = timetrackerdev_start(dev, priv);
+    } else {
+        res = timetrackerdev_stop(dev, priv);
+    }
+
     UNUSED(data);
     UNUSED(length);
-    UNUSED(priv);
 
-    comm_done(0);
+    comm_done(res);
 }
 
 void timetrackerdev_read_done(uint8_t device_id, uint16_t length) {
     volatile PDeviceContext devctx = comm_dev_context(device_id);
     volatile TimeTrackerDevInstance* dev = g_timetrackerdev_devs + devctx->dev_index;
 
-#if TIMETRACKERDEV_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     volatile PCircBuffer circbuf = (volatile PCircBuffer)&(dev->circ_buffer);
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
-#endif
 
-    UNUSED(dev);
-    UNUSED(length);
+    GPIO_WriteBit(dev->near_full_line.port,
+                  dev->near_full_line.pin_mask,
+                  circbuf_check_warning(circbuf));
 
     comm_done(0);
 }

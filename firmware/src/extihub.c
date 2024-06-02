@@ -24,6 +24,7 @@
 #include "fw.h"
 #include "utools.h"
 #include "extihub.h"
+#include "sys_tick_counter.h"
 
 #ifdef EXTIHUB_DEVICE_ENABLED
 

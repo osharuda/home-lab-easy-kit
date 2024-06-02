@@ -28,7 +28,7 @@
 
 #include <cstddef>
 
-#include <ekit_error.hpp>
+#include "ekit_error.hpp"
 
 {__{DEVNAME}_SHARED_HEADER__}
 

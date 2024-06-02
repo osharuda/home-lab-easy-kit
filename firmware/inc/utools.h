@@ -44,6 +44,7 @@ extern int g_assert_param_count;
 typedef struct tag_GPIO_descr {
     GPIOMode_TypeDef type;          /// Input/Output type
     GPIO_TypeDef*    port;          /// Port
+    uint16_t         pin_mask;      /// Pin mask
     uint8_t          pin_number;    /// Number of the pin
     uint8_t          default_val;   /// Default pin state (depends on type)
 } GPIO_descr;

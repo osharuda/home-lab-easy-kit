@@ -25,6 +25,7 @@
 #include <cassert>
 #include <unicode/errorcode.h>
 #include <cstdarg>
+#include <string.h>
 
 namespace tools {
 

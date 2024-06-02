@@ -24,6 +24,7 @@
 #include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
+#include "sys_tick_counter.h"
 
 /// \addtogroup group_communication_i2c_impl
 ///  @{

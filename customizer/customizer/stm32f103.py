@@ -547,6 +547,23 @@ mcu_available_resources += f"""
 mcu_available_resources += f"""
 }}"""
 
+pull_type_map = {
+    KW_PULL_UP: "GPIO_Mode_IPU",
+    KW_PULL_DOWN: "GPIO_Mode_IPD",
+    KW_PULL_NONE: "GPIO_Mode_IN_FLOATING"
+}
+
+out_type_map = {
+    KW_PUSH_PULL: "GPIO_Mode_Out_PP",
+    KW_OPEN_DRAIN: "GPIO_Mode_Out_OD"
+}
+
+trigger_type_map = {
+    KW_RISE: (1, 0),
+    KW_FALL: (0, 1),
+    KW_EDGE: (1, 1)
+}
+
 test_lines = mcu_available_resources.splitlines()
 
 mcu_resources = json.loads(mcu_available_resources)
@@ -637,6 +654,18 @@ def GPIO_to_PinSource(gpio: str) -> str:
 def GPIO_to_EXTI_line(gpio: str) -> str:
     pin_number = int(GPIO_to_pin_number(gpio))
     return "EXTI_Line{0}".format(pin_number)
+
+def GPIO_to_GPIO_Descr(gpio: str, pin_type: str, default_val: int) -> str:
+    if pin_type not in pull_type_map.values() and pin_type not in out_type_map.values():
+        raise RuntimeError(f"Incorrect pin type ({pin_type}) for {gpio}")
+
+    if pin_type in pull_type_map.values() and default_val!=0:
+        raise RuntimeError(f"Input pins must have default value equal to zero. {gpio} default value is {default_val}")
+
+    pin_number = int(GPIO_to_pin_number(gpio))
+    pin_port = GPIO_to_port(gpio)
+
+    return f"{{.type={pin_type}, .port={pin_port}, .pin_mask={1 << pin_number}, .pin_number={pin_number}, .default_val={default_val} }}"
 
 
 def EXTINum_to_EXTIHandler(extinum: int) -> str:

@@ -23,9 +23,10 @@
 #include "utools.h"
 #include "fw.h"
 #include "sys_tick_counter.h"
-//#include <stm32f10x.h>
 
-static volatile uint64_t g_systick_irq_cnt = 0;
+#if ENABLE_SYSTICK!=0
+
+volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned)) = 0;
 
 MAKE_ISR(SYS_TICK_ISR) {
     g_systick_irq_cnt++;
@@ -34,32 +35,4 @@ MAKE_ISR(SYS_TICK_ISR) {
 void systick_init(void) {
     timer_start_periodic(SYS_TICK_PERIPH, SYSTICK_PRESCALLER, SYSTICK_PERIOD, SYS_TICK_IRQ, IRQ_PRIORITY_SYSTICK);
 }
-
-void systick_get(uint64_t* timestamp) {
-    uint64_t irq_cnt1, irq_cnt2;
-    uint16_t cnt;
-
-    do {
-        DISABLE_IRQ
-        irq_cnt1 = g_systick_irq_cnt;
-        ENABLE_IRQ
-
-        cnt = SYS_TICK_PERIPH->CNT;
-
-        DISABLE_IRQ
-        irq_cnt2 = g_systick_irq_cnt;
-        ENABLE_IRQ
-    } while (irq_cnt1 != irq_cnt2);
-
-    *timestamp = ( irq_cnt1 << (sizeof(uint16_t)*CHAR_BIT) ) + cnt;
-}
-
-void delay(uint64_t duration) {
-    uint64_t when, end;
-    systick_get(&when);
-    when += duration;
-
-    do {
-        systick_get(&end);
-    } while (end < when);
-}
+#endif // of ENABLE_SYSTICK

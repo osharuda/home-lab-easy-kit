@@ -6,7 +6,7 @@ KW_SIGNALS      = "signals"
 KW_TYPE         = "type"
 KW_DEFAULT      = "default"
 KW_PIN          = "pin"
-KW_PULL         = "pull"
+
 KW_TIMER_IRQ_HANDLER = "timer_handler"
 
 KW_MAIN_TIMER   = "main_timer"
@@ -48,10 +48,14 @@ KW_HLEKIO       = "hlekio"
 KW_INFO_URL     = "info_url"
 KW_CPU          = "cpu"
 
+# Trigger types
 KW_TRIGGER      = "trigger"
 KW_RISE         = "rise"
 KW_FALL         = "fall"
 KW_EDGE         = "edge"
+
+# Input pull types
+KW_PULL         = "pull"
 KW_PULL_UP      = "up"
 KW_PULL_DOWN    = "down"
 KW_PULL_NONE    = "none"
@@ -59,6 +63,11 @@ KW_PULL_NONE    = "none"
 # Logical levels
 KW_LOGICAL_HI  = "high"
 KW_LOGICAL_LO  = "low"
+
+# Purpose of the pins
+KW_INTERRUPT   = "interrupt"
+KW_NEAR_FULL   = "near_full"
+KW_NEAR_empty  = "near_empty"
 
 # Pin types
 KW_PIN_TYPE = "pin-type"

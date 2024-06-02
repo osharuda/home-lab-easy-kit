@@ -23,6 +23,7 @@
 #include <stm32f10x_flash.h>
 #include "fw.h"
 #include "utools.h"
+#include "sys_tick_counter.h"
 #include "i2c_bus.h"
 #include "info_dev.h"
 #include "deskdev.h"

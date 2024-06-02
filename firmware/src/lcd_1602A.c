@@ -25,6 +25,7 @@
 #include "utools.h"
 #include "i2c_bus.h"
 #include "lcd_1602A.h"
+#include "sys_tick_counter.h"
 
 #ifdef LCD1602a_DEVICE_ENABLED
 

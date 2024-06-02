@@ -38,6 +38,7 @@
 /// \struct tag_TimeTrackerDevPrivData
 /// \brief Structure that describes private TimeTrackerDev data
 typedef struct tag_TimeTrackerDevPrivData {
+    volatile TimeTrackerStatus status;
     uint8_t priv_data;  ///< Some private data.
 } TimeTrackerDevPrivData;
 typedef volatile TimeTrackerDevPrivData* PTimeTrackerDevPrivData;
@@ -46,22 +47,17 @@ typedef volatile TimeTrackerDevPrivData* PTimeTrackerDevPrivData;
 /// \struct tag_TimeTrackerDevInstance
 /// \brief Structure that describes TimeTrackerDev virtual device
 typedef struct __attribute__ ((aligned)) tag_TimeTrackerDevInstance {
-        volatile DeviceContext      dev_ctx __attribute__ ((aligned));            ///< Virtual device context
-
-#if TIMETRACKERDEV_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
-        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
-#endif
-
-        volatile TimeTrackerDevPrivData   privdata;          ///< Private data used by this TimeTrackerDev device
-
-#if TIMETRACKERDEV_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
-        volatile uint8_t*           buffer;             ///< Internal buffer
-
-        uint16_t                    buffer_size;        ///< Buffer size
-#endif
-
-        uint8_t                     dev_id;             ///< Device ID for TimeTrackerDev virtual device
-
+        volatile DeviceContext      dev_ctx __attribute__ ((aligned));  ///< Virtual device context
+        volatile CircBuffer         circ_buffer;                        ///< Circular buffer control structure
+        volatile TimeTrackerDevPrivData   privdata;                     ///< Private data used by this TimeTrackerDev device
+        volatile GPIO_descr         interrup_line;                      ///< Line dedicated for interrupts
+        volatile GPIO_descr         near_full_line;                     ///< Line dedicated for buffer nearly full warning
+        volatile uint8_t*           buffer;                             ///< Internal buffer
+        uint16_t                    buffer_size;                        ///< Buffer size
+        uint16_t                    intrrupt_exci_cr;                   ///< Interrupt EXTI control register value; see AFIO_EXTICRXXX constants in CMSIS. (available in firmware part only)
+        uint8_t                     dev_id;                             ///< Device ID for TimeTrackerDev virtual device
+        uint8_t                     trig_on_rise;                       ///< 1 if trigger on signal rise is required, otherwise 0
+        uint8_t                     trig_on_fall;                       ///< 1 if trigger on signal fall is required, otherwise 0
 } TimeTrackerDevInstance;
 
 typedef volatile TimeTrackerDevInstance* PTimeTrackerDevInstance;

@@ -26,6 +26,7 @@
 #include "i2c_bus.h"
 #include "irrc.h"
 #include "extihub.h"
+#include "sys_tick_counter.h"
 
 #ifdef IRRC_DEVICE_ENABLED
 

@@ -71,6 +71,38 @@ class TimeTrackerDev final : public EKitVirtualDevice {
 
     /// \brief Destructor (virtual)
 	~TimeTrackerDev() override;
+
+    /// \brief Start device.
+    /// \param reset - reset device before starting.
+    void start(bool reset);
+
+    /// \brief Stops device.
+    void stop();
+
+    /// \brief Obtain status of the device
+    /// \param running - output parameter, it is set to true if device is running, otherwise it is set to false.
+    /// \param reset_ts - timestamp when device was reset
+    /// \return number of events accumulated
+    size_t get_status(bool& running, uint64_t& reset_ts);
+
+    /// \brief Reads all data from the device
+    /// \param data - std::vector to be used as storage. Data is appended to the end of the vector
+    void read_all(std::vector<uint64_t>& data);
+private:
+    PTimeTrackerStatus dev_status;
+    uint64_t* data_buffer;
+    std::vector<uint8_t> raw_buffer;
+
+    /// \brief Sends a command to the devive
+    /// \param flags - command byte flags to be used.
+    void send_command(int flags);
+
+    /// \brief Read status and data from device into internal buffer.
+    /// \param status - pointer to the device status.
+    /// \param data - pointer to the array with data.
+    /// \param count - number of timestamp elements in data array to be read.
+    /// \param to - timeout counting object
+    void get_priv(size_t count, EKitTimeout& to);
 };
 
 /// @}

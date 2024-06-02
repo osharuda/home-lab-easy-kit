@@ -25,6 +25,7 @@
 #include "utools.h"
 #include "step_motor.h"
 #include "step_motor_commands.h"
+#include "sys_tick_counter.h"
 #include "extihub.h"
 
 #ifdef STEP_MOTOR_DEVICE_ENABLED

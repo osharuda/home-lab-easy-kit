@@ -4,9 +4,9 @@
 check_env
 
 # Downloading kernel
-#git clone --depth=1 https://github.com/raspberrypi/linux
 rm -rf linux
-tar xzf ./backup/linux_kernel.tar.gz
+git clone --depth=1 https://github.com/raspberrypi/linux
+#tar xzf ./backup/linux_kernel.tar.gz
 cd linux
 
 # Setting required variables

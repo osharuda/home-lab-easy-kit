@@ -20,6 +20,10 @@
 /// \addtogroup group_timetrackerdev
 /// @{{
 
+#define TIMETRACKERDEV_STATUS_STOPPED        0
+#define TIMETRACKERDEV_STATUS_STARTED        1
+
+
 /// \def TIMETRACKERDEV_RESERVED_3
 /// \brief Defines TimeTrackerDev command specific flag 3
 #define TIMETRACKERDEV_RESERVED_3             128
@@ -28,19 +32,23 @@
 /// \brief Defines TimeTrackerDev command specific flag 2
 #define TIMETRACKERDEV_RESERVED_2             64
 
-/// \def TIMETRACKERDEV_RESERVED_1
-/// \brief Defines TimeTrackerDev command specific flag 1
-#define TIMETRACKERDEV_RESERVED_1             32
+/// \def TIMETRACKERDEV_RESET
+/// \brief Defines reset option for TimeTrackerDev command. If flag is specified, device must be reset.
+#define TIMETRACKERDEV_RESET                  32
 
-/// \def TIMETRACKERDEV_RESERVED_0
-/// \brief Defines TimeTrackerDev command specific flag 0
-#define TIMETRACKERDEV_RESERVED_0             16
+/// \def TIMETRACKERDEV_START
+/// \brief Defines start TimeTrackerDev command. If flag is specified, the device in instructed
+///        to switch into started state. If flag is not set, the device should be switched to stopped state.
+#define TIMETRACKERDEV_START                  16
 
-/// \struct tag_TimeTrackerDevCommand
-/// \brief This structure describes TimeTrackerDev command
+/// \struct tag_TimeTrackerStatus
+/// \brief Structure that describes status of the TimeTrackerDev device
 #pragma pack(push, 1)
-typedef struct tag_TimeTrackerDevCommand {{
-    uint16_t data;  ///< Some data. Customize it for particular device.
-}} TimeTrackerDevCommand;
+typedef struct tag_TimeTrackerStatus {{
+    uint64_t last_reset;  ///< Timestamp of the last reset operation.
+    uint16_t event_number;///< Number of events accumulated.
+    uint8_t status;       ///< Current status.
+}} TimeTrackerStatus;
 #pragma pack(pop)
+typedef volatile TimeTrackerStatus* PTimeTrackerStatus;
 /// @}}

@@ -1,4 +1,4 @@
 {
     "install_path": "/usr/local",
-    "cmsis_path": "~/STM32F10x_StdPeriph_Lib_V3.6.0"
+    "cmsis_path": "/mnt/SHARE/STM32F10x_StdPeriph_Lib_V3.6.0"
 }

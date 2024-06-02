@@ -26,6 +26,7 @@
 #include "i2c_bus.h"
 #include "deskdev.h"
 #include "extihub.h"
+#include "sys_tick_counter.h"
 
 #ifdef DESKDEV_DEVICE_ENABLED
 

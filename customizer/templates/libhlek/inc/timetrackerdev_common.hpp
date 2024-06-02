@@ -28,7 +28,7 @@
 
 #include <cstddef>
 
-#include <ekit_error.hpp>
+#include "ekit_error.hpp"
 
 {__TIMETRACKERDEV_SHARED_HEADER__}
 
@@ -40,7 +40,7 @@
 typedef struct tag_TimeTrackerDevConfig{{
     uint8_t         dev_id;             ///< Device ID for TimeTrackerDev virtual device
     const char*     dev_name;           ///< Name of the TimeTrackerDev virtual device as given in JSON configuration file
-    size_t          dev_buffer_len;     ///< Length of the TimeTrackerDev internal buffer, 0 if no buffer is used.
+    size_t          dev_buffer_len;     ///< Length of the TimeTrackerDev internal buffer
 }} TimeTrackerDevConfig;
 
 /// @}}

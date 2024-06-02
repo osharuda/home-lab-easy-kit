@@ -55,10 +55,7 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
 
             pin_def_name = "GPIODEV_{0}_PIN".format(pin_name.upper())
 
-            fw_pin_list.append("{{ {0}, {1}, {2}, {3} }}".format(pin_type,
-                                                                 self.mcu_hw.GPIO_to_port(gpio),
-                                                                 self.mcu_hw.GPIO_to_pin_number(gpio),
-                                                                 def_val))
+            fw_pin_list.append(self.mcu_hw.GPIO_to_GPIO_Descr(gpio, pin_type, def_val))
 
             sw_pin_list.append('{{ {0}, {1}, {2}, "{3}" }}'.format(pin_def_name,
                                                             in_def,

@@ -48,88 +48,38 @@ class TimeTrackerDevCustomizer(DeviceCustomizer):
         index = 0
         for dev_name, dev_config in self.device_list:
 
+            self.require_feature("SYSTICK", dev_config)
+
             dev_requires = dev_config[KW_REQUIRES]
             dev_id       = dev_config[KW_DEV_ID]
             buffer_size  = dev_config[KW_BUFFER_SIZE]
 
-            for rdecl, ritem in dev_requires.items():
-                rtype, rname = self.unpack_resource(ritem)
 
-                # Custom resource handling
-                if rtype == RT_GPIO:
-                    # process gpio resources here
-                    pass
-                elif rtype == RT_IRQ_HANDLER:
-                    # process IRQ handlers here
-                    pass
-                elif rtype == RT_EXTI_LINE:
-                    # process EXTI lines
-                    pass
-                elif rtype == RT_BACKUP_REG:
-                    # process backup registers
-                    pass
-                elif rtype == RT_TIMER:
-                    # process timers
-                    pass
-                elif rtype == RT_UART:
-                    # process usart
-                    pass
-                elif rtype == RT_I2C:
-                    # process i2c
-                    pass
-                elif rtype == RT_DMA:
-                    # process dma
-                    pass
-                elif rtype == RT_DMA_CHANNEL:
-                    # process dma_channel
-                    pass
-                elif rtype == RT_ADC:
-                    # process ADC
-                    pass
-                elif rtype == RT_ADC_INPUT:
-                    # process ADC input
-                    pass
-                elif rtype == RT_SPI:
-                    # process SPI
-                    pass
-                else:
-                    raise RuntimeError('Wrong resource specified in {0} requirements: "{1}"'.format(dev_name, rdecl))
+            interrupt_pin = self.get_gpio(get_param(dev_requires, KW_INTERRUPT, f' for device "{dev_name}"'))
+            exti_line = self.mcu_hw.GPIO_to_EXTI_line(interrupt_pin)
+            dev_requires[f"exti_line_{dev_name}"] = {RT_EXTI_LINE: exti_line}
+            exti_control_reg = self.mcu_hw.GPIO_to_AFIO_EXTICR(interrupt_pin)
 
-            # Do not forget to add IRQs, DMA and other related resources
-            if "DEV_CIRCULAR_BUFFER" == "DEV_NO_BUFFER":
-                # No buffers
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {0} }}".format(
-                    dev_id))
+            exti_type = get_param(dev_config, KW_PULL, f' for device "{dev_name}"', self.mcu_hw.pull_type_map)
+            exti_raise, exti_fall = get_param(dev_config, KW_TRIGGER, f' for device "{dev_name}"',
+                                              self.mcu_hw.trigger_type_map)
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", 0}}'.format(
-                    dev_id, dev_name))
+            near_full_pin = self.get_gpio(get_param(dev_requires, KW_NEAR_FULL, f' for device "{dev_name}"'))
+            near_full_pin_type = self.mcu_hw.out_type_map[KW_PUSH_PULL]
 
-                fw_device_buffers = []
-            elif "DEV_CIRCULAR_BUFFER" == "DEV_LINIAR_BUFFER":
-                # Buffer is present
-                fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
-                    dev_id, dev_name, buffer_size))
+            # Configure buffer
+            fw_buffer_name = "g_{0}_buffer".format(dev_name)
+            exti_pin_descr = self.mcu_hw.GPIO_to_GPIO_Descr(interrupt_pin, exti_type, 0)
+            near_full_pin_descr = self.mcu_hw.GPIO_to_GPIO_Descr(near_full_pin, near_full_pin_type, 0)
+            fw_device_descriptors.append(f"""{{ {{0}}, {{0}}, {{ {{0}}, 0}}, {exti_pin_descr}, {near_full_pin_descr}, {fw_buffer_name}, {buffer_size}, {exti_control_reg}, {dev_id}, {exti_raise}, {exti_fall} }}""")
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
-            elif "DEV_CIRCULAR_BUFFER" == "DEV_CIRCULAR_BUFFER":
-                # Buffer is present
-                fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
+            sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
+                dev_id, dev_name, buffer_size))
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
-                    dev_id, dev_name, buffer_size))
+            fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
-
+            # libconfig
             sw_config_name = "timetrackerdev_{0}_config_ptr".format(dev_name)
             sw_config_declarations.append(f"extern const TimeTrackerDevConfig* {sw_config_name};")
             sw_configs.append(
