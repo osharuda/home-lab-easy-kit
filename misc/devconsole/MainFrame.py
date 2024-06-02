@@ -100,6 +100,9 @@ class MainFrame(wx.Frame):
         self.btn_deploy = wx.Button(self, wx.ID_ANY, "PROJECT")
         sizer_5.Add(self.btn_deploy, 0, wx.EXPAND | wx.RIGHT, 0)
 
+        self.btn_clear = wx.Button(self, wx.ID_ANY, "CLR SCR")
+        sizer_5.Add(self.btn_clear, 0, wx.EXPAND | wx.RIGHT, 0)
+
         self.panel_1 = wx.Panel(self, wx.ID_ANY, style=wx.BORDER_NONE)
         toolbar_sizer.Add(self.panel_1, 1, wx.EXPAND, 0)
 
@@ -184,6 +187,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_new_config, self.button_new_config)
         self.Bind(wx.EVT_BUTTON, self.on_install_software, self.btn_deploy_software)
         self.Bind(wx.EVT_BUTTON, self.on_create_project, self.btn_deploy)
+        self.Bind(wx.EVT_BUTTON, self.on_clear_screen, self.btn_clear)
         self.Bind(wx.EVT_CHOICE, self.on_build_type_choise, self.choice_build_type)
         self.Bind(wx.EVT_BUTTON, self.on_build, self.btn_build)
         self.Bind(wx.EVT_CHOICE, self.on_last_json_select, self.choice_last_json)
@@ -455,4 +459,7 @@ class MainFrame(wx.Frame):
         self.app_logic.debug_monitor()
         event.Skip()
 
+    def on_clear_screen(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.text_log.Clear()
+        event.Skip()
 # end of class MainFrame
