@@ -265,6 +265,10 @@ class AppLogic:
     def BuildType(self, value: str):
         self.make_release = value.upper() == "RELEASE"
 
+    @property
+    def LogFileName(self):
+        return os.path.join(self.MountPoint, self.LastConfigName, "build.log")
+
 # endregion
 # region MUTLITHREADING
 
@@ -835,6 +839,9 @@ class AppLogic:
     def sanitize_config(self):
         if not self.LastConfiguration:
             raise RuntimeError("Configuration is not set")
+
+    def read_log(self) -> str:
+        return pytools.read_text_file(self.LogFileName)
 
 # endregion
 

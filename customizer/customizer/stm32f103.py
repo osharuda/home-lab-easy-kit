@@ -59,9 +59,9 @@ def get_bus_frequency(bus: str) -> int:
     if bus in APB1_BUS:
         return 18000000
     elif bus in APB2_BUS:
-        return 72000000
+        return system_clock
     elif bus in AHB_BUS:
-        return 72000000
+        return system_clock
     else:
         raise RuntimeError(f'Unknown bus: "{bus}"')
 
@@ -938,3 +938,6 @@ def spi_get_frame_format(value: str):
 def spi_get_frame_size(value: str):
     val_map = {8: 0, 16: 1}
     return val_map.get(int(value))
+
+def systick_frequency():
+    return system_clock

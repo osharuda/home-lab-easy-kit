@@ -103,6 +103,9 @@ class MainFrame(wx.Frame):
         self.btn_clear = wx.Button(self, wx.ID_ANY, "CLR SCR")
         sizer_5.Add(self.btn_clear, 0, wx.EXPAND | wx.RIGHT, 0)
 
+        self.btn_build_log = wx.Button(self, wx.ID_ANY, "Build log")
+        sizer_5.Add(self.btn_build_log, 0, wx.EXPAND | wx.RIGHT, 0)
+
         self.panel_1 = wx.Panel(self, wx.ID_ANY, style=wx.BORDER_NONE)
         toolbar_sizer.Add(self.panel_1, 1, wx.EXPAND, 0)
 
@@ -188,6 +191,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_install_software, self.btn_deploy_software)
         self.Bind(wx.EVT_BUTTON, self.on_create_project, self.btn_deploy)
         self.Bind(wx.EVT_BUTTON, self.on_clear_screen, self.btn_clear)
+        self.Bind(wx.EVT_BUTTON, self.on_build_log, self.btn_build_log)
         self.Bind(wx.EVT_CHOICE, self.on_build_type_choise, self.choice_build_type)
         self.Bind(wx.EVT_BUTTON, self.on_build, self.btn_build)
         self.Bind(wx.EVT_CHOICE, self.on_last_json_select, self.choice_last_json)
@@ -201,7 +205,8 @@ class MainFrame(wx.Frame):
         self.disabled_controls = []
         self.all_controls = [self.btn_nfs_config, self.choice_remote_config, self.button_delete_remote_config,
                              self.button_edit_config, self.button_new_config, self.choice_build_type,
-                             self.btn_deploy_software, self.btn_build, self.btn_flash, self.btn_deploy]
+                             self.btn_deploy_software, self.btn_build, self.btn_flash, self.btn_deploy, self.btn_clear,
+                             self.btn_build_log]
 
         # OnComplete event
         self.Bind(EVT_COMPLETE, self.on_complete)
@@ -461,5 +466,9 @@ class MainFrame(wx.Frame):
 
     def on_clear_screen(self, event):  # wxGlade: MainFrame.<event_handler>
         self.text_log.Clear()
+        self.log = ""
+        event.Skip()
+    def on_build_log(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.make_log(self.app_logic.read_log())
         event.Skip()
 # end of class MainFrame

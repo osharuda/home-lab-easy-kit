@@ -66,7 +66,7 @@ void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to) {
     static const char* const func_name = "TimeTrackerDev::get_priv";
     size_t buffer_data_size = sizeof(uint64_t)*count;
 
-    if (buffer_data_size <= config->dev_buffer_len) {
+    if (buffer_data_size > config->dev_buffer_len) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "Internal buffer is not sufficient for this request.");
     }
 
@@ -91,14 +91,36 @@ size_t TimeTrackerDev::get_status(bool& running, uint64_t& reset_ts) {
     get_priv(0, to);
 
     running = (dev_status->status == TIMETRACKERDEV_STATUS_STARTED);
-    reset_ts = dev_status->last_reset;
+    reset_ts = dev_status->first_event_ts;
     return dev_status->event_number;
 }
 
-void TimeTrackerDev::read_all(std::vector<uint64_t>& data) {
+void TimeTrackerDev::read_all(std::vector<uint64_t>& data, bool relative) {
     EKitTimeout to(get_timeout());
     BusLocker          blocker(bus, get_addr(), to);
 
     get_priv(0, to);
-    get_priv(dev_status->event_number, to);
+    size_t n = dev_status->event_number;
+
+    get_priv(n, to);
+    uint64_t start_point = relative ? dev_status->first_event_ts: 0;
+    for (size_t i=0; i<n; i++) {
+        data.push_back(data_buffer[i] - start_point);
+    }
 }
+
+void TimeTrackerDev::read_all(std::vector<double>& data, bool relative) {
+    EKitTimeout to(get_timeout());
+    BusLocker          blocker(bus, get_addr(), to);
+
+    get_priv(0, to);
+    size_t n = dev_status->event_number;
+
+    get_priv(n, to);
+    uint64_t start_point = relative ? dev_status->first_event_ts: 0;
+    for (size_t i=0; i<n; i++) {
+        data.push_back((double)(data_buffer[i] - start_point) / (double)1.0e6L);
+    }
+}
+
+void read_all(std::vector<double>& data);

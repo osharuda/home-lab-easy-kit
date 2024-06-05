@@ -92,8 +92,15 @@ def is_parent_of(path: str, parent: str):
             p = p[1:]
     return True
 
-
 def path_rebase(src: str, dst: str, p: str) -> str:
+    """
+      Transform path by substituting parent directrory from one to another.
+
+      :param src: Old parent directory
+      :param dst: New parent directory
+      :param p: Original path to be transformed
+      :return: Modified file system path.
+    """
     abs_src = os.path.abspath(src).split(os.path.sep)
     abs_dst = os.path.abspath(dst).split(os.path.sep)
     abs_p = os.path.abspath(p).split(os.path.sep)

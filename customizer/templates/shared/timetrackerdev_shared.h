@@ -45,9 +45,9 @@
 /// \brief Structure that describes status of the TimeTrackerDev device
 #pragma pack(push, 1)
 typedef struct tag_TimeTrackerStatus {{
-    uint64_t last_reset;  ///< Timestamp of the last reset operation.
-    uint16_t event_number;///< Number of events accumulated.
-    uint8_t status;       ///< Current status.
+    uint64_t first_event_ts; ///< Timestamp of the first event after reset operation. If UINT64_MAX no events since reset.
+    uint16_t event_number;   ///< Number of events accumulated.
+    uint8_t status;          ///< Current status.
 }} TimeTrackerStatus;
 #pragma pack(pop)
 typedef volatile TimeTrackerStatus* PTimeTrackerStatus;

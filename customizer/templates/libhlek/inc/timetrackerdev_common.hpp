@@ -41,6 +41,7 @@ typedef struct tag_TimeTrackerDevConfig{{
     uint8_t         dev_id;             ///< Device ID for TimeTrackerDev virtual device
     const char*     dev_name;           ///< Name of the TimeTrackerDev virtual device as given in JSON configuration file
     size_t          dev_buffer_len;     ///< Length of the TimeTrackerDev internal buffer
+    size_t          tick_freq;          ///< Tick frequency
 }} TimeTrackerDevConfig;
 
 /// @}}

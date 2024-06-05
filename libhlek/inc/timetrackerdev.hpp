@@ -81,13 +81,19 @@ class TimeTrackerDev final : public EKitVirtualDevice {
 
     /// \brief Obtain status of the device
     /// \param running - output parameter, it is set to true if device is running, otherwise it is set to false.
-    /// \param reset_ts - timestamp when device was reset
+    /// \param first_ts - first timestamp since the last reset. If no events happened, UINT64_MAX.
     /// \return number of events accumulated
-    size_t get_status(bool& running, uint64_t& reset_ts);
+    size_t get_status(bool& running, uint64_t& first_ts);
 
     /// \brief Reads all data from the device
     /// \param data - std::vector to be used as storage. Data is appended to the end of the vector
-    void read_all(std::vector<uint64_t>& data);
+    /// \param relative - if true, all events are returned relative to first event since reset.
+    void read_all(std::vector<uint64_t>& data, bool relative);
+
+    /// \brief Reads all data from the device
+    /// \param data - std::vector of double to be used as storage. Data is appended to the end of the vector. Values are seconds.
+    /// \param relative - if true, all events are returned relative to first event since reset.
+    void read_all(std::vector<double>& data, bool relative);
 private:
     PTimeTrackerStatus dev_status;
     uint64_t* data_buffer;

@@ -2486,19 +2486,56 @@ void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 //----------------------------------------------------------------------------------------------//
-//                                    TimeTrackerDevInfoHandler                                      //
+//                                    TimeTrackerDevStartHandler                                      //
 //----------------------------------------------------------------------------------------------//
-DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevInfoHandler,"timetrackerdev::", "::info")
-std::string TimeTrackerDevInfoHandler::help() const {
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevStartHandler,"timetrackerdev::", "::start")
+std::string TimeTrackerDevStartHandler::help() const {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
-    return tools::format_string("# %s shows information for %s device. No parameters are required.\n",
+    return tools::format_string("# %s starts %s device. No parameters are required.\n",
                                 get_command_name(), 
                                 d->get_dev_name());
 }
 
-void TimeTrackerDevInfoHandler::handle(const std::vector<std::string>& args) {
+void TimeTrackerDevStartHandler::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
-    ui->log(tools::str_format("Not implemented"));
+    d->start(true);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    TimeTrackerDevStopHandler                                      //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevStopHandler,"timetrackerdev::", "::stop")
+std::string TimeTrackerDevStopHandler::help() const {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    return tools::format_string("# %s stops %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void TimeTrackerDevStopHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    d->stop();
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    TimeTrackerDevReadHandler                                      //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevReadHandler,"timetrackerdev::", "::read")
+std::string TimeTrackerDevReadHandler::help() const {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    return tools::format_string("# %s reads all timestampts from %s device. No parameters are required.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void TimeTrackerDevReadHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    std::vector<double> data;
+    d->read_all(data, true);
+    for (auto d=data.begin(); d!=data.end(); ++d) {
+        ui->log(tools::str_format("%f sec",*d));
+    }
+
 }
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE

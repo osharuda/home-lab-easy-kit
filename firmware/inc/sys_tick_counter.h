@@ -33,7 +33,7 @@ extern volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned));
 
 // Systick is configured to fire interrupt once per 65536 ticks
 #define SYSTICK_PRESCALLER (0)
-#define SYSTICK_CNT_FREQ  (MCU_FREQUENCY/(SYSTICK_PRESCALLER + 2))
+#define SYSTICK_CNT_FREQ  (MCU_FREQUENCY/(SYSTICK_PRESCALLER + 1))
 #define SYSTICK_PERIOD (0xFFFF)
 #define SYSTICK_ONE_US_CNT (SYSTICK_CNT_FREQ / 1000000)
 #define SYSTICK_ONE_MS_CNT (SYSTICK_CNT_FREQ / 1000)
