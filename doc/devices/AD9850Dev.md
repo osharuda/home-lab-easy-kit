@@ -33,7 +33,7 @@ AD9850 chip (from Analog Devices) is a well accessed, not cheap DDS generator of
 | `"requires"` | Describes peripherals required by the virtual device. | Object with `"gpio"` required pins | Yes |
 | `"D0"`-`"D7"` | Data pins | `"gpio"` | Yes |
 | `"W_CLK"` | Word load clock signal | `"gpio"` | Yes |
-| `"FQ_UD"` | Word load clock signal | `"gpio"`| Yes |
+| `"FQ_UD"` | Frequency update signal | `"gpio"`| Yes |
 | `"RESET"` | Reset signal | `"gpio"`| Yes |
 
 
