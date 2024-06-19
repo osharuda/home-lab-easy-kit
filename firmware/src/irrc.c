@@ -85,6 +85,7 @@ void irrc_readdone(uint8_t device_id, uint16_t length) {
 
 void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx) {
     UNUSED(ctx);
+    now = SYSTICK_TO_uS(now);
 	volatile uint64_t diff = get_tick_diff_64(irrc_data.signal_start, now);
 	if (diff>=IRRC_NEC_REPEAT_MAX) {
 		// seems like uncompleted transmission, clear previous data

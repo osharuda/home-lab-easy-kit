@@ -57,7 +57,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
         for dev_name, dev_config in self.device_list:
             self.require_feature("SYSTICK", dev_config)
-            dev_id = dev_config["dev_id"]
+            dev_id = dev_config[KW_DEV_ID]
             motors_cfg = dev_config["motors"]
             dev_requires = dev_config[KW_REQUIRES]
             motors_count = len(motors_cfg)
@@ -94,7 +94,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
 
                 used_pins = self.get_driver_gpio(mot_name, mot_cfg, dev_name, dev_requires)
                 # Motor buffers
-                mot_buf_size = int(mot_cfg["buffer_size"])
+                mot_buf_size = int(mot_cfg[KW_BUFFER_SIZE])
                 mot_buffer_name = mot_var_prefix + "_buffer"
                 fw_motor_buffers.append(self.tab + "uint8_t {0}[{1}] = {{0}}; \\".format(mot_buffer_name, mot_buf_size))
 

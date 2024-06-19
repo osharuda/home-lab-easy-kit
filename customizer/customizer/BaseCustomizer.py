@@ -32,6 +32,8 @@ class BaseCustomizer:
         self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
         self.proto_header = "i2c_proto.h"
         self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
+        self.hlekio_ioctl = "hlekio_ioctl.h"
+        self.hlekio_dir = os.path.join(get_project_root(), "hlekio")
 
         # get info uuid length
         h, hash_len = hash_dict_as_c_array("")

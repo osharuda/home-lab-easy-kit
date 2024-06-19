@@ -126,6 +126,7 @@ void CONTROLS_EXTI_HANDLER(uint64_t timestamp, volatile void* ctx)
     uint32_t events = (uint32_t)ctx;
 	uint8_t push = 0;
 	uint16_t tmp;
+    timestamp = SYSTICK_TO_uS(timestamp);
 
 	if (events & BUTTON_UP_PIN_MASK)
 	{

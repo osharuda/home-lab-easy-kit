@@ -52,7 +52,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
 
         index = 0
         for dev_name, dev_config in self.device_list:
-            dev_id       = dev_config["dev_id"]
+            dev_id       = dev_config[KW_DEV_ID]
             dev_requires = dev_config[KW_REQUIRES]
 
             use_dma = dev_config["use_dma"] != 0
@@ -64,7 +64,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
             dma_tx = self.mcu_hw.dma_request_map[spi + "_TX"]
             dma_rx_it = "0"
             dma_tx_it = "0"
-            buffer_size = dev_config.get("buffer_size", 0)  # Due to SPI nature, buffer size is the same for input and output
+            buffer_size = dev_config.get(KW_BUFFER_SIZE, 0)  # Due to SPI nature, buffer size is the same for input and output
             dma_tx_preinit = "NULL"
             dma_rx_preinit = "NULL"
 
@@ -132,7 +132,7 @@ class SPIProxyCustomizer(DeviceCustomizer):
 
             self.check_requirements(spi_confg_dev, dev_requires, "dev_{0}".format(dev_name), exclude_resources)
 
-            baud_rate_control, spi_freq = self.mcu_hw.spi_get_baud_rate_control(spi_confg_dev, dev_config["clock_speed"])
+            baud_rate_control, spi_freq = self.mcu_hw.spi_get_baud_rate_control(spi_confg_dev, dev_config[KW_CLOCK_SPEED])
             clock_phase  = self.mcu_hw.spi_get_clock_phase(dev_config["clock_phase"])
             clock_polarity = self.mcu_hw.spi_get_clock_polarity(dev_config["clock_polarity"])
             frame_format = self.mcu_hw.spi_get_frame_format(dev_config["frame_format"])

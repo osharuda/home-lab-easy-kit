@@ -386,27 +386,46 @@ void enable_debug_pins(void);
 
 /// \brief set debug pin PC_13 to logical 1.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void set_debug_pin_0(void);
+__attribute__((always_inline)) static inline
+void set_debug_pin_0(void) {
+    GPIOC->BSRR = GPIO_Pin_13;
+}
 
 /// \brief clears debug pin PC_13 to logical 0.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void clear_debug_pin_0(void);
+__attribute__((always_inline)) static inline
+void clear_debug_pin_0(void) {
+    GPIOC->BRR = GPIO_Pin_13;
+}
 
 /// \brief set debug pin PC_14 to logical 1.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void set_debug_pin_1(void);
+__attribute__((always_inline)) static inline
+void set_debug_pin_1(void) {
+    GPIOC->BSRR = GPIO_Pin_14;
+}
 
 /// \brief clears debug pin PC_14 to logical 0.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void clear_debug_pin_1(void);
+__attribute__((always_inline)) static inline
+void clear_debug_pin_1(void) {
+    GPIOC->BRR = GPIO_Pin_14;
+}
 
 /// \brief set debug pin PC_15 to logical 1.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void set_debug_pin_2(void);
+__attribute__((always_inline)) static inline
+void set_debug_pin_2(void) {
+    GPIOC->BSRR = GPIO_Pin_15;
+}
 
 /// \brief clears debug pin PC_15 to logical 0.
 /// \warning This is for debugging only. Normally this function shouldn't be used. To use it place a breakpoint into this function body.
-void clear_debug_pin_2(void);
+__attribute__((always_inline)) static inline
+void clear_debug_pin_2(void) {
+    GPIOC->BRR = GPIO_Pin_15;
+}
+
 #endif // of EMERGENCY_DEBUG_TOOLS
 
 /// \brief call this function to fail some assertion. Execution will stuck inside until reset.

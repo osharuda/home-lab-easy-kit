@@ -6,6 +6,15 @@ KW_SIGNALS      = "signals"
 KW_TYPE         = "type"
 KW_DEFAULT      = "default"
 KW_PIN          = "pin"
+KW_ADDRESS      = "address"
+KW_CLOCK_SPEED  = "clock_speed"
+KW_DEV_NAME     = "device_name"
+KW_BUS          = "bus"
+
+KW_SDA_LINE     = "SDA"
+KW_SCL_LINE     = "SCL"
+KW_EV_IRQ_HLR   = "ev_irq_handler"
+KW_ER_IRQ_HLR   = "er_irq_handler"
 
 KW_TIMER_IRQ_HANDLER = "timer_handler"
 

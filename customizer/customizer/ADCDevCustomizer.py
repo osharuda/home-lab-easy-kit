@@ -110,7 +110,7 @@ class ADCDevCustomizer(DeviceCustomizer):
 
         for dev_name, dev_config in self.device_list:
             adcdev_requires = dev_config[KW_REQUIRES]
-            dev_id = dev_config["dev_id"]
+            dev_id = dev_config[KW_DEV_ID]
             measurements_per_sample = dev_config["measurements_per_sample"]
             use_dma = dev_config["use_dma"] != 0
             adc_input_number = 0
@@ -156,7 +156,7 @@ class ADCDevCustomizer(DeviceCustomizer):
             if adc_input_number == 0:
                 raise RuntimeError("Device {0} must have at least one adc_input".format(dev_name))
             sample_block_size = adc_input_number*sample_size
-            buffer_size = dev_config["buffer_size"] * sample_block_size;
+            buffer_size = dev_config[KW_BUFFER_SIZE] * sample_block_size;
 
             if timer_count == 0:
                 raise RuntimeError("Device {0} must have one timer assigned".format(dev_name))

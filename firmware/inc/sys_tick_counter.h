@@ -36,38 +36,39 @@ extern volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned));
 #define SYSTICK_CNT_FREQ  (MCU_FREQUENCY/(SYSTICK_PRESCALLER + 1))
 #define SYSTICK_PERIOD (0xFFFF)
 #define SYSTICK_ONE_US_CNT (SYSTICK_CNT_FREQ / 1000000)
+#define SYSTICK_TO_uS(x) ((x)/SYSTICK_ONE_US_CNT)
 #define SYSTICK_ONE_MS_CNT (SYSTICK_CNT_FREQ / 1000)
+#define SYSTICK_TO_mS(x) ((x)/SYSTICK_ONE_MS_CNT)
 
 #define delay_us(x) delay( ((uint64_t)(SYSTICK_ONE_US_CNT)) * ((uint64_t)(x)) )
 #define delay_ms(x) delay( ((uint64_t)(SYSTICK_ONE_MS_CNT)) * ((uint64_t)(x)) )
+
 
 void systick_init(void);
 
 __attribute__((always_inline))
 static inline void systick_get(volatile uint64_t* timestamp) {
-    uint64_t irq_cnt1, irq_cnt2;
-    uint16_t cnt;
+    uint64_t irq_cnt;
+    uint16_t cnt1, cnt2;
 
     do {
-        DISABLE_IRQ
-        irq_cnt1 = g_systick_irq_cnt;
-        ENABLE_IRQ
-
-        cnt = SYS_TICK_PERIPH->CNT;
+        cnt1 = SYS_TICK_PERIPH->CNT;
 
         DISABLE_IRQ
-        irq_cnt2 = g_systick_irq_cnt;
+        irq_cnt = g_systick_irq_cnt;
         ENABLE_IRQ
-    } while (irq_cnt1 != irq_cnt2);
 
-    *timestamp = ( irq_cnt1 << (sizeof(uint16_t)*CHAR_BIT) ) + cnt;
+        cnt2 = SYS_TICK_PERIPH->CNT;
+    } while (cnt1 > cnt2);
+
+    *timestamp = ( irq_cnt << (sizeof(uint16_t)*CHAR_BIT) ) + cnt1;
 }
 
 __attribute__((always_inline))
 static inline uint64_t get_us_clock(void) {
         uint64_t res;
         systick_get(&res);
-        return res / SYSTICK_ONE_US_CNT;
+        return SYSTICK_TO_uS(res);
 }
 
 __attribute__((always_inline))

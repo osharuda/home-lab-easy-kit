@@ -42,13 +42,13 @@ void TimeTrackerDev::send_command(int flags) {
     BusLocker   blocker(bus, get_addr(), to);
 
     EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flags, to);
-    if (err != EKIT_OK) {
+    if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
 
     // Write data
     err = bus->write(nullptr, 0, to);
-    if (err != EKIT_OK) {
+    if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "write() failed");
     }
 }
@@ -62,7 +62,7 @@ void TimeTrackerDev::stop() {
     send_command(0);
 }
 
-void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to) {
+void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to, bool& ovf) {
     static const char* const func_name = "TimeTrackerDev::get_priv";
     size_t buffer_data_size = sizeof(uint64_t)*count;
 
@@ -74,7 +74,11 @@ void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to) {
     size_t data_size = sizeof(TimeTrackerStatus) + buffer_data_size;
 
     // read data into internal buffer
+    ovf = false;
     EKIT_ERROR err = bus->read((uint8_t*)dev_status, data_size, to);
+    if (err == EKIT_OVERFLOW) {
+        ovf = true;
+    } else
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }
@@ -85,10 +89,11 @@ void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to) {
 }
 
 size_t TimeTrackerDev::get_status(bool& running, uint64_t& reset_ts) {
+    bool ovf;
     EKitTimeout to(get_timeout());
     BusLocker          blocker(bus, get_addr(), to);
 
-    get_priv(0, to);
+    get_priv(0, to, ovf);
 
     running = (dev_status->status == TIMETRACKERDEV_STATUS_STARTED);
     reset_ts = dev_status->first_event_ts;
@@ -96,31 +101,45 @@ size_t TimeTrackerDev::get_status(bool& running, uint64_t& reset_ts) {
 }
 
 void TimeTrackerDev::read_all(std::vector<uint64_t>& data, bool relative) {
+    bool ovf;
     EKitTimeout to(get_timeout());
     BusLocker          blocker(bus, get_addr(), to);
 
-    get_priv(0, to);
-    size_t n = dev_status->event_number;
+    size_t n;
 
-    get_priv(n, to);
-    uint64_t start_point = relative ? dev_status->first_event_ts: 0;
-    for (size_t i=0; i<n; i++) {
-        data.push_back(data_buffer[i] - start_point);
-    }
+    do {
+        get_priv(0, to, ovf);
+        uint64_t start_point = relative ? dev_status->first_event_ts: 0;
+        n = dev_status->event_number;
+
+        if (n>=max_timestamps_per_i2c_transaction) n=max_timestamps_per_i2c_transaction;
+        get_priv(n, to, ovf);
+
+        for (size_t i=0; i<n; i++) {
+            data.push_back(data_buffer[i] - start_point);
+        }
+    } while (n>0);
 }
 
 void TimeTrackerDev::read_all(std::vector<double>& data, bool relative) {
     EKitTimeout to(get_timeout());
+    bool ovf;
     BusLocker          blocker(bus, get_addr(), to);
+    double tick_freq = static_cast<double>(this->config->tick_freq);
+    size_t n;
 
-    get_priv(0, to);
-    size_t n = dev_status->event_number;
+    do {
+        get_priv(0, to, ovf);
+        uint64_t start_point = relative ? dev_status->first_event_ts: 0;
+        n = dev_status->event_number;
 
-    get_priv(n, to);
-    uint64_t start_point = relative ? dev_status->first_event_ts: 0;
-    for (size_t i=0; i<n; i++) {
-        data.push_back((double)(data_buffer[i] - start_point) / (double)1.0e6L);
-    }
+        if (n>=max_timestamps_per_i2c_transaction) n=max_timestamps_per_i2c_transaction;
+        get_priv(n, to, ovf);
+
+        for (size_t i=0; i<n; i++) {
+            data.push_back((double) (data_buffer[i] - start_point) / tick_freq);
+        }
+    } while (n>0);
 }
 
 void read_all(std::vector<double>& data);

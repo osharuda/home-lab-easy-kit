@@ -45,8 +45,8 @@ volatile TimeTrackerDevInstance g_timetrackerdev_devs[] = TIMETRACKERDEV_FW_DEV_
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
-uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev);
-
+static uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev);
+static uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv);
 
 void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = (uint32_t)(ctx);
@@ -66,6 +66,8 @@ void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
         if (dev->privdata.status.first_event_ts == UINT64_MAX) {
             dev->privdata.status.first_event_ts = clock;
         }
+    } else {
+        timetrackerdev_stop(dev, &dev->privdata);
     }
 }
 
@@ -102,8 +104,8 @@ void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t ind
                            1);
 
     START_PIN_DECLARATION;
-    DECLARE_PIN(dev->near_full_line.port, dev->near_full_line.pin_number, dev->near_full_line.type);
-    PIN_RESET_SET(dev->near_full_line.port, dev->near_full_line.pin_number);
+    DECLARE_PIN(dev->near_full_line.port, dev->near_full_line.pin_mask, dev->near_full_line.type);
+
 
     dev->privdata.status.status = 0;
     timetrackerdev_reset(dev);
@@ -140,7 +142,9 @@ uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev) {
     circbuf_reset_no_irq((volatile PCircBuffer)&dev->circ_buffer);
     dev->privdata.status.event_number = 0;
     dev->privdata.status.first_event_ts = UINT64_MAX;
+    GPIO_WriteBit(dev->near_full_line.port, dev->near_full_line.pin_mask, dev->near_full_line.default_val);
     ENABLE_IRQ
+
     return 0;
 }
 

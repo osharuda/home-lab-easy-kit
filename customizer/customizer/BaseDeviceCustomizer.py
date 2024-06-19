@@ -296,7 +296,7 @@ class BaseDeviceCustomizer(BaseCustomizer):
     def get_dev_ids(self):
         res = list()
         for v in self.dev_configs.values():
-            res.append(v["dev_id"])
+            res.append(v[KW_DEV_ID])
         return res
 
     def get_int_value(self, periph: str, d: dict, value: str, values: set) -> int:

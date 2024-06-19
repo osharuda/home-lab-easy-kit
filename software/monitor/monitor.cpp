@@ -658,6 +658,7 @@ int main(int argc, char* argv[])
 #ifdef TIMETRACKERDEV_DEVICE_ENABLED
     struct TimeTrackerDevCommandHandlers {
         std::shared_ptr<TimeTrackerDev> dev;
+        std::shared_ptr<CommandHandler> timetrackerdev_status_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_start_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_stop_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_read_handler;
@@ -671,10 +672,13 @@ int main(int argc, char* argv[])
         TimeTrackerDevCommandHandlers& h = timetrackerdev_handlers.at(index);
 
         h.dev.reset(new TimeTrackerDev(firmware, descr));
+
+        h.timetrackerdev_status_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_start_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_stop_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_read_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
 
+        ui->add_command(cmd_index++, h.timetrackerdev_status_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_start_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_stop_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_read_handler);

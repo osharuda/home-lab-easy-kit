@@ -72,62 +72,62 @@ mcu_available_resources = "{"
 
 # General purpose pins (GPIO)
 mcu_available_resources += f"""
-    "PA_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA"}},
-    "PA_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
-    "PA_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOA" }},
+    "PA_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA"}},
+    "PA_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
+    "PA_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOA" }},
 
-    "PB_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
-    "PB_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOB" }},
+    "PB_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
+    "PB_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOB" }},
     """
 mcu_available_resources += f"""
-    "PC_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-    "PC_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-    "PC_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
+    "PC_13" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+    "PC_14" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+    "PC_15" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
     """
 
 # The following GPIO is not available on Blue Pill and other STM32F103x devices in LQFP48 packages
 # Uncomment the following lines if you need them
 # mcu_available_resources += f"""
-#    "PC_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
-#    "PC_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_0" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_1" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_2" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_3" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_4" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_5" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_6" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_7" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_8" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_9" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_10" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_11" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
+#    "PC_12" : {{ "type" : "{RT_GPIO}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_GPIOC" }},
 #    """
 
 # IRQ Handlers (some devices can't share it, therefore it is treated as a resource of MCU)
@@ -138,11 +138,11 @@ mcu_available_resources += f"""
      "RTC_IRQHandler"                 : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "FLASH_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "RCC_IRQHandler"                 : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
-     "EXTI0_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
-     "EXTI1_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
-     "EXTI2_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
-     "EXTI3_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
-     "EXTI4_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
+     "EXTI0_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
+     "EXTI1_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
+     "EXTI2_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
+     "EXTI3_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
+     "EXTI4_IRQHandler"               : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
      "DMA1_Channel1_IRQHandler"       : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "DMA1_Channel2_IRQHandler"       : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "DMA1_Channel3_IRQHandler"       : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
@@ -155,7 +155,7 @@ mcu_available_resources += f"""
      "USB_LP_CAN1_RX0_IRQHandler"     : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "CAN1_RX1_IRQHandler"            : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "CAN1_SCE_IRQHandler"            : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
-     "EXTI9_5_IRQHandler"             : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
+     "EXTI9_5_IRQHandler"             : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
      "TIM1_BRK_TIM9_IRQHandler"       : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "TIM1_UP_TIM10_IRQHandler"       : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "TIM1_TRG_COM_TIM11_IRQHandler"  : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
@@ -175,7 +175,7 @@ mcu_available_resources += f"""
      "USART1_IRQHandler"              : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "USART2_IRQHandler"              : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "USART3_IRQHandler"              : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
-     "EXTI15_10_IRQHandler"           : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB2Periph_AFIO"}},
+     "EXTI15_10_IRQHandler"           : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB2Periph_AFIO"}},
      "RTCAlarm_IRQHandler"            : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "USBWakeUp_IRQHandler"           : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
      "TIM8_BRK_IRQHandler"            : {{ "type" : "{RT_IRQ_HANDLER}" , "{KW_REQUIRES}" : {{}}}},
@@ -256,73 +256,73 @@ mcu_available_resources += f"""
 
 # Backup registers
 mcu_available_resources += f"""
-    "BKP_DR1" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR2" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR3" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR4" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR5" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR6" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR7" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR8" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR9" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR10" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR11" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR12" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR13" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR14" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR15" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR16" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR17" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR18" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR19" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR20" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR21" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR22" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR23" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR24" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR25" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR26" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR27" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR28" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR29" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR30" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR31" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR32" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR33" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR34" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR35" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR36" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR37" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR38" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR39" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR40" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR41" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
-    "BKP_DR42" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR1" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR2" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR3" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR4" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR5" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR6" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR7" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR8" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR9" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR10" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR11" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR12" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR13" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR14" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR15" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR16" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR17" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR18" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR19" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR20" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR21" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR22" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR23" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR24" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR25" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR26" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR27" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR28" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR29" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR30" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR31" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR32" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR33" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR34" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR35" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR36" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR37" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR38" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR39" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR40" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR41" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
+    "BKP_DR42" : {{"type" : "{RT_BACKUP_REG}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_BKP"}},
 """
 
 # Timers
 mcu_available_resources += f"""
-    "TIM1": {{"type": "{RT_TIMER}", "subtype": "advanced", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM1_UP_IRQHandler"}} }}, "bus": "RCC_APB2Periph_TIM1"}},
-    "TIM2": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM2_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM2"}},
-    "TIM3": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM3_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM3"}},
-    "TIM4": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM4_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM4"}},
-    "TIM5": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM5_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM5"}},
-    "TIM6": {{"type": "{RT_TIMER}", "subtype": "basic",    "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM6_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM6"}},
-    "TIM7": {{"type": "{RT_TIMER}", "subtype": "basic",    "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM7_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM7"}},
-    "TIM8": {{"type": "{RT_TIMER}", "subtype": "advanced", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM8_UP_IRQHandler"}} }}, "bus": "RCC_APB2Periph_TIM8"}},
-    "TIM9": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM9"}},
-    "TIM10": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM10"}},
-    "TIM11": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM11"}},
-    "TIM12": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM12_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM12"}},
-    "TIM13": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM13_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM13"}},
-    "TIM14": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM14_IRQHandler"}} }}, "bus": "RCC_APB1Periph_TIM14"}},
-    "TIM15": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM15"}},
-    "TIM16": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM16"}},
-    "TIM17": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "bus": "RCC_APB2Periph_TIM17"}},
+    "TIM1": {{"type": "{RT_TIMER}", "subtype": "advanced", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM1_UP_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB2Periph_TIM1"}},
+    "TIM2": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM2_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM2"}},
+    "TIM3": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM3_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM3"}},
+    "TIM4": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM4_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM4"}},
+    "TIM5": {{"type": "{RT_TIMER}", "subtype": "general",  "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM5_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM5"}},
+    "TIM6": {{"type": "{RT_TIMER}", "subtype": "basic",    "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM6_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM6"}},
+    "TIM7": {{"type": "{RT_TIMER}", "subtype": "basic",    "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM7_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM7"}},
+    "TIM8": {{"type": "{RT_TIMER}", "subtype": "advanced", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM8_UP_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB2Periph_TIM8"}},
+    "TIM9": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM9"}},
+    "TIM10": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM10"}},
+    "TIM11": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM11"}},
+    "TIM12": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM12_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM12"}},
+    "TIM13": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM13_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM13"}},
+    "TIM14": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{ "{KW_TIMER_IRQ_HANDLER}" : {{"{RT_IRQ_HANDLER}" : "TIM14_IRQHandler"}} }}, "{KW_BUS}": "RCC_APB1Periph_TIM14"}},
+    "TIM15": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM15"}},
+    "TIM16": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM16"}},
+    "TIM17": {{"type": "{RT_TIMER}", "subtype": "lite", "features": ["16bit"],  "{KW_REQUIRES}": {{}}, "{KW_BUS}": "RCC_APB2Periph_TIM17"}},
 """
 # Real Time Clock
 mcu_available_resources += f"""
-    "RTC" : {{"type" : "rtc", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_APB1Periph_PWR"}},
+    "RTC" : {{"type" : "rtc", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_APB1Periph_PWR"}},
 """
 
 # USART
@@ -330,59 +330,60 @@ mcu_available_resources += f"""
     "USART1" : {{"type" : "{RT_UART}", "{KW_REQUIRES}" : {{"{RT_IRQ_HANDLER}" : "USART1_IRQHandler", 
                                                 "RX" : {{"{RT_GPIO}" : "PA_10"}}, 
                                                 "TX" : {{"{RT_GPIO}" : "PA_9"}} }},
-                "bus" : "RCC_APB2Periph_USART1"}},
+                "{KW_BUS}" : "RCC_APB2Periph_USART1"}},
                                                 
     "USART2" : {{"type" : "{RT_UART}", "{KW_REQUIRES}" : {{"{RT_IRQ_HANDLER}" : "USART2_IRQHandler", 
                                                 "RX" : {{"{RT_GPIO}" : "PA_3"}}, 
                                                 "TX" : {{"{RT_GPIO}" : "PA_2" }} }},
-                "bus" : "RCC_APB1Periph_USART2" }},
+                "{KW_BUS}" : "RCC_APB1Periph_USART2" }},
                                                 
     "USART3" : {{"type" : "{RT_UART}", "{KW_REQUIRES}" : {{"{RT_IRQ_HANDLER}" : "USART3_IRQHandler", 
                                                 "RX" : {{"{RT_GPIO}" : "PB_11"}}, 
                                                 "TX" : {{"{RT_GPIO}" : "PB_10"}} }},
-                "bus" : "RCC_APB1Periph_USART3" }},
+                "{KW_BUS}" : "RCC_APB1Periph_USART3" }},
 """
 
 # I2C
 mcu_available_resources += f"""
-    "I2C1" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"ev_irq_handler" : {{"{RT_IRQ_HANDLER}" : "I2C1_EV_IRQHandler"}}, 
-                                            "er_irq_handler" : {{"{RT_IRQ_HANDLER}" : "I2C1_ER_IRQHandler"}}, 
-                                            "SDA" : {{"{RT_GPIO}" : "PB_7"}}, 
-                                            "SCL" : {{"{RT_GPIO}" : "PB_6"}}}},
-                "bus" : "RCC_APB1Periph_I2C1"}},
+    "I2C1" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"{KW_EV_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C1_EV_IRQHandler"}}, 
+                                            "{KW_ER_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C1_ER_IRQHandler"}}, 
+                                            "{KW_SDA_LINE}" : {{"{RT_GPIO}" : "PB_7"}}, 
+                                            "{KW_SCL_LINE}" : {{"{RT_GPIO}" : "PB_6"}}}},
+                "{KW_BUS}" : "RCC_APB1Periph_I2C1", "{KW_CLOCK_SPEED}": ["100000", "400000"]}},
                                             
-    "I2C2" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"ev_irq_handler" : {{"{RT_IRQ_HANDLER}" : "I2C2_EV_IRQHandler"}}, 
-                                            "er_irq_handler" : {{"{RT_IRQ_HANDLER}" : "I2C2_ER_IRQHandler"}},
-                                            "SDA" : {{"{RT_GPIO}" : "PB_11"}}, 
-                                            "SCL" : {{"{RT_GPIO}" : "PB_10"}}}},
-                "bus" : "RCC_APB1Periph_I2C2"}},
+    "I2C2" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"{KW_EV_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C2_EV_IRQHandler"}}, 
+                                            "{KW_ER_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C2_ER_IRQHandler"}},
+                                            "{KW_SDA_LINE}" : {{"{RT_GPIO}" : "PB_11"}}, 
+                                            "{KW_SCL_LINE}" : {{"{RT_GPIO}" : "PB_10"}}}},
+                "{KW_BUS}" : "RCC_APB1Periph_I2C2", "{KW_CLOCK_SPEED}": ["100000", "400000"]}},
 """
 
 # DMA controllers and channels
 mcu_available_resources += f"""
-    "DMA1" : {{ "type" : "{RT_DMA}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1"}},
+    "DMA1" : {{ "type" : "{RT_DMA}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", 
+    "{KW_CLOCK_SPEED}": ["100000", "400000"]}},
     """
 # The DMA2 controller and its relative requests are available only in high-density and connectivity line devices
 # mcu_available_resources += f"""
-#    "DMA2" : {{ "type" : "{RT_DMA}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2"}},
+#    "DMA2" : {{ "type" : "{RT_DMA}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2"}},
 #    """
 mcu_available_resources += f"""
-    "DMA1_Channel1" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel1_IRQHandler"}}}},
-    "DMA1_Channel2" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel2_IRQHandler"}}}},
-    "DMA1_Channel3" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel3_IRQHandler"}}}},
-    "DMA1_Channel4" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel4_IRQHandler"}}}},
-    "DMA1_Channel5" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel5_IRQHandler"}}}},
-    "DMA1_Channel6" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel6_IRQHandler"}}}},
-    "DMA1_Channel7" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel7_IRQHandler"}}}},
+    "DMA1_Channel1" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel1_IRQHandler"}}}},
+    "DMA1_Channel2" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel2_IRQHandler"}}}},
+    "DMA1_Channel3" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel3_IRQHandler"}}}},
+    "DMA1_Channel4" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel4_IRQHandler"}}}},
+    "DMA1_Channel5" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel5_IRQHandler"}}}},
+    "DMA1_Channel6" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel6_IRQHandler"}}}},
+    "DMA1_Channel7" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA1", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA1_Channel7_IRQHandler"}}}},
     """
 
 # The DMA2 controller and its relative requests are available only in high-density and connectivity line devices
 # mcu_available_resources += f"""
-#    "DMA2_Channel1" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel1_IRQHandler"}}}},
-#    "DMA2_Channel2" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel2_IRQHandler"}}}},
-#    "DMA2_Channel3" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel3_IRQHandler"}}}},
-#    "DMA2_Channel4" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel4_IRQHandler"}}}},
-#    "DMA2_Channel5" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "bus" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel5_IRQHandler"}}}},
+#    "DMA2_Channel1" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel1_IRQHandler"}}}},
+#    "DMA2_Channel2" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel2_IRQHandler"}}}},
+#    "DMA2_Channel3" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel3_IRQHandler"}}}},
+#    "DMA2_Channel4" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel4_IRQHandler"}}}},
+#    "DMA2_Channel5" : {{ "type" : "{RT_DMA_CHANNEL}", "{KW_REQUIRES}" : {{}}, "{KW_BUS}" : "RCC_AHBPeriph_DMA2", "dma_handler" : {{"{RT_IRQ_HANDLER}" : "DMA2_Channel5_IRQHandler"}}}},
 # """
 
 # map resource/feature onto DMA channel
@@ -428,8 +429,8 @@ def get_DMA_from_channel(channel: str) -> str:
 
 # ADC and ADC channels
 mcu_available_resources += f"""
-    "ADC1" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": ["dma_support"], "dma_dr_address" : "0x4001244C", "bus" : "RCC_APB2Periph_ADC1", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC1_2_IRQHandler"}}}},
-    "ADC2" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": [],              "bus" : "RCC_APB2Periph_ADC2", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC1_2_IRQHandler"}}}},
+    "ADC1" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": ["dma_support"], "dma_dr_address" : "0x4001244C", "{KW_BUS}" : "RCC_APB2Periph_ADC1", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC1_2_IRQHandler"}}}},
+    "ADC2" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": [],              "{KW_BUS}" : "RCC_APB2Periph_ADC2", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC1_2_IRQHandler"}}}},
     """
 # ADC Sample time constants
 adc_sample_times = {"ADC_SampleTime_1Cycles5", "ADC_SampleTime_7Cycles5", "ADC_SampleTime_13Cycles5",
@@ -439,7 +440,7 @@ adc_sample_times = {"ADC_SampleTime_1Cycles5", "ADC_SampleTime_7Cycles5", "ADC_S
 # Blue Pill and some other stm32F103x controllers doesn't have ADC3, uncomment it if you need it and your MCU has it
 # ADC3 is available only in high-density devices.
 # mcu_available_resources += f"""
-#    "ADC3" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": ["dma_support"], "dma_dr_address" : "0x40013C4C", "bus" : "RCC_APB2Periph_ADC3", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC3_IRQHandler"}}}},
+#    "ADC3" : {{ "type" : "{RT_ADC}", "{KW_REQUIRES}" : {{}}, "features": ["dma_support"], "dma_dr_address" : "0x40013C4C", "{KW_BUS}" : "RCC_APB2Periph_ADC3", "adc_handler" : {{"{RT_IRQ_HANDLER}" : "ADC3_IRQHandler"}}}},
 #    """
 mcu_available_resources += f"""
     "ADC_Channel_0" : {{"type" : "{RT_ADC_INPUT}", "{KW_REQUIRES}" : {{"{RT_GPIO}" : "PA_0"}} }},
@@ -473,8 +474,9 @@ mcu_available_resources += f"""
 """
 
 # CAN
+
 mcu_available_resources += f"""
-    "CAN1" : {{"type" : "can", "bus" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
+    "CAN1" : {{"type" : "can", "{KW_BUS}" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
         "sram"  : {{"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"}},
         "CANRX" : {{"{RT_GPIO}" : "PA_11"}},
         "CANTX" : {{"{RT_GPIO}" : "PA_12"}}}},
@@ -483,7 +485,7 @@ mcu_available_resources += f"""
         "irq_rx1_handler" : {{"{RT_IRQ_HANDLER}": "CAN1_RX1_IRQHandler"}},
         "irq_sce_handler" : {{"{RT_IRQ_HANDLER}": "CAN1_SCE_IRQHandler"}}
     }},
-    "CAN1_REMAP" : {{"type" : "can", "bus" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
+    "CAN1_REMAP" : {{"type" : "can", "{KW_BUS}" : ["RCC_APB1Periph_CAN1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
         "sram"  : {{"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"}},
         "CANRX" : {{"{RT_GPIO}" : "PB_8"}},
         "CANTX" : {{"{RT_GPIO}" : "PB_9"}}}} ,
@@ -493,14 +495,13 @@ mcu_available_resources += f"""
         "irq_sce_handler" : {{"{RT_IRQ_HANDLER}": "CAN1_SCE_IRQHandler"}}
     }},
 """
-
-# "ADC1": {{"type": "{RT_ADC}", "{KW_REQUIRES}": {{}}, "features": ["dma_support"], "dma_dr_address": "0x4001244C",         "bus": "RCC_APB2Periph_ADC1", "adc_handler": {{"{RT_IRQ_HANDLER}": "ADC1_2_IRQHandler"}}}},
-# "ADC2": {{"type": "{RT_ADC}", "{KW_REQUIRES}": {{}}, "features": [], "bus": "RCC_APB2Periph_ADC2",         "adc_handler": {{"{RT_IRQ_HANDLER}": "ADC1_2_IRQHandler"}}}},
+# "ADC1": {{"type": "{RT_ADC}", "{KW_REQUIRES}": {{}}, "features": ["dma_support"], "dma_dr_address": "0x4001244C",         "{KW_BUS}": "RCC_APB2Periph_ADC1", "adc_handler": {{"{RT_IRQ_HANDLER}": "ADC1_2_IRQHandler"}}}},
+# "ADC2": {{"type": "{RT_ADC}", "{KW_REQUIRES}": {{}}, "features": [], "{KW_BUS}": "RCC_APB2Periph_ADC2",         "adc_handler": {{"{RT_IRQ_HANDLER}": "ADC1_2_IRQHandler"}}}},
 
 
 # USB
 mcu_available_resources += f"""
-    "USB1" : {{"type" : "usb", "bus" : "RCC_APB1Periph_USB",  "{KW_REQUIRES}" : {{
+    "USB1" : {{"type" : "usb", "{KW_BUS}" : "RCC_APB1Periph_USB",  "{KW_REQUIRES}" : {{
         "sram"      : {{"usb_can_shared_sram" : "USB_CAN_Shared_SRAM"}},
         "USB_MINUS" : {{"{RT_GPIO}" : "PA_11"}},
         "USB_PLUS"  : {{"{RT_GPIO}" : "PA_12"}} 
@@ -509,7 +510,7 @@ mcu_available_resources += f"""
 
 # SPI
 mcu_available_resources += f"""
-    "SPI1" : {{"type" : "{RT_SPI}", "bus": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
+    "SPI1" : {{"type" : "{RT_SPI}", "{KW_BUS}": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
         "SPI_SCK" : {{"{RT_GPIO}" : "PA_5"}},
         "SPI_MISO" : {{"{RT_GPIO}" : "PA_6"}},
         "SPI_MOSI" : {{"{RT_GPIO}" : "PA_7"}},
@@ -520,7 +521,7 @@ mcu_available_resources += f"""
         }}
     }},
 
-    "SPI1_REMAP" : {{"type" : "{RT_SPI}", "bus": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
+    "SPI1_REMAP" : {{"type" : "{RT_SPI}", "{KW_BUS}": ["RCC_APB2Periph_SPI1", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
         "SPI_SCK" : {{"{RT_GPIO}" : "PB_3"}},
         "SPI_MISO" : {{"{RT_GPIO}" : "PB_4"}},
         "SPI_MOSI" : {{"{RT_GPIO}" : "PB_5"}},
@@ -531,7 +532,7 @@ mcu_available_resources += f"""
         }}
     }},
     
-    "SPI2" : {{"type" : "{RT_SPI}", "bus": ["RCC_APB1Periph_SPI2", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
+    "SPI2" : {{"type" : "{RT_SPI}", "{KW_BUS}": ["RCC_APB1Periph_SPI2", "RCC_APB2Periph_AFIO"], "{KW_REQUIRES}" : {{
         "SPI_SCK" : {{"{RT_GPIO}" : "PB_13"}},
         "SPI_MISO" : {{"{RT_GPIO}" : "PB_14"}},
         "SPI_MOSI" : {{"{RT_GPIO}" : "PB_15"}},
@@ -565,7 +566,6 @@ trigger_type_map = {
 }
 
 test_lines = mcu_available_resources.splitlines()
-
 mcu_resources = json.loads(mcu_available_resources)
 
 system_clock = 72000000  # 72Mhz
@@ -730,7 +730,7 @@ def get_TIMER_freq(timer: str, prescaller: int = 1) -> int:
         mult = 2
 
     # get number of APB bus RCC_APB ->2<- Periph_TIM1
-    n = int(mcu_resources[timer]["bus"][7])
+    n = int(mcu_resources[timer][KW_BUS][7])
     if n == 1:
         return mult * system_clock
     elif n == 2:
@@ -742,7 +742,9 @@ def get_TIMER_freq(timer: str, prescaller: int = 1) -> int:
 def DMA_Channel_to_IRQHandler(dmachannel: str) -> str:
     return mcu_resources[dmachannel]["dma_handler"][RT_IRQ_HANDLER]
 
-
+def check_i2c_clock_speed(i2c, freq):
+    if str(freq) not in mcu_resources[i2c][KW_CLOCK_SPEED]:
+        raise RuntimeError(f"Invalid clock speed, allowed values are {', '.join(mcu_resources[i2c][KW_CLOCK_SPEED])} ")
 
 def get_DMA_IT_Flag(channel: str, flag: str) -> str:
     if channel not in mcu_resources:
@@ -761,9 +763,9 @@ def ENABLE_CLOCK_on_APB(res: list) -> str:
 
     for r in res:
         rr = mcu_resources[r]
-        if "bus" in rr:
+        if KW_BUS in rr:
             bus_list = list()
-            bus_value = rr["bus"]
+            bus_value = rr[KW_BUS]
             if isinstance(bus_value, str):
                 bus_list.append(bus_value)
             elif isinstance(bus_value, list):
@@ -891,7 +893,7 @@ def generate_set_gpio_bus_function(func_name: str, inp_type: str, port_type: str
 
 
 def spi_get_baud_rate_control(spi: str, value : str):
-    bus_list = mcu_resources[spi]["bus"]
+    bus_list = mcu_resources[spi][KW_BUS]
     bus = next(b for b in bus_list if b.find('Periph_SPI') != -1)
     freq = get_bus_frequency(bus)
     in_val = (str(freq) + "_" + value).lower()

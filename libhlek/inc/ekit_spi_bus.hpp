@@ -89,37 +89,37 @@ class EKitSPIBus final : public EKitBus {
         ///< Clock phase ( default: 0 ):
         ///< 0 - sample on leading edge
         ///< non-zero - sample on trailing edge
-        SPI_OPT_CLOCK_PHASE = 1,
+        SPI_OPT_CLOCK_PHASE = 201,
 
         ///< Clock polarity ( default: 0 ):
         ///< 0 - idle low
         ///< non-zero - idle high
-        SPI_OPT_CLOCK_POLARITY = 2,
+        SPI_OPT_CLOCK_POLARITY = 202,
 
         ///< Chip select active ( default: 0 ):
         ///< 0 - chip select active low
         ///< non-zero - chip select active high
-        SPI_OPT_CS_HIGH = 3,
+        SPI_OPT_CS_HIGH = 203,
 
         ///< Least significant byte goes first ( default: 0 ):
         ///< 0 - most significant bit goes first
         ///< non-zero - least significan bit goes first
-        SPI_OPT_LSB_FIRST = 4,
+        SPI_OPT_LSB_FIRST = 204,
 
         ///< Use chip select signal ( default: 0 ):
         ///< 0 - XXX
         ///< non-zero - XXX
-        SPI_OPT_NO_CS = 5,
+        SPI_OPT_NO_CS = 205,
 
         ///< SPI clock frequency XXX ( default: XXX )
-        SPI_OPT_CLOCK_FREQUENCY = 6,
+        SPI_OPT_CLOCK_FREQUENCY = 206,
 
         ///< Word size in bits ( default: 8 )
-        SPI_OPT_WORD_SIZE = 7,
+        SPI_OPT_WORD_SIZE = 207,
 
         ///< True to deselect device before starting the
         ///< next transfer. ( default: 0 )
-        SPI_OPT_CS_CHANGE = 8
+        SPI_OPT_CS_CHANGE = 208
     };
 
     /// \brief Copy construction is forbidden

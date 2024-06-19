@@ -261,6 +261,7 @@ class CommandHandler {
 	DEFINE_HANDLER_CLASS(TimeTrackerDevStartHandler);
     DEFINE_HANDLER_CLASS(TimeTrackerDevStopHandler);
     DEFINE_HANDLER_CLASS(TimeTrackerDevReadHandler);
+    DEFINE_HANDLER_CLASS(TimeTrackerDevStatusHandler);
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE
 

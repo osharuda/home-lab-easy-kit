@@ -322,7 +322,7 @@ uint8_t circbuf_check_warning(volatile PCircBuffer circ) {
 uint8_t circbuf_check_warning_no_irq(volatile PCircBuffer circ) {
     if (circ->data_len <= circ->warn_low_thr) {
         circ->wrn = 0;
-    } else if (circ->data_len > circ->warn_high_thr) {
+    } else if (circ->data_len >= circ->warn_high_thr) {
         circ->wrn = 1;
     }
     return circ->wrn;

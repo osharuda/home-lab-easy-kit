@@ -12,6 +12,95 @@ BUILDCONF="Debug"
 ROOTDIR=$(pwd)
 LOGFILE="${ROOTDIR}/build.log"
 
+
+######## Detect if we are working in different directory. In this case we should use symlink to mirror project in current directory
+HLEKDIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+PROJECTDIR=$(pwd)
+
+
+# Creates sym link
+# {1} - src path
+# {2} - destination path
+# {3} - file or directory name; Note this function uses basename of this path, so it's possible
+#       to use find result.
+# Note: this function is being exported, to be called from sub-shell during find
+make_sym_link () {
+    local bn=$(basename ${3})
+    local src_file="${1}/${bn}"
+    local dst_file="${2}/${bn}"
+
+    # Check if required symlink is already created
+    if [ -h ${dst_file} ]; then
+        local link_path=$(readlink -f ${dst_file})
+        if [ ${link_path} == ${src_file} ]; then
+            echo "${dst_file} is already created and ok."
+            return
+        fi
+    fi
+
+    if [ ! -e ${src_file} ]; then
+       echo "'${src_file}' doesn't exist."
+       exit 1
+    fi
+ 
+    if [ -e ${dst_file} ]; then
+       echo "'${dst_file}' already exist."
+       exit 1
+    fi
+ 
+    ln -s ${src_file} ${dst_file}
+}
+export -f make_sym_link
+
+# Mirrors HLEK project using symlinks
+# {1} - HLEK directory
+# {2} - Target directory
+hlek_mirror () {
+    if [ ${PROJECTDIR} == ${HLEKDIR} ]; then
+        echo "May not mirror HLEK into self."
+        exit 1
+    fi
+
+    local d='customizer'
+    echo "Creating symlinks for ${d}..."
+    make_sym_link ${HLEKDIR} ${PROJECTDIR} ${d}
+
+    local d='firmware'
+    echo "Creating symlinks for ${d}..."
+    make_sym_link ${HLEKDIR} ${PROJECTDIR} ${d}
+
+    local d='software'
+    echo "Creating symlinks for ${d}..."
+    make_sym_link ${HLEKDIR} ${PROJECTDIR} ${d}
+
+    local d='libhlek'
+    echo "Creating symlinks for ${d}..."
+    mkdir -p ${d}
+    make_sym_link ${HLEKDIR}/${d} ${PROJECTDIR}/${d} "src"
+    local lhlek_inc="${d}/inc"
+    mkdir -p "${lhlek_inc}"
+    find "${HLEKDIR}/${lhlek_inc}" ! -name '*_common.hpp' ! -name 'i2c_proto.h' -name "*.hpp" -exec bash -c "make_sym_link \"${HLEKDIR}/${lhlek_inc}\" \"${PROJECTDIR}/${lhlek_inc}\" '{}'" \;
+
+    local d='hlekio'
+    echo "Creating symlinks for ${d}..."
+    mkdir -p ${d}
+    make_sym_link ${HLEKDIR}/${d} ${PROJECTDIR}/${d} "linux"
+    make_sym_link ${HLEKDIR}/${d} ${PROJECTDIR}/${d} "environments"
+    make_sym_link ${HLEKDIR}/${d} ${PROJECTDIR}/${d} "Makefile"
+    find "${HLEKDIR}/${d}" -maxdepth 1 -name '*.h' -exec bash -c "make_sym_link \"${HLEKDIR}/${d}\" \"${PROJECTDIR}/${d}\" '{}'" \;
+    find "${HLEKDIR}/${d}" -maxdepth 1 -name '*.c' -exec bash -c "make_sym_link \"${HLEKDIR}/${d}\" \"${PROJECTDIR}/${d}\" '{}'" \;
+    find "${HLEKDIR}/${d}" -maxdepth 1 -name '*.sh' -exec bash -c "make_sym_link \"${HLEKDIR}/${d}\" \"${PROJECTDIR}/${d}\" '{}'" \;
+    find "${HLEKDIR}/${d}" -maxdepth 1 -name '*.py' -exec bash -c "make_sym_link \"${HLEKDIR}/${d}\" \"${PROJECTDIR}/${d}\" '{}'" \;
+
+    make_sym_link ${HLEKDIR} ${PROJECTDIR} global.json
+    make_sym_link ${HLEKDIR} ${PROJECTDIR} customize.sh
+}
+
+if [ ${PROJECTDIR} != ${HLEKDIR} ]; then
+    hlek_mirror ${HLEKDIR} ${PROJECTDIR}
+fi
+
+
 ####### Parse arguments
 i=0
 JSONS=()
@@ -20,6 +109,11 @@ do
 	if [ ${ARG^^} == "RELEASE" ]
 	then
 		BUILDCONF="Release"
+		continue
+	fi
+
+	if [ ${ARG^^} == "DEBUG" ]
+	then
 		continue
 	fi
 
@@ -69,7 +163,7 @@ function make_libhlek {
 
 function build_libhlek {
 	echo "Building LIBHLEK [${BUILDCONF}]" >> "${LOGFILE}" 2>&1
-	./customize.sh --libhlek >> "${LOGFILE}" 2>&1
+	./customize.sh --libhlek --verbose >> "${LOGFILE}" 2>&1
 
 	if [ -d "libhlek/${BUILDCONF}" ]
 	then
@@ -119,7 +213,7 @@ do
 	json_file_name="$(cd "$(dirname "$j")"; pwd -P)/$(basename "$j")"
 	CONFIGDIR="${json%.*}"
 	echo "Customizing ${json}" >> "${LOGFILE}" 2>&1
-	./customize.sh --json=${json_file_name} >> "${LOGFILE}" 2>&1
+	./customize.sh --json=${json_file_name} --verbose >> "${LOGFILE}" 2>&1
 
 	# Build & install libconf
 	build_subproject "lib${CONFIGDIR}" true

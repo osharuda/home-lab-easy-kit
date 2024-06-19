@@ -39,7 +39,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.libhlek_name = "lib" + self.hlek_name
         self.libhlek_install_path = os.path.join(self.install_path, self.libhlek_name)
 
-        self.config_name = common_config[FW_FIRMWARE]["device_name"]
+        self.config_name = common_config[FW_FIRMWARE][KW_DEV_NAME]
         self.libconfig_name = "lib" + self.config_name
         self.libconfig_install_path = os.path.join(self.install_path, self.libconfig_name)
 
@@ -87,20 +87,24 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
 
     def customize(self):
-        buffer_size = self.dev_config[FW_I2C]["buffer_size"]
-        address_0 = self.dev_config[FW_I2C]["address"]
-        clock_speed = self.dev_config[FW_I2C]["clock_speed"]
-        device_name = self.dev_config["device_name"]
+
+        buffer_size = self.dev_config[FW_I2C][KW_BUFFER_SIZE]
+        address_0 = self.dev_config[FW_I2C][KW_ADDRESS]
+        clock_speed = self.dev_config[FW_I2C][KW_CLOCK_SPEED]
+        device_name = self.dev_config[KW_DEV_NAME]
 
         extender_requires = self.dev_config[FW_I2C][KW_REQUIRES]
         i2c_periph = self.get_i2c(extender_requires)
+        self.mcu_hw.check_i2c_clock_speed(i2c_periph, clock_speed)
 
         # Update requirements for I2C
         extender_requires = {**extender_requires, **self.mcu_hw.mcu_resources[i2c_periph][KW_REQUIRES]}
-        sda = self.get_gpio(extender_requires["SDA"])
-        scl = self.get_gpio(extender_requires["SCL"])
-        ev_isr = self.get_isr(extender_requires["ev_irq_handler"])
-        er_isr = self.get_isr(extender_requires["er_irq_handler"])
+        sda = self.get_gpio(extender_requires[KW_SDA_LINE])
+        scl = self.get_gpio(extender_requires[KW_SCL_LINE])
+        ev_isr = self.get_isr(extender_requires[KW_EV_IRQ_HLR])
+        er_isr = self.get_isr(extender_requires[KW_ER_IRQ_HLR])
+
+
 
         timer_requires = self.dev_config[FW_SYS_TICK][KW_REQUIRES]
         systick_timer_periph = self.get_timer(timer_requires)

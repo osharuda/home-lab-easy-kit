@@ -138,7 +138,6 @@ void ADC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     volatile ADCDevFwInstance* dev = g_adc_devs+index;
     volatile ADCDevFwPrivData* pdata = (&dev->privdata);
 
-    // <CHECKIT> Do we actually need this check?
     if (TIM_GetITStatus(dev->timer, TIM_IT_Update) == RESET) {
         return;
     }

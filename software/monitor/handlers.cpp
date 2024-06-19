@@ -2491,9 +2491,11 @@ void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevStartHandler,"timetrackerdev::", "::start")
 std::string TimeTrackerDevStartHandler::help() const {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    auto cn = get_command_name();
+    auto dn = d->get_dev_name();
     return tools::format_string("# %s starts %s device. No parameters are required.\n",
-                                get_command_name(), 
-                                d->get_dev_name());
+                                cn.c_str(),
+                                dn.c_str());
 }
 
 void TimeTrackerDevStartHandler::handle(const std::vector<std::string>& args) {
@@ -2507,9 +2509,11 @@ void TimeTrackerDevStartHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevStopHandler,"timetrackerdev::", "::stop")
 std::string TimeTrackerDevStopHandler::help() const {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    auto cn = get_command_name();
+    auto dn = d->get_dev_name();
     return tools::format_string("# %s stops %s device. No parameters are required.\n",
-                                get_command_name(),
-                                d->get_dev_name());
+                                cn.c_str(),
+                                dn.c_str());
 }
 
 void TimeTrackerDevStopHandler::handle(const std::vector<std::string>& args) {
@@ -2523,9 +2527,11 @@ void TimeTrackerDevStopHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevReadHandler,"timetrackerdev::", "::read")
 std::string TimeTrackerDevReadHandler::help() const {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    auto cn = get_command_name();
+    auto dn = d->get_dev_name();
     return tools::format_string("# %s reads all timestampts from %s device. No parameters are required.\n",
-                                get_command_name(),
-                                d->get_dev_name());
+                                cn.c_str(),
+                                dn.c_str());
 }
 
 void TimeTrackerDevReadHandler::handle(const std::vector<std::string>& args) {
@@ -2535,7 +2541,37 @@ void TimeTrackerDevReadHandler::handle(const std::vector<std::string>& args) {
     for (auto d=data.begin(); d!=data.end(); ++d) {
         ui->log(tools::str_format("%f sec",*d));
     }
-
 }
+
+//----------------------------------------------------------------------------------------------//
+//                                    TimeTrackerDevStatusHandler                                      //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevStatusHandler,"timetrackerdev::", "::status")
+std::string TimeTrackerDevStatusHandler::help() const {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    auto cn = get_command_name();
+    auto dn = d->get_dev_name();
+    return tools::format_string("# %s prints device status. No parameters are required.\n",
+                                cn.c_str(),
+                                dn.c_str());
+}
+
+void TimeTrackerDevStatusHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    bool running;
+    uint64_t first_ts;
+    size_t n = d->get_status(running, first_ts);
+    std::string dn = d->get_dev_name();
+
+    if (running) {
+        ui->log(tools::str_format("Device %s is RUNNING.", dn.c_str()));
+    } else {
+        ui->log(tools::str_format("Device %s is STOPPED.", dn.c_str()));
+    }
+
+    ui->log(tools::str_format("%d timestamps are stored in the buffer.", n));
+    ui->log(tools::str_format("First timestamp is %f", (double)first_ts/(double)d->config->tick_freq));
+}
+
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE

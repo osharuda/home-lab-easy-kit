@@ -61,7 +61,7 @@ public:
 
     /// \enum EKitFirmwareOptions
     enum EKitFirmwareOptions {
-        FIRMWARE_OPT_FLAGS = 1      ///< Indicates that device specific command option flags are set
+        FIRMWARE_OPT_FLAGS = 100      ///< Indicates that device specific command option flags are set
     };
 
     /// \brief Copy construction is forbidden

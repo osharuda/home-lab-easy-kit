@@ -139,7 +139,6 @@ public:
     /// \brief Implementation of the EKitBus#unlock() virtual function.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR unlock() override;
-
 };
 
 /// @}

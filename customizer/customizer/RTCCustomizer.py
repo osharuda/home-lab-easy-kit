@@ -41,7 +41,7 @@ class RTCCustomizer(ExclusiveDeviceCustomizer):
         br = self.get_backup_reg(rtc_requires)
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
-                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__DEVICE_ID__": self.dev_config[KW_DEV_ID],
                       "__RTC_DEVICE_NAME__": self.device_name,
                       "__RTC_BACKUP_REG__": br}
         self.patch_templates()

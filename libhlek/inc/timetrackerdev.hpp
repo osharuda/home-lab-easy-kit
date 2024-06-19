@@ -86,18 +86,22 @@ class TimeTrackerDev final : public EKitVirtualDevice {
     size_t get_status(bool& running, uint64_t& first_ts);
 
     /// \brief Reads all data from the device
-    /// \param data - std::vector to be used as storage. Data is appended to the end of the vector
+    /// \param data - std::vector to be used as storage. Timestamps are raw number of ticks. To get value in seconds,
+    ///               division by \ref TimeTrackerDevConfig::tick_freq is required.
+    ///               Data is appended to the end of the vector.
     /// \param relative - if true, all events are returned relative to first event since reset.
     void read_all(std::vector<uint64_t>& data, bool relative);
 
     /// \brief Reads all data from the device
-    /// \param data - std::vector of double to be used as storage. Data is appended to the end of the vector. Values are seconds.
+    /// \param data - std::vector of double to be used as storage. Data is appended to the end of the vector.
+    ///               Values are seconds (internally divided by \ref TimeTrackerDevConfig::tick_freq).
     /// \param relative - if true, all events are returned relative to first event since reset.
     void read_all(std::vector<double>& data, bool relative);
 private:
     PTimeTrackerStatus dev_status;
     uint64_t* data_buffer;
     std::vector<uint8_t> raw_buffer;
+    static constexpr size_t max_timestamps_per_i2c_transaction = 512;
 
     /// \brief Sends a command to the devive
     /// \param flags - command byte flags to be used.
@@ -108,7 +112,8 @@ private:
     /// \param data - pointer to the array with data.
     /// \param count - number of timestamp elements in data array to be read.
     /// \param to - timeout counting object
-    void get_priv(size_t count, EKitTimeout& to);
+    /// \param ovf - output parameter. If true, overflow has occurred, otherwise false.
+    void get_priv(size_t count, EKitTimeout& to, bool& ovf);
 };
 
 /// @}

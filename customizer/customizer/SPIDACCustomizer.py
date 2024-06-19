@@ -179,7 +179,7 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             exclude_resources = {'SPI_MISO', 'SPI_RX_DMA'}  # We are not receiving anything from DAC
             dev_requires = dev_config[KW_REQUIRES]
-            dev_id = dev_config["dev_id"]
+            dev_id = dev_config[KW_DEV_ID]
 
 
             timer = self.get_timer(dev_requires["TIMER"])
@@ -194,7 +194,7 @@ class SPIDACCustomizer(DeviceCustomizer):
             dev_requires["SPI"] = spi
 
             baud_rate_control, spi_freq = self.mcu_hw.spi_get_baud_rate_control(spi_confg_dev,
-                                                                                dev_config["clock_speed"])
+                                                                                dev_config[KW_CLOCK_SPEED])
             clock_phase = self.mcu_hw.spi_get_clock_phase(dev_config["clock_phase"])
             clock_polarity = self.mcu_hw.spi_get_clock_polarity(dev_config["clock_polarity"])
             frame_format = dev_config["frame_format"].upper()

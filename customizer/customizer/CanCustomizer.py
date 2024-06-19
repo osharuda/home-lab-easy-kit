@@ -117,7 +117,7 @@ class CanCustomizer(DeviceCustomizer):
             self.require_feature("SYSTICK", dev_config)
 
             dev_requires = dev_config[KW_REQUIRES]
-            dev_id       = dev_config["dev_id"]
+            dev_id       = dev_config[KW_DEV_ID]
             bitrate     = dev_config["bitrate"]
             buffer_size = "sizeof(CanRecvMessage)*{0}".format(dev_config["buffered_msg_count"])
 

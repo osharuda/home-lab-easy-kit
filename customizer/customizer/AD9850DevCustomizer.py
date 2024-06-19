@@ -48,7 +48,7 @@ class AD9850DevCustomizer(DeviceCustomizer):
         for dev_name, dev_config in self.device_list:
 
             dev_requires = dev_config[KW_REQUIRES]
-            dev_id       = dev_config["dev_id"]
+            dev_id       = dev_config[KW_DEV_ID]
             clock_freq = frequency_to_int(dev_config["clock_frequency"])
 
             rtype, d0 = self.unpack_resource(dev_requires["D0"])

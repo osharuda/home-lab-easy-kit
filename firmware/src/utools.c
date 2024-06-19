@@ -192,30 +192,6 @@ void counted_break(uint32_t cnt)
 	clear_debug_pin_2();
 }
 
-void set_debug_pin_0(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET);
-}
-
-void clear_debug_pin_0(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);
-}
-
-void set_debug_pin_1(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_14, Bit_SET);
-}
-
-void clear_debug_pin_1(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_14, Bit_RESET);
-}
-
-void set_debug_pin_2(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_15, Bit_SET);
-}
-
-void clear_debug_pin_2(void) {
-    GPIO_WriteBit(GPIOC, GPIO_Pin_15, Bit_RESET);
-}
-
 #endif
 
 void fail_assert(uint8_t* src, uint32_t line) {

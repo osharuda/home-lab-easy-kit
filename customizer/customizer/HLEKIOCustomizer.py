@@ -20,7 +20,6 @@ from tools import *
 class HLEKIOCustomizer(BaseCustomizer):
     def __init__(self, hlekio_config: [dict]):
         super().__init__()
-        self.hlekio_dir = os.path.join(get_project_root(), "hlekio")
         self.dts_source = os.path.join(self.hlekio_dir, "hlekio.dts")
 
         self.dts_template_dir = os.path.join(self.template_dir, "hlekio")

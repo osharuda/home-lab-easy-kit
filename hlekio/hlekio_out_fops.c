@@ -51,12 +51,25 @@ long hlekio_out_unlocked_ioctl(struct file* file, unsigned int cmd, unsigned lon
     struct hlekio_file_data* fdata = file->private_data;
     struct hlekio_device* hdev = fdata->hdev;
     long err = -ENOTTY;
+    void* __user ubuf;
+
     switch (cmd) {
         case HLEKIO_RESET:
             err = hlekio_set_gpio(hdev, hdev->pin.default_level);
         break;
         case HLEKIO_BINARY_MODE:
             SET_BINARY_MODE(fdata, arg);
+            err = 0;
+        break;
+        case HLEKIO_PIN_TYPE:
+            u8 value = HLEKIO_OUTPUT_DEV;
+            ubuf = (void* __user)arg;
+
+            if(copy_to_user(ubuf, &value, sizeof(value))) {
+                err = -EFAULT;
+                break;
+            }
+
             err = 0;
         break;
     }

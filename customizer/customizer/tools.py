@@ -28,6 +28,9 @@ def concat_lines(l: list) -> str:
 def get_project_root() -> str:
     return os.path.abspath(get_env_var("PROJECTDIR"))
 
+def get_hlek_root() -> str:
+    return os.path.abspath(get_env_var("PROJECTDIR"))
+
 def get_env_var(name: str) -> str:
     if name not in os.environ:
         raise RuntimeError(f'Environment variable "{name}" is not set!')

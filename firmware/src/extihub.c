@@ -41,9 +41,10 @@ ExtiHandlerDescr g_extihub_handlers[EXTIHUB_LINE_COUNT];
 /// \details This function is called by EXTI interrupt handlers which are used by firmware. This function calls
 ///          EXTI callbacks registered in EXTI HUB by #exti_register_callback().
 void EXTIHUB_COMMON_IRQ_HANDLER(void) {
+    uint64_t timestamp;
+    systick_get(&timestamp);
 	uint32_t events = EXTI->PR;
 	EXTI->PR |= events;
-	uint64_t timestamp = get_us_clock();
 
 	for (uint8_t exti_line = 0; exti_line<EXTIHUB_LINE_COUNT; exti_line++) {
         PExtiHandlerDescr hndlr;

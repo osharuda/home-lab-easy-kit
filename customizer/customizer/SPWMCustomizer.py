@@ -115,7 +115,7 @@ class SPWMCustomizer(ExclusiveDeviceCustomizer):
 
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
-                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__DEVICE_ID__": self.dev_config[KW_DEV_ID],
                       "__SPWM_DEVICE_NAME__": self.device_name,
                       "__SPWM_PORT_COUNT__": len(used_ports),
                       "__SPWM_TIMER__": timer,

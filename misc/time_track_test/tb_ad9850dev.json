@@ -1,0 +1,34 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+     "sys_tick": {                                                                                                                                                                                                           
+       "requires" : {"timer": "TIM1"}},
+    "i2c_bus" : {
+      "clock_speed" : 400000,
+      "buffer_size" : 512,
+      "address" : 31,
+      "requires" :  {"i2c" : "I2C1"}
+    }},
+
+  "devices" : {
+    "AD9850DevCustomizer": {
+      "gen_0" : {
+        "dev_id" : 7,
+        "clock_frequency": "125MHz",
+        "requires" : {
+          "D0" :    {"gpio" : "PA_0"}, 
+          "D1" :    {"gpio" : "PA_1"},
+          "D2" :    {"gpio" : "PA_2"},
+          "D3" :    {"gpio" : "PB_14"},
+          "D4" :    {"gpio" : "PA_8"},
+          "D5" :    {"gpio" : "PA_9"},
+          "D6" :    {"gpio" : "PA_10"},
+          "D7" :    {"gpio" : "PA_15"},
+          "W_CLK" : {"gpio" : "PB_3"},
+          "FQ_UD" : {"gpio" : "PB_4"},
+          "RESET" : {"gpio" : "PB_5"}
+        }
+      }
+    }
+  }
+}

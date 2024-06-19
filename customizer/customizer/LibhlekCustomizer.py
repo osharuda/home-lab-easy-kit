@@ -34,6 +34,7 @@ class LibhlekCustomizer(BaseCustomizer):
         self.add_template(os.path.join(self.fw_inc_templ, self.proto_header), [os.path.join(self.libhlek_inc_dest_path, self.proto_header)])
         self.add_template(os.path.join(self.libhlek_templ_path, self.cmake_script), [self.libhlek_cmakelists_path])
         self.add_common_headers()
+        self.add_copy(os.path.join(self.hlekio_dir, self.hlekio_ioctl), [os.path.join(self.libhlek_inc_dest_path, self.hlekio_ioctl)])
 
 
     def add_common_headers(self):

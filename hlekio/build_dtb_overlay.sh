@@ -5,8 +5,8 @@
 
 # check_target_arch
 
-#lias dtcpp="cpp -nostdinc -undef -x assembler-with-cpp"
-rm ${DTS_NAME}.dts.preprocessed
+alias dtcpp="cpp -nostdinc -undef -x assembler-with-cpp"
+rm -rf ${DTS_NAME}.dts.preprocessed
 cpp -nostdinc -I ./linux/include -I ./linux/arch  -undef -x assembler-with-cpp ${DTS_NAME}.dts ${DTS_NAME}.dts.preprocessed
 dtc -@ -I dts -O dtb -o ${DTS_NAME}.dtbo ${DTS_NAME}.dts.preprocessed
 

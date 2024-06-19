@@ -51,8 +51,8 @@ class UartProxyCustomizer(DeviceCustomizer):
             uart_port = self.get_usart(uart_proxy_requires)
             baud_rate = dev_config["baud_rate"];
             (irq_handler, rx, tx) = self.mcu_hw.USART_to_resources(uart_port)
-            buffer_size = dev_config["buffer_size"]
-            dev_id = dev_config["dev_id"]
+            buffer_size = dev_config[KW_BUFFER_SIZE]
+            dev_id = dev_config[KW_DEV_ID]
             buf_size_def = "{0}_BUFFER_LEN".format(dev_name.upper())
             fw_buffer_size_defs.append("#define {0} {1}".format(buf_size_def, buffer_size))
             buffer_name = "g_{0}_buffer".format(dev_name)

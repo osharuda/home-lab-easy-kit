@@ -69,7 +69,7 @@ class GPIODevCustomizer(ExclusiveDeviceCustomizer):
 
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
-                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__DEVICE_ID__": self.dev_config[KW_DEV_ID],
                       "__GPIO_DEVICE_NAME__": self.device_name,
                       "__CPP_GPIO_DEV_PINS_DECLARATION__": concat_lines(cpp_pin_defs),
                       "__C_GPIO_DEV_PINS_DECLARATION__": concat_lines(c_pin_defs),

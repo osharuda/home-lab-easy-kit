@@ -145,7 +145,7 @@ def customize_firmware(json_file_name: str):
     configuration["global"] = global_config
 
     # Check configuration
-    configuration[FW_FIRMWARE]["device_name"], json_ext = os.path.splitext(os.path.basename(json_file_name))
+    configuration[FW_FIRMWARE][KW_DEV_NAME], json_ext = os.path.splitext(os.path.basename(json_file_name))
     if 'firmware' not in configuration:
         raise RuntimeError(f'"{FW_FIRMWARE}" section is not specified.')
     firmware_conf_section = configuration['firmware']

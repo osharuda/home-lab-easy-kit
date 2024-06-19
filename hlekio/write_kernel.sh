@@ -17,7 +17,6 @@ cd linux
 # Install kernel modules
 sudo -E env PATH=$PATH make ARCH=$TARGET_ARCH CROSS_COMPILE=$TARGET_CROSS_COMPILER INSTALL_MOD_PATH=$SD_ROOTFS modules_install
 
-
 if [ $TARGET_ARCH == 'arm' ]; then
     echo ${IP}'ARM 32-bits'
 

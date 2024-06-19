@@ -71,6 +71,7 @@ long hlekio_in_unlocked_ioctl(struct file* file, unsigned int cmd, unsigned long
     struct hlekio_file_data* fdata = file->private_data;
     struct hlekio_device* hdev = fdata->hdev;
     unsigned long flags;
+    void* __user ubuf;
 
     switch (cmd) {
         case HLEKIO_RESET:
@@ -86,6 +87,17 @@ long hlekio_in_unlocked_ioctl(struct file* file, unsigned int cmd, unsigned long
             spin_unlock_irqrestore(&hdev->info_lock, flags);
             err = 0;
             break;
+        case HLEKIO_PIN_TYPE:
+            u8 value = HLEKIO_INPUT_DEV;
+            ubuf = (void* __user)arg;
+
+            if(copy_to_user(ubuf, &value, sizeof(value))) {
+                err = -EFAULT;
+                break;
+            }
+
+            err = 0;
+        break;
     }
 
     return err;

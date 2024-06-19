@@ -44,9 +44,9 @@ class IRRCCustomizer(ExclusiveDeviceCustomizer):
 
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
-                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__DEVICE_ID__": self.dev_config[KW_DEV_ID],
                       "__IRRC_DEVICE_NAME__": self.device_name,
-                      "__IRRC_BUF_LEN__": self.dev_config["buffer_size"],
+                      "__IRRC_BUF_LEN__": self.dev_config[KW_BUFFER_SIZE],
 
                       "__IRRC_OUT_PORT__": self.mcu_hw.GPIO_to_port(data_pin),
                       "__IRRC_OUT_PIN__": data_pin_number,

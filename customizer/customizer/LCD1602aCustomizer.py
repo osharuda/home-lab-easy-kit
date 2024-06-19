@@ -53,7 +53,7 @@ class LCD1602aCustomizer(ExclusiveDeviceCustomizer):
 
         self.vocabulary = self.vocabulary | {
                       "__NAMESPACE_NAME__": self.project_name,
-                      "__DEVICE_ID__": self.dev_config["dev_id"],
+                      "__DEVICE_ID__": self.dev_config[KW_DEV_ID],
                       "__LCD1602a_DEVICE_NAME__": self.device_name,
 
                       "__LCD1602a_ENABLE_PORT__": self.mcu_hw.GPIO_to_port(enable),
