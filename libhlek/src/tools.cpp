@@ -118,6 +118,8 @@ std::string get_backtrace() {
 
 #ifndef NDEBUG
 
+tools::GlobalMutexVerifier g_mtx_verif();
+
 tools::GlobalMutexVerifier::GlobalMutexVerifier(){
 }
 

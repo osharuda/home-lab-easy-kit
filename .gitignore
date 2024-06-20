@@ -18,8 +18,18 @@ build.log
 **/Release
 **/__pycache__
 
-# Linux kernel
+# Linux kernel and hlekio
 **/linux
+hlekio/*.cmd
+hlekio/*.o
+hlekio/*.order
+hlekio/*.ko
+hlekio/*.symvers
+hlekio/env.sh
+hlekio/*.mod.c
+hlekio/*.mod
+hlekio/makeenv
+libhlek/inc/hlekio_ioctl.h
 
 # Ignore libhlek generated files
 libhlek/inc/*_common.hpp
