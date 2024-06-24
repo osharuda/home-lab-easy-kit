@@ -5,12 +5,12 @@
 		"ttdev_warn" : {
 			"pin"     : "GPIO_8",
 			"pull"    : "up",
-			"trigger" : "rise"
+			"trigger" : "high"
 		},
 		"ttdev_ok" : {
 			"pin"     : "GPIO_7",
 			"pull"    : "up",
-			"trigger" : "fall"
+			"trigger" : "low"
 		}
 	},
 	"outputs": {

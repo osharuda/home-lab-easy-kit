@@ -222,6 +222,7 @@ extern volatile uint8_t g_irq_disabled;
                                     (port)->BSRR = pin;
 
 #ifndef NDEBUG
+
 #define ASSERT_IRQ_ENABLED assert_param(g_irq_disabled==0);
 
 #define ASSERT_IRQ_DISABLED assert_param(g_irq_disabled==1);
@@ -254,6 +255,11 @@ extern volatile uint8_t g_irq_disabled;
 /// \param _size - size to be aligned
 #define IS_ALIGNED(_ptr, _size) \
     assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (_size)) == 0);
+
+/// \brief Checks if pointer is aligned by word
+/// \param _ptr - pointer
+#define IS_WORD_ALIGNED(_ptr) \
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(uint32_t))) == 0);
 
 
 

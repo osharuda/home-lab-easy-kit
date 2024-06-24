@@ -26,8 +26,18 @@ ssize_t hlekio_in_read(struct file *file, char __user *buff, size_t count, loff_
 
     // Wait in blocking mode
     if ((file->f_flags & O_NONBLOCK) == 0) {
+        u8 wait_irq = 1;
+        int res = 0;
         atomic_inc(&hdev->irq_event_waiters_count);
-        int res = wait_for_completion_interruptible(&hdev->irq_event);
+
+        // check if pin already at required state
+        if (hdev->pin.trigger_by_level) {
+            wait_irq = (hlekio_get_gpio(hdev) != hdev->pin.trigger_level);
+        }
+
+        if (wait_irq) {
+            res = wait_for_completion_interruptible(&hdev->irq_event);
+        }
 
         if (atomic_dec_and_test(&hdev->irq_event_waiters_count)) {
             reinit_completion(&hdev->irq_event);

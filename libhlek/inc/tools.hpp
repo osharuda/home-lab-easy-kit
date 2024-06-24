@@ -140,7 +140,7 @@ namespace tools {
 	static thread_local TLSMutexVerifier tls_mtx_verif;
 
 	/// \brief Global variable to track deadlock conditions
-	extern GlobalMutexVerifier g_mtx_verif;
+	// extern GlobalMutexVerifier g_mtx_verif;
 
 	/// \class safe_mutex
 	/// \brief This class is used as wrapper on std::mutex. For debug builds it tracks and verifies mutexes. For release

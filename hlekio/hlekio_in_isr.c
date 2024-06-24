@@ -58,6 +58,17 @@ int hlekio_configure_isr(struct hlekio_device* hdev) {
             irq_flags = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING;
         break;
 
+        case HLEKIO_HI:
+            irq_flags = IRQF_TRIGGER_RISING;
+            hdev->pin.trigger_by_level = 1;
+            hdev->pin.trigger_level = 1;
+        break;
+
+        case HLEKIO_LO:
+            irq_flags = IRQF_TRIGGER_FALLING;
+            hdev->pin.trigger_by_level = 1;
+        break;
+
         default:
             err = -EINVAL;
             dev_err(dev, "Trigger is not specified in DT, err = %i\n", err);

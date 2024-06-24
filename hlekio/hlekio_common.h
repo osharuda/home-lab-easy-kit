@@ -12,6 +12,8 @@ struct hlekio_pin {
     int irq;
     int can_sleep;
     int open_drain;
+    int trigger_by_level;
+    int trigger_level;
 };
 
 struct hlekio_device
@@ -53,6 +55,8 @@ if ((v)) {                                          \
 #define HLEKIO_RISE (0)
 #define HLEKIO_FALL (1)
 #define HLEKIO_EDGE (2)
+#define HLEKIO_HI   (3)
+#define HLEKIO_LO   (4)
 
 #define TO_BINARY_LEVEL(lvl) ((lvl) != '0')
 #define TO_TEXT_LEVEL(lvl) ('0' + (!!lvl))

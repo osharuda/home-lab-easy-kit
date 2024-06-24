@@ -142,9 +142,11 @@ class HLEKIOCustomizer(BaseCustomizer):
         }
 
         self.trigger_to_value = {
-            KW_RISE: 0,
-            KW_FALL: 1,
-            KW_EDGE: 2
+            KW_RISE:        0,
+            KW_FALL:        1,
+            KW_EDGE:        2,
+            KW_LOGICAL_HI:  3,
+            KW_LOGICAL_LO:  4
         }
 
         self.pull_to_value = {

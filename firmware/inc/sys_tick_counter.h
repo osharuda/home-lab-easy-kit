@@ -54,9 +54,9 @@ static inline void systick_get(volatile uint64_t* timestamp) {
     do {
         cnt1 = SYS_TICK_PERIPH->CNT;
 
-        DISABLE_IRQ
+        NVIC_DisableIRQ(SYS_TICK_IRQ);
         irq_cnt = g_systick_irq_cnt;
-        ENABLE_IRQ
+        NVIC_EnableIRQ(SYS_TICK_IRQ);
 
         cnt2 = SYS_TICK_PERIPH->CNT;
     } while (cnt1 > cnt2);

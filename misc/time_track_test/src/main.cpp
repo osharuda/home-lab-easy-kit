@@ -41,9 +41,13 @@
 void help() {
     std::cout << "Usage: example </dev/i2c-X> <test freq, hz>" << std::endl;
 }
+void wait_buffer(HLEKIOInput* hi, EKitTimeout* to) {
+    hi->wait(*to, nullptr);
+}
 
 int main(int argc, char* argv[]) {
     const char* func_name = __FUNCTION__;
+    std::vector<double> ts;
     try {
         if (argc != 3) {
             throw EKitException(__FUNCTION__, EKIT_BAD_PARAM, "Wrong number of arguments");
@@ -66,8 +70,6 @@ int main(int argc, char* argv[]) {
         if (err != EKIT_OK) {
             throw EKitException(__FUNCTION__, EKIT_FAIL, tools::format_string("Failed to open %s", i2c_dev));
         }
-
-
 
         // Open firmware protocol for AD9850 (via I2C) and create devices
         std::shared_ptr<EKitBus> fw_ad9850 (new EKitFirmware(i2cbus, tb_ad9850dev::INFO_I2C_ADDRESS));
@@ -97,11 +99,19 @@ int main(int argc, char* argv[]) {
         ad9850->update(test_freq, 0);
         std::cout << "Frequency is set." << std::endl;
 
+        // Check if ttdev_warn already indicates full buffer
+        if (ttdev_warn.get(nullptr)) {
+            std::cout << "Buffer is already full by some data." << std::endl;
+        }
+
         // Catch events using time tracker
-        ttdev->start(true);
+        ttdev->stop();
         EKitTimeout to(10000);
+        std::thread wt(wait_buffer, &ttdev_warn, &to);
+        ttdev->start(true);
+
         std::cout << "Waiting buffer overrun." << std::endl;
-        ttdev_warn.wait(to, nullptr);
+        wt.join();
 
         std::cout << "N,Timestamp" << std::endl;
 
@@ -110,7 +120,7 @@ int main(int argc, char* argv[]) {
         size_t n = ttdev->get_status(running, first_ts);
         // assert(first_ts==0);
 
-        std::vector<double> ts;
+
         ttdev->read_all(ts, true);
         n=ts.size();
         for(size_t i=1; i<n; i++) {
