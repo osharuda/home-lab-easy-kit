@@ -83,6 +83,13 @@ KW_PIN_TYPE = "pin-type"
 KW_PUSH_PULL = "push-pull"
 KW_OPEN_DRAIN = "open-drain"
 
+# File names from source tree
+FILE_SEQ_LOCK_HDR = "seqlock.h"
+FILE_CIRC_BUF_HDR = "circbuffer.h"
+FILE_CIRC_BUF_SRC = "circbuffer.c"
+FILE_UTOOLS_BUF_HDR = "utools.h"
+FILE_UTOOLS_BUF_SRC = "utools.c"
+
 
 
 

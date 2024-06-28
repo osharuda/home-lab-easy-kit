@@ -32,6 +32,10 @@ class BaseCustomizer:
         self.libhlek_inc_dest_path = os.path.join(self.libhlek_dest_path, "inc")
         self.proto_header = "i2c_proto.h"
         self.fw_inc_templ = os.path.join(self.template_dir, "firmware/inc")
+        self.fw_path = os.path.join(self.project_dir, "firmware")
+        self.fw_inc_source_path = os.path.join(self.fw_path, "inc")
+        self.fw_src_source_path = os.path.join(self.fw_path, "src")
+        self.sw_testtool_dest = os.path.join(self.project_dir, "software/testtool")
         self.hlekio_ioctl = "hlekio_ioctl.h"
         self.hlekio_dir = os.path.join(get_project_root(), "hlekio")
 

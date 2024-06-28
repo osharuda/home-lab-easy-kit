@@ -155,7 +155,6 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         # print(vocabulary)
 
         self.patch_templates()
-        self.copy_files_for_tests()
 
     def add_fw_header(self, header: str):
         self.fw_dev_headers.append("#include \"{0}\"".format(header))
@@ -190,15 +189,6 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                 return
             else:
                 raise RuntimeError("Malformed dev_id is detected: {0}".format(dev_id))
-
-    def copy_files_for_tests(self):
-        file_list = [(os.path.join(self.fw_inc_source_path, "circbuffer.h"), self.sw_testtool_dest),
-                     (os.path.join(self.fw_src_source_path, "circbuffer.c"), self.sw_testtool_dest),
-                     (os.path.join(self.fw_inc_source_path, "utools.h"), self.sw_testtool_dest),
-                     (os.path.join(self.fw_src_source_path, "utools.c"), self.sw_testtool_dest)]
-
-        for src, dst in file_list:
-            copy(src, dst)
 
     def make_feature_macroses(self) -> dict:
         result = dict()

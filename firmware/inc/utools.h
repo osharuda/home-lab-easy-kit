@@ -250,18 +250,6 @@ extern volatile uint8_t g_irq_disabled;
 #define ENABLE_IRQ  __enable_irq();
 
 #endif
-/// \brief Checks if pointer is aligned as required
-/// \param _ptr - pointer
-/// \param _size - size to be aligned
-#define IS_ALIGNED(_ptr, _size) \
-    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (_size)) == 0);
-
-/// \brief Checks if pointer is aligned by word
-/// \param _ptr - pointer
-#define IS_WORD_ALIGNED(_ptr) \
-    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(uint32_t))) == 0);
-
-
 
 /// \brief Initializes miscellaneous checks made for debug builds.
 void debug_checks_init(void);
@@ -450,6 +438,23 @@ extern "C" {
 /// \param prescaller - pointer to the output value of prescaller.
 /// \param period - pointer to the output value of period.
 void timer_get_params(uint32_t us, volatile uint16_t* prescaller, volatile uint16_t* period);
+
+/// \brief Checks if pointer is aligned as required
+/// \param _ptr - pointer
+/// \param _size - size to be aligned
+#define IS_ALIGNED(_ptr, _size) \
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (_size)) == 0);
+
+/// \brief Checks if pointer is aligned by word
+/// \param _ptr - pointer
+#define IS_WORD_ALIGNED(_ptr) \
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(uint32_t))) == 0);
+
+
+/// \brief Checks if pointer is aligned by word
+/// \param _ptr - pointer
+#define IS_SIZE_ALIGNED(_ptr) \
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(*_ptr))) == 0);
 
 #ifdef __cplusplus
 }

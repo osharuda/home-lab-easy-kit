@@ -31,9 +31,6 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.toolchain_name = "toolchain.cmake"
         self.fw_templ = os.path.join(self.template_dir, "firmware");
         self.fw_src_templ = os.path.join(self.template_dir, "firmware/src")
-        self.fw_path = os.path.join(self.project_dir, "firmware")
-        self.fw_inc_source_path = os.path.join(self.fw_path, "inc")
-        self.fw_src_source_path = os.path.join(self.fw_path, "src")
         self.fw_inc_dest = common_config['firmware']['firmware_inc_path']
         self.fw_dest = common_config['firmware']['firmware_path']
 
@@ -50,7 +47,6 @@ class BaseDeviceCustomizer(BaseCustomizer):
         #self.sw_inc_dest = os.path.join(self.project_dir, "software/inc")
         #self.sw_src_dest = os.path.join(self.project_dir, "software/src")
         self.sw_testtool_templ = os.path.join(self.template_dir, "software/testtool")
-        self.sw_testtool_dest = os.path.join(self.project_dir, "software/testtool")
 
         self.sw_lib_path = common_config['firmware']['libconfig_path']
         self.sw_lib_inc_dest = common_config['firmware']['libconfig_inc_path']
