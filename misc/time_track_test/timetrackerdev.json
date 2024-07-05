@@ -5,7 +5,7 @@
     "sys_tick": {
       "requires" : {"timer": "TIM3"}},
     "i2c_bus" : {
-      "clock_speed" : 400000,
+      "clock_speed" : 100000,
       "buffer_size" : 96,
       "address" : 21,
       "requires" :  {"i2c" : "I2C2"}

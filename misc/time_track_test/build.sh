@@ -34,7 +34,7 @@ if [ ${DOCLEAN} != 0 ]; then
 fi
 
 # Generate and build HLEK components
-../../build.sh tb_ad9850dev.json tb_timetrackerdev.json ${BUILDCONF}
+../../build.sh ad9850dev.json timetrackerdev.json ${BUILDCONF}
 
 # Configure hlekio, do not build since build is going to be cross-compiled
 rm -rf hlekio/env.sh

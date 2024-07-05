@@ -19,9 +19,9 @@ if(${${HLEK_NAME}_FOUND})
     message(STATUS "libhlek found at ${LIBHLEK_INSTALL_PATH}")
 endif()
 
-########################## tb_ad9850dev
-set(LIBCONFIG_NAME tb_ad9850dev)
-set(LIBCONFIG_INSTALL_PATH "/usr/local/libtb_ad9850dev")
+########################## ad9850dev
+set(LIBCONFIG_NAME ad9850dev)
+set(LIBCONFIG_INSTALL_PATH "/usr/local/libad9850dev")
 set(${LIBCONFIG_NAME}_DIR ${LIBCONFIG_INSTALL_PATH})
 
 list(APPEND CMAKE_MODULE_PATH ${LIBCONFIG_INSTALL_PATH})
@@ -37,8 +37,8 @@ unset(LIBCONFIG_LIBRARY CACHE)
 
 
 ########################## tb_timetrackerdev
-set(LIBCONFIG_NAME tb_timetrackerdev)
-set(LIBCONFIG_INSTALL_PATH "/usr/local/libtb_timetrackerdev")
+set(LIBCONFIG_NAME timetrackerdev)
+set(LIBCONFIG_INSTALL_PATH "/usr/local/libtimetrackerdev")
 set(${LIBCONFIG_NAME}_DIR ${LIBCONFIG_INSTALL_PATH})
 
 list(APPEND CMAKE_MODULE_PATH ${LIBCONFIG_INSTALL_PATH})

@@ -22,8 +22,6 @@
 
 #include "main.hpp"
 #include <iostream>
-#include <libtb_ad9850dev/info_conf.hpp>
-#include <libtb_timetrackerdev/info_conf.hpp>
 
 #include <libhlek/info_dev.hpp>
 #include <libhlek/ekit_i2c_bus.hpp>
@@ -31,10 +29,12 @@
 #include <libhlek/texttools.hpp>
 
 #include <libhlek/ad9850dev.hpp>
-#include <libtb_ad9850dev/ad9850_conf.hpp>
+#include <libad9850dev/info_conf.hpp>
+#include <libad9850dev/ad9850_conf.hpp>
 
 #include <libhlek/timetrackerdev.hpp>
-#include <libtb_timetrackerdev/timetrackerdev_conf.hpp>
+#include <libtimetrackerdev/info_conf.hpp>
+#include <libtimetrackerdev/timetrackerdev_conf.hpp>
 
 #include <libhlek/hlekio.hpp>
 
@@ -72,45 +72,48 @@ int main(int argc, char* argv[]) {
         }
 
         // Open firmware protocol for AD9850 (via I2C) and create devices
-        std::shared_ptr<EKitBus> fw_ad9850 (new EKitFirmware(i2cbus, tb_ad9850dev::INFO_I2C_ADDRESS));
-        std::shared_ptr<INFODev> ad9850_info_dev(new INFODev(fw_ad9850, tb_ad9850dev::info_config_ptr));
-        std::shared_ptr<AD9850Dev> ad9850(new AD9850Dev(fw_ad9850, tb_ad9850dev::ad9850_gen_0_config_ptr));
+        std::shared_ptr<EKitBus> fw_ad9850 (new EKitFirmware(i2cbus, ad9850dev::INFO_I2C_ADDRESS));
+        std::shared_ptr<INFODev> ad9850_info_dev(new INFODev(fw_ad9850, ad9850dev::info_config_ptr));
+        std::shared_ptr<AD9850Dev> ad9850(new AD9850Dev(fw_ad9850, ad9850dev::ad9850_gen_0_config_ptr));
 
         // Open firmware protocol for TimeTrackerDev (via I2C) and create devices
-        std::shared_ptr<EKitBus> fw_timetackdev (new EKitFirmware(i2cbus, tb_timetrackerdev::INFO_I2C_ADDRESS));
-        std::shared_ptr<INFODev> timetrackdev_info_dev(new INFODev(fw_timetackdev, tb_timetrackerdev::info_config_ptr));
-        std::shared_ptr<TimeTrackerDev> ttdev(new TimeTrackerDev(fw_timetackdev, tb_timetrackerdev::timetrackerdev_timetrackerdev_0_config_ptr));
+        std::shared_ptr<EKitFirmware> fw(new EKitFirmware(i2cbus, timetrackerdev::INFO_I2C_ADDRESS));
+        std::shared_ptr<EKitBus> fw_timetackdev (fw);
+        std::shared_ptr<INFODev> timetrackdev_info_dev(new INFODev(fw_timetackdev, timetrackerdev::info_config_ptr));
+        std::shared_ptr<TimeTrackerDev> ttdev(new TimeTrackerDev(fw_timetackdev, timetrackerdev::timetrackerdev_timetrackerdev_0_config_ptr));
 
         // Open buffer overflow interrup line
         HLEKIOInput ttdev_warn("/dev/ttdev_warn");
 
-
         // Print information about available devices
         auto ad9850_name = ad9850_info_dev->get_dev_name();
+        std::cout << "checking " << ad9850_name.c_str() << " ..." << std::endl;
         ad9850_info_dev->check();
         std::cout << ad9850_name.c_str() << " connected successfully." << std::endl;
 
         auto timetrackdev_name = timetrackdev_info_dev->get_dev_name();
+        std::cout << "checking " << timetrackdev_name.c_str() << " ..." << std::endl;
         timetrackdev_info_dev->check();
         std::cout << timetrackdev_name.c_str() << " connected successfully." << std::endl;
 
         // Set ad9850
         ad9850->reset();
         ad9850->update(test_freq, 0);
-        std::cout << "Frequency is set." << std::endl;
+        //std::cout << "Frequency is set." << std::endl;
 
         // Check if ttdev_warn already indicates full buffer
         if (ttdev_warn.get(nullptr)) {
-            std::cout << "Buffer is already full by some data." << std::endl;
+            //std::cout << "Buffer is already full by some data." << std::endl;
         }
 
         // Catch events using time tracker
         ttdev->stop();
+        ttdev->start(true);
         EKitTimeout to(10000);
         std::thread wt(wait_buffer, &ttdev_warn, &to);
-        ttdev->start(true);
 
-        std::cout << "Waiting buffer overrun." << std::endl;
+
+        //std::cout << "Waiting buffer overrun." << std::endl;
         wt.join();
 
         std::cout << "N,Timestamp" << std::endl;
@@ -123,12 +126,17 @@ int main(int argc, char* argv[]) {
 
         ttdev->read_all(ts, true);
         n=ts.size();
+        /*
         for(size_t i=1; i<n; i++) {
             std::cout << i << "," << ts[i] - ts[i-1] <<std::endl;
         }
+         */
 
-        //ad9850->reset();
+        ad9850->reset();
         ttdev->stop();
+
+        std::cout << "OK " << ts.size() << " samples" <<std::endl;
+
 
     } catch (EKitException e) {
         std::cout << e.what() << std::endl;
