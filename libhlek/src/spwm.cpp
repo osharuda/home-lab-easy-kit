@@ -26,6 +26,7 @@
 SPWMDev::SPWMDev(std::shared_ptr<EKitBus>& ebus, const SPWMConfig* cfg) :
     super(ebus, cfg->dev_id, cfg->dev_name),
     config (cfg) {
+    clear_prev_data();
 }
 
 size_t SPWMDev::get_channel_count() const {
@@ -42,9 +43,9 @@ const SPWMChannel* SPWMDev::get_channel_info(size_t channel_index) {
 }
 
 void SPWMDev::set(SPWM_STATE& state) {
-	static const char* const func_name = "SPWMDev::set";
+    static const char* const func_name = "SPWMDev::set";
     size_t max_entry_count = config->channel_count + 1;
-    size_t pwm_size = PWM_ENTRY_SIZE(config->port_number);
+    const size_t pwm_size = PWM_ENTRY_SIZE(config->port_number);
     size_t buffer_size = max_entry_count * pwm_size;
     uint8_t pwmdata_buffer[buffer_size];
 
@@ -53,94 +54,102 @@ void SPWMDev::set(SPWM_STATE& state) {
         pwmdata[i].assign(pwmdata_buffer + i*pwm_size, config->port_number);
     }
 
-	std::map<uint16_t, PWM_ENTRY_HELPER> pwmmap;
-	uint8_t* data_ptr;
-	size_t data_len;
+    uint8_t* data_ptr;
+    size_t data_len;
 
-	// Block bus and fill data
-	{
+    // Block bus and fill data
+    {
         EKitTimeout to(get_timeout());
         BusLocker blocker(bus, get_addr(), to);
 
-		// state may specify some of the channels configured. Fill the reset of the channels.
-		for (size_t i=0; i<config->channel_count; i++) {
-			SPWM_STATE::const_iterator si = state.find(i);
-			if (si==state.end()) {
-				state[i]=prev_data[i];
-			}
-		}
+        // State may specify some channels configured. Fill the reset channels with values from prev_data map.
+        for (size_t i=0; i<config->channel_count; i++) {
+            SPWM_STATE::const_iterator si = state.find(i);
+            if (si==state.cend()) {
+                state[i]=prev_data[i];
+            }
+        }
 
-		// prepare reversed map
-		for (size_t i=0; i<config->channel_count; i++) {
-			size_t port = config->channels[i].port_index;
-			size_t pinval = 1 << config->channels[i].pin_number;
-			uint16_t value = state[i];
+        // Prepare reversed map, where keys are pwm values, and values are PWM_ENTRY_HELPER
+        // Also, std::map ensures the values will be enumerated in sorted order.
+        std::map<uint16_t, PWM_ENTRY_HELPER> pwmmap;
+        for (size_t i=0; i<config->channel_count; i++) {
+            size_t port = config->channels[i].port_index;
+            size_t pinval = 1 << config->channels[i].pin_number;
+            uint16_t value = state[i];
 
-			auto ins = pwmmap.emplace(value, PWM_ENTRY_HELPER());
+            auto ins = pwmmap.emplace(value, PWM_ENTRY_HELPER(config->port_number));
             PPWM_ENTRY entry = ins.first->second.data();
-			if (ins.second) {
+            if (ins.second) {
                 entry->n_periods = value;
-    		}
+            }
             entry->data[port] |= pinval;
-		}
+        }
 
-		// fill data
-        PPWM_ENTRY dst_entry = nullptr;
-        PPWM_ENTRY next_dst_entry = nullptr;
-		PPWM_ENTRY acc = pwmdata[0].data(); // First element is used as accumulator
-		size_t pwmindx = 1;
-		for (auto i=pwmmap.begin(); i!=pwmmap.end(); ++i) {
-			uint32_t value = (static_cast<uint32_t>(i->first) * static_cast<uint32_t>(max_period)) / 0xFFFF;
-			assert(value<=0xFFFF);
-            dst_entry = pwmdata[pwmindx-1].data();
-            dst_entry->n_periods = value - acc->n_periods;
-            next_dst_entry = pwmdata[pwmindx].data();
+        size_t pwmindx = 1;
+        PPWM_ENTRY prev_entry, dst_entry;
 
-            PPWM_ENTRY entry = i->second.data();
-			for (int j=0; j<config->port_number; j++) {
-				acc->data[j] |= entry->data[j];
-                next_dst_entry->data[j] = acc->data[j];
-			}
-			acc->n_periods = value;
-			pwmindx++;
-		}
+        PWM_ENTRY_HELPER accumulator(config->port_number);
+        PPWM_ENTRY acc_entry = accumulator.data();
 
-        next_dst_entry->n_periods = max_period - acc->n_periods;
+        for (auto i=pwmmap.begin(); i!=pwmmap.end(); ++i) {
+            PPWM_ENTRY pwmmap_entry = i->second.data();
+            prev_entry = pwmdata[pwmindx-1].data();
 
+            uint32_t value = (static_cast<uint32_t>(i->first) * static_cast<uint32_t>(max_period)) / 0xFFFF;
+            assert(value<=0xFFFF);
 
-		data_ptr = (uint8_t*)(pwmdata_buffer);
-		data_len = sizeof(PWM_ENTRY)*pwmindx;
-		if (acc->n_periods == 0) {
-			data_ptr = (uint8_t*)(pwmdata + 1);
-			data_len -= sizeof(PWM_ENTRY);
-		}
+            prev_entry->n_periods = value - acc_entry->n_periods;
+            acc_entry->n_periods = value;
+            dst_entry = pwmdata[pwmindx].data();
 
-		if (next_dst_entry->n_periods == 0) {
-			data_len -= sizeof(PWM_ENTRY);
-		}
+            for (int j=0; j<config->port_number; j++) {
+                uint16_t port_value = acc_entry->data[j] | pwmmap_entry->data[j];
+                dst_entry->data[j] = port_value;
+                acc_entry->data[j] = port_value;
+            }
+            pwmindx++;
+        }
 
-		// Write data
-		EKIT_ERROR err = bus->write(data_ptr, data_len, to);
-	    if (err != EKIT_OK) {
-	        throw EKitException(func_name, err, "write() failed");
-	    }
+        dst_entry->n_periods = max_period - acc_entry->n_periods;
 
-		for (size_t i=0; i<config->channel_count; i++) {
-			prev_data[i] = state[i];
-		}	   
-	}
+        data_ptr = (uint8_t*)(pwmdata_buffer);
+        data_len = pwm_size*pwmindx;
+
+        // Do not emmit first frame if some channel has 100% value
+        if (pwmdata[0].data()->n_periods == 0) {
+            data_ptr += pwm_size;
+            data_len -= pwm_size;
+        }
+
+        // Do not emmit the last frame if the last channel has 100% value
+        if (dst_entry->n_periods == 0) {
+            data_len -= pwm_size;
+        }
+
+        // Write data
+        EKIT_ERROR err = bus->write(data_ptr, data_len, to);
+        if (err != EKIT_OK) {
+            throw EKitException(func_name, err, "write() failed");
+        }
+
+        for (size_t i=0; i<config->channel_count; i++) {
+            prev_data[i] = state[i];
+        }       
+    }
 }
 
 void SPWMDev::reset() {
     clear_prev_data();
-	SPWM_STATE state;
-	set(state);
+    SPWM_STATE state;
+    set(state);
 }
 
 void SPWMDev::clear_prev_data() {
-	for (size_t i=0; i<config->channel_count; i++) {
-	    prev_data[i] = config->channels[i].def_val ? 0 : max_period;
-	}	
+    prev_data.resize(config->channel_count);
+    for (size_t i=0; i<config->channel_count; i++) {
+        prev_data[i] = config->channels[i].def_val ? 0 : max_period;
+    }    
 }
 
 void SPWMDev::set_pwm_freq(double freq) {

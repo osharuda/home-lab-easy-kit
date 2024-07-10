@@ -20,13 +20,16 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef SPWM_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spwm.h"
+#include "spwm_conf.h"
 
-#ifdef SPWM_DEVICE_ENABLED
+
 
 #define IRQ_PRIORITY_SPWM 3
 
@@ -42,7 +45,7 @@ volatile DeviceContext spwm_ctx __attribute__ ((aligned));
 void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
     uint8_t status = 0;
-    if (length>sizeof(SPWM_BUFFER_SIZE)) {
+    if (length>SPWM_BUFFER_SIZE) {
         status = COMM_STATUS_FAIL;
         goto done;
     }
