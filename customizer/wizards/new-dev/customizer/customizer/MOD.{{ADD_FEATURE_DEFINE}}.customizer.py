@@ -1,0 +1,1 @@
+    feature_detect_dict[{DevName}Customizer.__name__] = "{DEVNAME}_DEVICE_ENABLED"

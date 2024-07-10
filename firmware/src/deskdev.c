@@ -20,15 +20,18 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef DESKDEV_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "deskdev.h"
 #include "extihub.h"
 #include "sys_tick_counter.h"
+#include "desk_conf.h"
 
-#ifdef DESKDEV_DEVICE_ENABLED
+
 
 DeskDevButtonState g_ddev_buttons[BUTTON_COUNT];
 DeskDevEncoderState g_ddev_encoder;

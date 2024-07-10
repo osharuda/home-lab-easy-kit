@@ -16,28 +16,8 @@
  */
 
 /*!  \file
- *   \brief High-resolution System Tick Counter source.
+ *   \brief Example project skeleton
  *   \author Oleh Sharuda
  */
 
-#include "fw.h"
-#if ENABLE_SYSTICK!=0
-
-#include "utools.h"
-#include "sys_tick_counter.h"
-
-
-
-volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned)) = 0;
-
-MAKE_ISR(SYS_TICK_ISR) {
-    if (SYS_TICK_PERIPH->SR & TIM_IT_Update) {
-        g_systick_irq_cnt++;
-        TIM_ClearITPendingBit(SYS_TICK_PERIPH, TIM_IT_Update);
-    }
-}
-
-void systick_init(void) {
-    timer_start_periodic(SYS_TICK_PERIPH, SYSTICK_PRESCALLER, SYSTICK_PERIOD, SYS_TICK_IRQ, IRQ_PRIORITY_SYSTICK);
-}
-#endif // of ENABLE_SYSTICK
+/// @}

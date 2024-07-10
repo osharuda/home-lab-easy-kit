@@ -20,13 +20,19 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
+
 #include "fw.h"
+#ifdef ADCDEV_DEVICE_ENABLED
+
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
+#define SEQ_LOCK_I2C_READER
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "adcdev.h"
-
-#ifdef ADCDEV_DEVICE_ENABLED
+#include "adc_conf.h"
 
 /// \addtogroup group_adc_dev
 /// @{
@@ -90,7 +96,7 @@ static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev);
 ///       1. Averages and put sampled data into circular buffer.
 ///       2. Clears \ref ADCDEV_STATUS_SAMPLING flag to control
 ///       3. Detects if sampling should be stopped (all requested samples are made or circular buffer is overflown).
-void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile PCircBuffer circ_buffer);
+void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile struct CircBuffer* circ_buffer);
 
 
 
@@ -294,7 +300,7 @@ void adc_start( volatile ADCDevFwInstance* dev,
 void adc_read_done(uint8_t device_id, uint16_t length) {
     uint16_t index = comm_dev_context(device_id)->dev_index;
     volatile ADCDevFwInstance* dev = g_adc_devs+index;
-    volatile PCircBuffer circbuf = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
     uint8_t status = circbuf_get_ovf(circbuf) ? COMM_STATUS_OVF : COMM_STATUS_OK;
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
@@ -302,10 +308,10 @@ void adc_read_done(uint8_t device_id, uint16_t length) {
 }
 
 static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev) {
-    volatile PCircBuffer circ_buffer = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circ_buffer = (volatile struct CircBuffer*)&(dev->circ_buffer);
     DISABLE_IRQ
-    circbuf_init(circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size);
-    circbuf_init_block_mode_no_irq(circ_buffer, dev->sample_block_size);
+    circbuf_init(circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size, 0);
+    circbuf_init_block_mode(circ_buffer, dev->sample_block_size);
     circbuf_init_status(circ_buffer,
                         (volatile uint8_t*)&(dev->privdata.status),
                         STRUCT_MEMBER_SIZE(ADCDevFwPrivData,status));
@@ -329,7 +335,7 @@ void adc_init() {
         dev->dev_ctx.dev_index = i;
         dev->dev_ctx.on_command = adc_dev_execute;
         dev->dev_ctx.on_read_done = adc_read_done;
-        dev->dev_ctx.circ_buffer = (volatile PCircBuffer)( &(dev->circ_buffer) );
+        dev->dev_ctx.circ_buffer = (volatile struct CircBuffer*)( &(dev->circ_buffer) );
 
         // Initialize circular buffer
         adc_reset_circ_buffer(dev);
@@ -437,7 +443,7 @@ void adc_reset(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata)
     adc_reset_peripherals(dev, pdata);
 }
 
-void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile PCircBuffer circ_buffer) {
+void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile struct CircBuffer* circ_buffer) {
     // State sanity check
     assert_param(IS_SET(pdata->status, (uint16_t)(ADCDEV_STATUS_SAMPLING | ADCDEV_STATUS_STARTED)));
     uint8_t stop_sampling = 0;
@@ -511,7 +517,7 @@ void ADC_COMMON_DMA_IRQ_HANDLER(uint16_t index) {
 
     // Disable sampling
     adc_suspend(dev);
-    adc_complete(dev, pdata, (PCircBuffer)&dev->circ_buffer);
+    adc_complete(dev, pdata, (struct CircBuffer*)&dev->circ_buffer);
 
     DMA_ClearITPendingBit(dev->dma_it);
 }
@@ -587,7 +593,7 @@ void ADC_COMMON_ADC_IRQ_HANDLER(uint16_t index) {
     assert_param(index < ADCDEV_DEVICE_COUNT);
     volatile ADCDevFwInstance *dev = g_adc_devs + index;
     volatile ADCDevFwPrivData* pdata = (&dev->privdata);
-    volatile PCircBuffer       circ_buffer = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circ_buffer = (volatile struct CircBuffer*)&(dev->circ_buffer);
 
     // get actual value and increase current pointer.
     *pdata->current_measurement = ADC_GetConversionValue(dev->adc);

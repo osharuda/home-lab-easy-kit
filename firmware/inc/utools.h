@@ -22,6 +22,10 @@
 
 #pragma once
 
+/// \brief Macro for suppressing warnings for some unused parameters which actually are not being used.
+/// \param x - Unused parameter to be ignored.
+#define UNUSED(x) (void)(x)
+
 #ifdef DISABLE_NOT_TESTABLE_CODE
 #include "stdint.h"
 #include "limits.h"
@@ -95,10 +99,6 @@ extern GPIO_TypeDef g_null_port;
 /// \note is used in debug builds only.
 extern volatile uint8_t g_irq_disabled;
 #endif
-
-/// \brief Macro for suppressing warnings for some unused parameters which actually are not being used.
-/// \param x - Unused parameter to be ignored.
-#define UNUSED(x) (void)(x)
 
 /// \brief Check if all bits specified by f are set in x.
 /// \param x - value to be tested.

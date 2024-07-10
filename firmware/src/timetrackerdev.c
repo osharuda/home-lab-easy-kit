@@ -20,17 +20,21 @@
  *   \author Oleh Sharuda
  */
 
+#include "fw.h"
+
+#ifdef TIMETRACKERDEV_DEVICE_ENABLED
+
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
+#define SEQ_LOCK_I2C_READER
+
 #include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
+#include "timetrackerdev_conf.h"
 #include "timetrackerdev.h"
 #include <stm32f10x.h>
 #include "extihub.h"
-#include "circbuffer.h"
-
-
-#ifdef TIMETRACKERDEV_DEVICE_ENABLED
 
 /// \addtogroup group_timetrackerdev
 /// @{
@@ -51,9 +55,9 @@ static uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatil
 void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = (uint32_t)(ctx);
     volatile TimeTrackerDevInstance* dev = g_timetrackerdev_devs + dev_index;
-    volatile PCircBuffer circbuf = (volatile PCircBuffer)&dev->circ_buffer;
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&dev->circ_buffer;
 
-    uint64_t* data = circbuf_reserve_block(circbuf);
+    volatile uint64_t* data = circbuf_reserve_block(circbuf);
     if (data) {
         *data = clock;
         circbuf_commit_block(circbuf);
@@ -82,8 +86,8 @@ void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t ind
     dev->privdata.status.status = 0;
 
     // Init circular buffer
-    volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
-    circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
+    circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size, 0);
     devctx->circ_buffer  = circbuf;
     circbuf_init_block_mode(circbuf, sizeof(uint64_t));
     circbuf_init_status(circbuf,
@@ -139,7 +143,7 @@ uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeT
 
 uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev) {
     DISABLE_IRQ
-    circbuf_reset_no_irq((volatile PCircBuffer)&dev->circ_buffer);
+    circbuf_reset((volatile struct CircBuffer*)&dev->circ_buffer);
     dev->privdata.status.event_number = 0;
     dev->privdata.status.first_event_ts = UINT64_MAX;
     GPIO_WriteBit(dev->near_full_line.port, dev->near_full_line.pin_mask, dev->near_full_line.default_val);
@@ -174,13 +178,13 @@ void timetrackerdev_read_done(uint8_t device_id, uint16_t length) {
     volatile PDeviceContext devctx = comm_dev_context(device_id);
     volatile TimeTrackerDevInstance* dev = g_timetrackerdev_devs + devctx->dev_index;
 
-    volatile PCircBuffer circbuf = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
 
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
 
     DISABLE_IRQ
-    uint16_t curlen = circbuf_len_no_irq(circbuf);
+    uint16_t curlen = circbuf_len(circbuf);
     dev->privdata.status.event_number =  curlen / sizeof(uint64_t);
     // Either length is less than size of the status or number of bytes read from buffer consist of complete 8 byte blocks
     assert_param( (length < sizeof(TimeTrackerStatus)) ||

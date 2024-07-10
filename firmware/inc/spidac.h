@@ -137,7 +137,7 @@ typedef volatile SPIDACInstance* PSPIDACInstance;
 void spidac_init();
 
 /// \brief #ON_COMMAND callback for all SPIDAC devices
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 void spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);

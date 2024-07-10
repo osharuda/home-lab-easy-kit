@@ -24,7 +24,6 @@
 
 #pragma once
 
-#define {DEVNAME}_DEVICE_ENABLED 1
 /// \addtogroup group_{devname}
 /// @{{
 

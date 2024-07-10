@@ -29,6 +29,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         self.example_main_hpp = "main.hpp"
         self.example_main_cpp = "main.cpp"
         self.fw_dev_headers = []
+        self.feature_defines = []
         self.sw_dev_headers = []
         self.allocated_dev_ids = []
         self.required_resources = required_resources
@@ -133,6 +134,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
                       "__SYS_TICK_IRQ__": systick_irqn,
 
                       "__FW_HEADERS__": concat_lines(self.fw_dev_headers),
+                      "__FW_FEATURE_DEFINES__": concat_lines(self.feature_defines),
                       "__SW_HEADERS__": concat_lines(self.sw_dev_headers),
                       "__COMM_BUFFER_LENGTH__": buffer_size,
                       "__I2C_FIRMWARE_ADDRESS__": address_0,
@@ -155,6 +157,12 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         # print(vocabulary)
 
         self.patch_templates()
+
+
+
+    def add_fw_feature_define(self, feature_define: str):
+        define = f"""#define {feature_define} 1"""
+        self.feature_defines.append(define)
 
     def add_fw_header(self, header: str):
         self.fw_dev_headers.append("#include \"{0}\"".format(header))

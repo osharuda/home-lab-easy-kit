@@ -20,16 +20,18 @@
  *   \author Oleh Sharuda
  */
 
+#include "fw.h"
+#ifdef CAN_DEVICE_ENABLED
+
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
+#define SEQ_LOCK_I2C_READER
+
 #include <string.h>
 #include <stm32f10x.h>
-#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
 #include "can.h"
-
-
-
-#ifdef CAN_DEVICE_ENABLED
 
 /// \addtogroup group_can
 /// @{
@@ -83,7 +85,7 @@ void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
 /// \param circ_buffer - internal circular buffer represented by a pointer to #CircBuffer structure.
 /// \param message - message represented by a pointer to #CanRxMsg structure.
 /// \param status - status represented by a pointer to #CanStatus structure.
-void can_put_message_on_buffer(volatile CanInstance* dev, volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status);
+void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBuffer* circ_buffer, CanRxMsg* message, volatile CanStatus* status);
 
 /// \brief Reset state of the CAN virtual device
 /// \param dev - device instance structure represented by #CanInstance
@@ -114,7 +116,7 @@ void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO0, &message);
         can_put_message_on_buffer(dev,
-                                  (volatile PCircBuffer)&(dev->circ_buffer),
+                                  (volatile struct CircBuffer*)&(dev->circ_buffer),
                                   &message,
                                   (volatile PCanStatus) &(dev->privdata.status));
     }
@@ -144,7 +146,7 @@ void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO1, &message);
         can_put_message_on_buffer(dev,
-                                  (volatile PCircBuffer)&(dev->circ_buffer),
+                                  (volatile struct CircBuffer*)&(dev->circ_buffer),
                                   &message,
                                   (volatile PCanStatus) &(dev->privdata.status));
     }
@@ -236,7 +238,7 @@ void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
 
 #if CAN_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
-    volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
     circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
     circbuf_init_block_mode(circbuf, sizeof(CanRecvMessage));
     circbuf_init_status(circbuf, (volatile uint8_t*)&(dev->privdata.status), sizeof(CanStatus));
@@ -282,7 +284,7 @@ void can_init() {
 }
 
 void can_reset_status(volatile CanInstance* dev) {
-    volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
     dev->privdata.status.data_len = circbuf_total_len(circbuf);
     dev->privdata.status.state = 0;
     dev->privdata.status.lsb_trans_count = 0;
@@ -358,7 +360,7 @@ void can_read_done(uint8_t device_id, uint16_t length) {
     volatile CanInstance* dev = g_can_devs + devctx->dev_index;
 
 #if CAN_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
-    volatile PCircBuffer circbuf = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
 
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
@@ -522,7 +524,7 @@ done:
     return result;
 }
 
-void can_put_message_on_buffer(volatile CanInstance* dev, volatile PCircBuffer circ_buffer, CanRxMsg* message, volatile CanStatus* status) {
+void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBuffer* circ_buffer, CanRxMsg* message, volatile CanStatus* status) {
     CanRecvMessage* recv_msg = (CanRecvMessage*)circbuf_reserve_block(circ_buffer);
     if (recv_msg==0) {
         // Failed to reserve
@@ -555,8 +557,8 @@ void can_put_message_on_buffer(volatile CanInstance* dev, volatile PCircBuffer c
 
 void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev) {
     DISABLE_IRQ
-    volatile PCircBuffer circbuf = devctx->circ_buffer;
-    circbuf_reset_no_irq(devctx->circ_buffer);
+    volatile struct CircBuffer* circbuf = devctx->circ_buffer;
+    circbuf_reset(devctx->circ_buffer);
     dev->privdata.status.data_len = circbuf_total_len_no_irq(circbuf);
     ENABLE_IRQ
 }

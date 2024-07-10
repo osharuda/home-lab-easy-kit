@@ -76,7 +76,6 @@ class ADCDevCustomizer(DeviceCustomizer):
             if input_name not in analog_inputs_names:
                 raise RuntimeError("Input {0} listed in sample_times.override section is not listed among inputs for device {1}".format(input_name, dev_name))
 
-
     def get_sample_time(self, dev_config, dev_name, input_name) -> str:
         res = dev_config["sample_time"]["default"]
         if input_name in dev_config["sample_time"]["override"]:
@@ -209,8 +208,8 @@ class ADCDevCustomizer(DeviceCustomizer):
             fw_accumulator_buffer_name = "g_{0}_accumulator_buffer".format(dev_name)
 
             fw_device_descrs.append(f"""{{\\
-    {{0}},\\
-    {{0}},\\
+    {self.device_context_initializer},\\
+    {self.circular_buffer_initializer},\\
     {{0}},\\
     {fw_inputs_name},\\
     {fw_measurement_buffer_name},\\

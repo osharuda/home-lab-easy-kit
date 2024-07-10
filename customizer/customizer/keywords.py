@@ -91,6 +91,8 @@ FILE_UTOOLS_BUF_HDR = "utools.h"
 FILE_UTOOLS_BUF_SRC = "utools.c"
 
 
+KW_FEATURE_DEFINES = "feature_defines"
+
 
 
 

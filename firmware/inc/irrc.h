@@ -24,8 +24,8 @@
 
 #ifdef IRRC_DEVICE_ENABLED
 
+/// \brief NEC standard IR remo te control support
 /// \defgroup group_irrc_dev IRRCDev
-/// \brief NEC standard IR remote control support
 /// @{
 /// \page page_irrc_dev
 /// \tableofcontents
@@ -66,18 +66,7 @@
 #define IRRC_NEC_DATA			2
 
 
-typedef struct tag_IRRCPrivData{
-    uint64_t signal_start;
-    uint64_t last_bit_start;
- 	CircBuffer circ;
- 	uint32_t data;
-	uint8_t	state;
-	uint8_t bitcounter;
-	uint8_t last_actual;
-	uint8_t last_ir_address;
-	uint8_t last_ir_command;
-	uint8_t buffer[IRRC_BUF_LEN];
-} IRRCPrivData, *PIRRCPrivData;
+
 
 void irrc_init();
 void irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length);

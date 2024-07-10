@@ -59,7 +59,7 @@ void {devname}_init_vdev(volatile {DevName}Instance* dev, uint16_t index) {
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
-    volatile PCircBuffer circbuf = (volatile PCircBuffer) &(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
     circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
     devctx->circ_buffer  = circbuf;
 #endif
@@ -92,7 +92,7 @@ void {devname}_read_done(uint8_t device_id, uint16_t length) {
     volatile {DevName}Instance* dev = g_{devname}_devs + devctx->dev_index;
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
-    volatile PCircBuffer circbuf = (volatile PCircBuffer)&(dev->circ_buffer);
+    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
 #endif

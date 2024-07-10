@@ -20,15 +20,14 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef SPIDAC_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spidac.h"
 #include <stm32f10x.h>
-
-
-#ifdef SPIDAC_DEVICE_ENABLED
 
 /// \addtogroup group_spidac
 /// @{

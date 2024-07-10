@@ -34,7 +34,7 @@
 /// In order to control device softwaere should write \ref AD9850Command structure into device.
 /// This structure is treated as a command, it's content reflects the way AD9850 is being controlled via parallel interface.
 /// For details read manufacturer documentation: <a href="https://www.analog.com/media/en/technical-documentation/data-sheets/AD9850.pdf">AD9850 documentation</a> ("Programming the AD9850", pages 9-12)
-/// If reset should be performed before operation \ref AD9850DEV_RESET must be set in a command byte (tag_CommCommandHeader#command_byte)
+/// If reset should be performed before operation \ref AD9850DEV_RESET must be set in a command byte (CommCommandHeader#command_byte)
 ///
 
 /// \struct tag_AD9850DevPrivData
@@ -136,7 +136,7 @@ typedef volatile AD9850DevInstance* PAD9850DevInstance;
 void ad9850dev_init();
 
 /// \brief #ON_COMMAND callback for all AD9850Dev devices
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 void ad9850dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);

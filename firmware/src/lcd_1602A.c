@@ -20,14 +20,17 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef LCD1602a_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "lcd_1602A.h"
 #include "sys_tick_counter.h"
+#include "lcd1602a_conf.h"
 
-#ifdef LCD1602a_DEVICE_ENABLED
+
 
 /// \defgroup group_lcd_1602a_dev LCD1602ADev
 /// \brief Simple LCD1602a screen support
@@ -80,6 +83,9 @@ void lcd_init()
     comm_register_device(&g_lcd_ctx);
     g_lcd_blink = 0;
     lcd_set_backlight(1);
+
+    lcd_string((uint8_t*)LCD1602a_WELCOME_1, LCD1602a_LINE_1);
+    lcd_string((uint8_t*)LCD1602a_WELCOME_2, LCD1602a_LINE_2);
 }
 
 void lcd_polling(uint8_t device_id) {

@@ -20,13 +20,15 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef GPIODEV_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "gpio_dev.h"
+#include "gpio_conf.h"
 
-#ifdef GPIODEV_DEVICE_ENABLED
 
 
 

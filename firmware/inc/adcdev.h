@@ -93,7 +93,7 @@ typedef struct tag_ADCDevFwChannel {
 typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
         volatile DeviceContext      dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
+        volatile struct CircBuffer         circ_buffer;        ///< Circular buffer control structure
 
         volatile ADCDevFwPrivData   privdata;           ///< Private data used by this ADCDev device
 
@@ -152,7 +152,7 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
 void adc_init();
 
 /// \brief #ON_COMMAND callback for all ADCDev devices
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 void adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);

@@ -32,6 +32,7 @@
 #include <cstdarg>
 #include <regex>
 #include <thread>
+#include <signal.h>
 
 /// \defgroup group_tools Tools
 /// \brief Miscellaneous and multipurpose tools
@@ -364,10 +365,35 @@ namespace tools {
     /// \return true if little endian, otherwise false.
     bool is_little_endian();
 
+    /// \brief Installs signal handler
+    /// \param signum - signal number. Must not exceed _NSIG value.
+    /// \param prev_sig_actions - array of the sigaction, with at least of _NSIG elements. If empty, elements will be added.
+    /// \param new_sig_actions - array of the sigaction to store new handlers, with at least of _NSIG elements.
+    ///        If empty, elements will be added.
+    /// \param handler - signal handler to be called. Note, in order to call previous handler should be used.
+    /// \note: SIGSTOP and SIGKILL may not be used
+    void install_signal_handler(    int signum,
+                                    std::vector<struct sigaction>& prev_sig_actions,
+                                    std::vector<struct sigaction>& new_sig_actions,
+                                    __sighandler_t handler);
+
+    /// \brief Calls previously installed signal handler if any
+    /// \param signum - signal number. Must not exceed _NSIG value.
+    /// \param prev_sig_actions - array of the sigaction, with at least of _NSIG elements which was passed to the install_signal_handler()
+    /// \param new_sig_actions - array of the sigaction, with at least of _NSIG elements which was passed to the install_signal_handler()
+    void call_previous_signal_handler(int signum,
+                                      std::vector<struct sigaction>& prev_sig_actions,
+                                      std::vector<struct sigaction>& new_sig_actions);
+
     /// \brief Makes pid file
     /// \return true if success, false if file is already created and can't be overwritten (likely another such program
     ///         is running).
     bool make_pid_file();
+
+    /// \brief Deletes pid file. Must be called on process exit.
+    void delete_pid_file();
+
+
 }
 
 /// @}

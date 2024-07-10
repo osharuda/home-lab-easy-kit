@@ -1,0 +1,47 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 128,
+      "address" : 45,
+      "requires" :  {"i2c" : "I2C1"}},
+    "sys_tick": {"requires" : {"timer": "TIM3"}}},
+
+  "devices" : {
+    "ADCDevCustomizer": {
+      "adc_dma" : {
+        "dev_id" : 2,
+        "buffer_size" : 256,
+	      "measurements_per_sample": 1,
+        "use_dma" : 1,
+        "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
+                         "override" : {"input_0" : "ADC_SampleTime_7Cycles5"}},
+        "requires" :  { "ADC" : {"adc" : "ADC1"},
+                        "TIMER" : {"timer" :  "TIM2"},
+                        "input_0" : {"adc_input" : "ADC_Channel_0"}}}}, 
+    "SPWMCustomizer": {
+      "spwm_0" : {
+        "dev_id" : 3,
+        "prescaler" : 1,
+        "description" : {"pwm" : {
+                           "type" : "GPIO_Mode_Out_PP",
+                           "gpio" : "PA_1",
+                           "default" : 1}
+        },
+      "requires" :  {"timer" :  "TIM4"}
+    }
+  },
+
+    "TimeTrackerDevCustomizer": {
+      "timetrackerdev_0" : {
+        "dev_id" :    4,
+        "buffer_size" : 8120,
+        "pull": "up",
+        "trigger": "edge",
+        "requires" :  {"interrupt" : {"gpio" : "PA_2"},
+                       "near_full"  : {"gpio" : "PA_3"}}
+      }
+    }
+  }
+}

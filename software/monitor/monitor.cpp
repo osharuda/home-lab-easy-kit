@@ -241,9 +241,18 @@ void HLEKMON::message_handler(int index, wint_t ch, int err) {
             on_event(ch, err);
     }
 }
+std::vector<struct sigaction> new_sig_actions;
+std::vector<struct sigaction> prev_sig_actions;
+
+void test_signal(int signum) {
+    std::cout << "Test signal" << std::endl;
+}
+
 
 int main(int argc, char* argv[])
 {
+    tools::install_signal_handler(SIGPWR, prev_sig_actions, new_sig_actions, test_signal);
+
     // Create a pid file
     bool singlton = tools::make_pid_file();
     if (!singlton) {
@@ -688,4 +697,6 @@ int main(int argc, char* argv[])
 // ADD_DEVICE
 
     ui->runloop();
+
+    tools::delete_pid_file();
 }

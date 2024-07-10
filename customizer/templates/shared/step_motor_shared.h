@@ -17,13 +17,6 @@
 
  /* --------------------> END OF THE TEMPLATE HEADER <-------------------- */
 
-
-#ifdef STEP_MOTOR_FIRMWARE
-#define MDESCR_SPECIFIER volatile
-#elif !defined STEP_MOTOR_FIRMWARE
-#define MDESCR_SPECIFIER const
-#endif
-
 /// \addtogroup group_step_motor_dev
 /// @{{
 

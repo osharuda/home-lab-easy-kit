@@ -20,16 +20,20 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+
+#ifdef AD9850DEV_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
+#include "ad9850_conf.h"
 #include "ad9850dev.h"
 #include <stm32f10x.h>
 #include <core_cm3.h>
 
 
-#ifdef AD9850DEV_DEVICE_ENABLED
+
 
 /// \addtogroup group_ad9850dev
 /// @{

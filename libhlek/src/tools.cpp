@@ -33,6 +33,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #ifdef __PYTHON_MODULE__
 #include <Python.h>
@@ -251,27 +252,122 @@ bool tools::is_little_endian() {
     return *ptest==1;
 }
 
+
+constexpr size_t max_signal_number = _NSIG;
+void tools::install_signal_handler(    int signum,
+                                std::vector<struct sigaction>& prev_sig_actions,
+                                std::vector<struct sigaction>& new_sig_actions,
+                                __sighandler_t handler) {
+    assert(signum < max_signal_number);
+    assert(signum != SIGKILL); // May not be intercepted
+    assert(signum != SIGSTOP); // May not be intercepted
+
+
+    size_t size = prev_sig_actions.size();
+    if (size < max_signal_number) {
+        prev_sig_actions.resize(max_signal_number);
+        memset(prev_sig_actions.data() + size, 0, max_signal_number - size);
+    }
+
+    size = new_sig_actions.size();
+    if (size < max_signal_number) {
+        new_sig_actions.resize(max_signal_number);
+        memset(new_sig_actions.data() + size, 0, max_signal_number - size);
+    }
+
+    new_sig_actions[signum].sa_handler = handler;
+    new_sig_actions[signum].sa_flags = SA_NODEFER | SA_NOMASK;
+    sigaction( signum, &new_sig_actions[signum], &prev_sig_actions[signum]);
+}
+
+void tools::call_previous_signal_handler(int signum,
+                                         std::vector<struct sigaction>& prev_sig_actions,
+                                         std::vector<struct sigaction>& new_sig_actions) {
+    assert(signum < max_signal_number);
+    assert(prev_sig_actions.size() >= max_signal_number);
+
+    // restore old sigaction: new will become an old signal handler, prev will become a new signal handler
+    std::vector<struct sigaction> tmp;
+    install_signal_handler(signum, tmp, prev_sig_actions, prev_sig_actions[signum].sa_handler);
+
+    if ( (prev_sig_actions[signum].sa_handler == SIG_IGN) ||
+         (prev_sig_actions[signum].sa_handler == SIG_DFL) ||
+         (prev_sig_actions[signum].sa_handler == SIG_ERR)) {
+        raise(signum);
+    } else {
+        prev_sig_actions[signum].sa_handler(signum);
+    }
+
+    // swap again
+    install_signal_handler(signum, prev_sig_actions, new_sig_actions, new_sig_actions[signum].sa_handler);
+}
+
+static std::string get_pid_file_name() {
+    // Get absolute executable file path and form pid file name
+    constexpr const char* prefix = ".pid";
+    char buffer[PATH_MAX+1+strlen(prefix)];
+    char* pid_file_name = realpath("/proc/self/exe", buffer);
+    strcat(pid_file_name, prefix);
+
+    return buffer;
+}
+
+void tools::delete_pid_file() {
+    std::string pid_file_name = get_pid_file_name();
+    unlink(pid_file_name.c_str());
+}
+
+std::vector<struct sigaction> auto_delete_pid_file_new_sig_actions;
+std::vector<struct sigaction> auto_delete_pid_file_prev_sig_actions;
+static void autodelete_pid_file(int signum) {
+    tools::delete_pid_file();
+    tools::call_previous_signal_handler(  signum,
+                                        auto_delete_pid_file_prev_sig_actions,
+                                        auto_delete_pid_file_new_sig_actions);
+}
+
 bool tools::make_pid_file() {
     bool result = false;
     int fd;
 
     // Get pid and it's string representation
-    pid_t pid = getpid(); // Current pid
+    pid_t pid = gettid(); // Current pid
     std::string str_pid = std::to_string(pid);
 
     // Get absolute executable file path and form pid file name
-    constexpr const char* prefix = ".pid";
-    char buffer[PATH_MAX+1+strlen(prefix)];
-    char* pid_file_name = realpath("/proc/self/exe", buffer);
-    if (pid_file_name==NULL) goto done;
-    strcat(pid_file_name, prefix);
+    std::string pid_file_name = get_pid_file_name();
 
     // Open and lock pid file
-    fd = open(pid_file_name,
-              O_CREAT | O_RDWR,
+    fd = open(pid_file_name.c_str(),
+              O_CREAT | O_RDWR | O_EXCL,
               S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0) goto done;
     if (flock(fd, LOCK_EX | LOCK_NB) < 0) goto done;
+
+    // set handlers
+    install_signal_handler(SIGSEGV,
+                           auto_delete_pid_file_prev_sig_actions,
+                           auto_delete_pid_file_new_sig_actions,
+                           autodelete_pid_file);
+
+    install_signal_handler(SIGABRT,
+                           auto_delete_pid_file_prev_sig_actions,
+                           auto_delete_pid_file_new_sig_actions,
+                           autodelete_pid_file);
+
+
+    install_signal_handler(SIGINT,
+                           auto_delete_pid_file_prev_sig_actions,
+                           auto_delete_pid_file_new_sig_actions,
+                           autodelete_pid_file);
+
+
+    install_signal_handler(SIGTERM,
+                           auto_delete_pid_file_prev_sig_actions,
+                           auto_delete_pid_file_new_sig_actions,
+                           autodelete_pid_file);
+
+
 
     // Write file and exit. Note, fd remains opened until process is terminated.
     do {
@@ -281,4 +377,5 @@ bool tools::make_pid_file() {
 done:
     return result;
 }
+
 

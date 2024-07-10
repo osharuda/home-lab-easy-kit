@@ -21,13 +21,12 @@
  */
 
 #include "utools.h"
-#include <string.h>
 
 #ifdef DISABLE_NOT_TESTABLE_CODE
 int g_assert_param_count = 0;
 #else
 
-#include "fw.h"
+
 
 /// \addtogroup group_utools
 /// @{

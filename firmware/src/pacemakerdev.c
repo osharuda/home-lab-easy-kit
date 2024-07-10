@@ -20,15 +20,17 @@
  *   \author Oleh Sharuda
  */
 
+#include "fw.h"
+#ifdef PACEMAKERDEV_DEVICE_ENABLED
+
 #include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
-#include "fw.h"
 #include "pacemakerdev.h"
 #include <stm32f10x.h>
 
 
-#ifdef PACEMAKERDEV_DEVICE_ENABLED
+
 
 /// \addtogroup group_pacemakerdev
 /// @{

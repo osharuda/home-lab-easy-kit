@@ -20,14 +20,17 @@
  *   \author Oleh Sharuda
  */
 
+#include "fw.h"
+#ifdef INFO_DEVICE_ENABLED
+
 #include <assert.h>
 #include <string.h>
-#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
 #include "info_dev.h"
+#include "info_conf.h"
 
-#ifdef INFO_DEVICE_ENABLED
+
 
 volatile DeviceContext g_info_devctx __attribute__ ((aligned));
 volatile uint8_t g_info_uuid[] = INFO_UUID;

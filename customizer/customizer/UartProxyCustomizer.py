@@ -57,17 +57,16 @@ class UartProxyCustomizer(DeviceCustomizer):
             fw_buffer_size_defs.append("#define {0} {1}".format(buf_size_def, buffer_size))
             buffer_name = "g_{0}_buffer".format(dev_name)
             buffer_defs.append("uint8_t {0}[{1}]={{0}}; \\".format(buffer_name, buf_size_def))
-            fw_device_descrs.append("{{ {{0}}, {{0}}, {3}, {4}, {6}, {2}, {9}, {1}, {5}, {7}, {8}, {0} }}".format(
-                dev_id,                                     #0
-                buf_size_def,                               #1
-                buffer_name,                                #2
-                uart_port,                                  #3
-                self.mcu_hw.GPIO_to_port(rx),               #4
-                self.mcu_hw.GPIO_to_pin_mask(rx),           #5
-                self.mcu_hw.GPIO_to_port(tx),               #6
-                self.mcu_hw.GPIO_to_pin_mask(tx),           #7
-                self.mcu_hw.ISRHandler_to_IRQn(irq_handler),#8
-                baud_rate))                                 #9
+
+            fw_device_descrs.append(f"{{ {self.device_context_initializer}, {self.circular_buffer_initializer}, {uart_port}, {self.mcu_hw.GPIO_to_port(rx)}, {self.mcu_hw.GPIO_to_port(tx)}, {buffer_name}, {baud_rate}, {buf_size_def}, {self.mcu_hw.GPIO_to_pin_mask(rx)}, {self.mcu_hw.GPIO_to_pin_mask(tx)}, {self.mcu_hw.ISRHandler_to_IRQn(irq_handler)}, {dev_id} }}")
+
+
+
+
+
+
+
+
 
             sw_device_descrs.append("{{ {0}, {1}, \"{2}\", {3} }}".format(dev_id,
                                                                           buffer_size,

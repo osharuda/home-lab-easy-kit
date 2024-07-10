@@ -36,3 +36,11 @@ echo -n "" >/var/lib/dhcp/dhclient.leases
 dhclient -v eth0
 exit
 ```
+
+
+# 3. Set Raspberry PI I2C to 400KHz (Fast Mode)
+Add the following parameter to the ```/boot/firmware/config.txt```
+```
+dtparam=i2c_arm_baudrate=400000
+```
+and reboot.

@@ -48,7 +48,7 @@ typedef volatile TimeTrackerDevPrivData* PTimeTrackerDevPrivData;
 /// \brief Structure that describes TimeTrackerDev virtual device
 typedef struct __attribute__ ((aligned)) tag_TimeTrackerDevInstance {
         volatile DeviceContext      dev_ctx __attribute__ ((aligned));  ///< Virtual device context
-        volatile CircBuffer         circ_buffer;                        ///< Circular buffer control structure
+        volatile struct CircBuffer         circ_buffer;                        ///< Circular buffer control structure
         volatile TimeTrackerDevPrivData   privdata;                     ///< Private data used by this TimeTrackerDev device
         volatile GPIO_descr         interrup_line;                      ///< Line dedicated for interrupts
         volatile GPIO_descr         near_full_line;                     ///< Line dedicated for buffer nearly full warning
@@ -66,7 +66,7 @@ typedef volatile TimeTrackerDevInstance* PTimeTrackerDevInstance;
 void timetrackerdev_init();
 
 /// \brief #ON_COMMAND callback for all TimeTrackerDev devices
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 void timetrackerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);

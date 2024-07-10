@@ -20,15 +20,15 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef SPIPROXY_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spiproxy.h"
 #include <stm32f10x.h>
 
-
-#ifdef SPIPROXY_DEVICE_ENABLED
 
 /// \addtogroup group_spiproxy
 /// @{

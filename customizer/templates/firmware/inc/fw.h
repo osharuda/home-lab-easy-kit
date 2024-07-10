@@ -60,6 +60,8 @@
 #define IRQ_PRIORITY_EXTI                  8
 #define IRQ_PRIORITY_STEP_MOTOR_TIMER      9
 
+#define MAIN_PRIORITY                      0xFF
+
 #define ENABLE_SYSTICK {__ENABLE_SYSTICK__}
 
 
@@ -86,6 +88,9 @@
 {__LIBHLEK_ERROR_DEFINES__}
 
 #include "i2c_proto.h"
+
+{__FW_FEATURE_DEFINES__}
+
 {__FW_HEADERS__}
 
 {__APB_CLOCK_ENABLE__}

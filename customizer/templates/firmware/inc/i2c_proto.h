@@ -43,26 +43,26 @@
 /// Communication with firmware is based on commands. Each device should define it’s own command(s) set, but there is general flow that every command should satisfy.
 /// Simple devices may use device specific flags allocated in command byte, more complex devices may pass information using command data.
 ///
-/// Software sends data and selects device. If device does not require any data then software may send just #tag_CommCommandHeader to select device. When command received, all communication status flags are cleared.
-/// Software waits until device reacts on the command received by reading communication status flags tag_CommResponseHeader#comm_status from device.
+/// Software sends data and selects device. If device does not require any data then software may send just #CommCommandHeader to select device. When command received, all communication status flags are cleared.
+/// Software waits until device reacts on the command received by reading communication status flags CommResponseHeader#comm_status from device.
 /// If device does not answer or #COMM_STATUS_BUSY is set then device is busy, wait should be prolonged.
 /// When software is confident that #COMM_STATUS_BUSY is cleared it may reads (optionally) data from the device.
 ///
-/// Software sends data or commands to firmware as buffer which consist of #tag_CommCommandHeader structure and data following this header.
+/// Software sends data or commands to firmware as buffer which consist of #CommCommandHeader structure and data following this header.
 /// To receive data software must select device by sending a command to this device and make sure #COMM_STATUS_BUSY is cleared.
-/// Software receives data back from the selected device as #tag_CommResponseHeader structure followed by the device data.
+/// Software receives data back from the selected device as #CommResponseHeader structure followed by the device data.
 /// The length of read operation is defined by software, so it is possible software reads more data than device buffer has.
 /// In this case, #COMM_BAD_BYTE is sent repeatedly and software is responsible for detection and handling of such situation.
-/// To do this, software may pay attention on tag_CommResponseHeader#length field, this value is calculated by firmware when read is initiated and is equal to
+/// To do this, software may pay attention on CommResponseHeader#length field, this value is calculated by firmware when read is initiated and is equal to
 /// amount of data in the buffer at that moment.
 ///
 /// Master may commit several reads from the device. This behavior is device specific.
 ///
 /// \section sect_communication_details_02 Control sum calculation
-/// Control sum is being calculated by firmware on data reception from software. All data bytes, including #tag_CommCommandHeader are XORed (except tag_CommCommandHeader#control_crc), and checked against tag_CommCommandHeader#control_crc.
+/// Control sum is being calculated by firmware on data reception from software. All data bytes, including #CommCommandHeader are XORed (except CommCommandHeader#control_crc), and checked against ommCommandHeader#control_crc.
 /// Note, that initial value for control sum is #COMM_CRC_INIT_VALUE.
 /// In the case of mismatch firmware discards received buffer and communication status flag #COMM_STATUS_CRC is set.
-/// Software reads are checked with use of tag_CommResponseHeader#last_crc . To check control sum software should issue two read operations, the first to read data, and the second to read previous operation control sum.
+/// Software reads are checked with use of CommResponseHeader#last_crc . To check control sum software should issue two read operations, the first to read data, and the second to read previous operation control sum.
 /// Thus, data integrity is verified on both paths.
 ///
 /// \section sect_communication_details_03 Communication workflow
@@ -78,7 +78,7 @@
 ///
 /// \section sect_communication_command_01 Command
 ///
-/// Command are sent from software to firmware, as #tag_CommCommandHeader structure and optional data. Data is put into
+/// Command are sent from software to firmware, as #CommCommandHeader structure and optional data. Data is put into
 /// receive buffer (common to all virtual devices) and ON_COMMAND device callback is called.
 ///
 
@@ -123,13 +123,13 @@
 
 #pragma pack(push, 1)
 
-/// \struct tag_CommCommandHeader
+/// \struct CommCommandHeader
 /// \brief This structure represent command being sent from software to firmware
-typedef struct tag_CommCommandHeader{{
+struct CommCommandHeader{{
 	uint8_t  command_byte; ///< Command byte, contains device ID and may have several device specific flags set.
 	uint16_t length;	///< Length of the data that follows this structure, may be equal to 0
 	uint8_t  control_crc; ///< Is a control sum. All the bytes, including this header (but excluding this value) are XORed and must be equal to this value, otherwise command will not be accepted and #COMM_STATUS_CRC will be set.
-}} CommCommandHeader, *PCommCommandHeader;
+}};
 
 #pragma pack(pop)
 /// @}}
@@ -141,7 +141,7 @@ typedef struct tag_CommCommandHeader{{
 /// \tableofcontents
 ///
 /// \section sect_communication_response_01 Response
-/// Response is sent by firmware per software request. Response consist of #tag_CommResponseHeader structure and optional
+/// Response is sent by firmware per software request. Response consist of #CommResponseHeader structure and optional
 /// data. It is important to note that length of the data transmitted completely depend on software. Software may read
 /// less or more data then selected virtual device has or even just single byte. Firmware should carefully handle all such
 /// situations. When transmission is over virtual device ON_READDONE callback is called.
@@ -172,14 +172,15 @@ typedef struct tag_CommCommandHeader{{
 #define COMM_STATUS_OK               0
 
 
-/// \struct tag_CommResponseHeader
+/// \struct CommResponseHeader
 /// \brief This structure represent information being received by software from firmware.
 #pragma pack(push, 1)
-typedef struct tag_CommResponseHeader{{
+struct CommResponseHeader{{
 	uint8_t last_crc;   ///< Control sum of the previous operation.
+	uint8_t dummy;      ///< Dummy byte: required to be sent as fast as possible by I2C
 	uint8_t  comm_status; ///< Represents state of the firmware communication status flags. If response header is not read completely then device is not notified when transmission is done, therefore software may read just one byte in order to get communication status.
 	uint16_t length;	///< Number of bytes available in the device buffer at the moment when software started receive. If device requested more data than was available #COMM_BAD_BYTE may be sent.
-}} CommResponseHeader, *PCommResponseHeader;
+}};
 #pragma pack(pop)
 /// @}}
 
@@ -196,12 +197,17 @@ typedef struct tag_CommResponseHeader{{
 /// \brief Defines initial value (salt) for control sum calculation
 #define COMM_CRC_INIT_VALUE           0
 
+// Dummy byte
+/// \def COMM_DUMMY_BYTE
+/// \brief Defines dummy byte used to sent second byte as soon as possible
+#define COMM_DUMMY_BYTE               0xDB
+
 /// \def COMM_CRC_OFFSET
-/// \brief Defines offset (in bytes) of the tag_CommCommandHeader#control_crc
+/// \brief Defines offset (in bytes) of the CommCommandHeader#control_crc
 #define COMM_CRC_OFFSET               3
 
 /// \def COMM_COMMAND_BYTE_OFFSET
-/// \brief Defines offset (in bytes) of the tag_CommCommandHeader#command_byte
+/// \brief Defines offset (in bytes) of the CommCommandHeader#command_byte
 #define COMM_COMMAND_BYTE_OFFSET      0
 
 #ifdef HLEK_FIRMWARE

@@ -19,16 +19,35 @@
  *   \brief IRRC (Infra Red Remote Control) device C source file.
  *   \author Oleh Sharuda
  */
+#include "fw.h"
+#ifdef IRRC_DEVICE_ENABLED
+
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
+#define SEQ_LOCK_I2C_READER
 
 #include <string.h>
-#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
 #include "irrc.h"
 #include "extihub.h"
 #include "sys_tick_counter.h"
+#include "irrc_conf.h"
 
-#ifdef IRRC_DEVICE_ENABLED
+
+typedef struct tag_IRRCPrivData{
+    uint64_t signal_start;
+    uint64_t last_bit_start;
+    struct CircBuffer circ;
+    uint32_t data;
+    uint8_t	state;
+    uint8_t bitcounter;
+    uint8_t last_actual;
+    uint8_t last_ir_address;
+    uint8_t last_ir_command;
+    uint8_t buffer[IRRC_BUF_LEN];
+} IRRCPrivData, *PIRRCPrivData;
+
 
 IRRCPrivData irrc_data;
 volatile DeviceContext irrc_ctx __attribute__ ((aligned));
@@ -44,7 +63,7 @@ void irrc_recv_init() {
 
 void irrc_init() {
     memset((void*)&irrc_data, 0, sizeof(IRRCPrivData));
-    circbuf_init(&irrc_data.circ,irrc_data.buffer,IRRC_BUF_LEN);
+    circbuf_init(&irrc_data.circ,irrc_data.buffer,IRRC_BUF_LEN, 0);
 
 	memset((void*)&irrc_ctx, 0, sizeof(DeviceContext));
 	irrc_ctx.device_id = IRRC_ADDR;

@@ -89,7 +89,7 @@ void lcd_toggle_enabled();
 void lcd_half_byte(uint8_t byte, uint32_t mode);
 
 /// \brief #ON_COMMAND callback for LCDDev
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 void lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);

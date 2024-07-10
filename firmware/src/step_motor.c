@@ -20,15 +20,44 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+
+#ifdef STEP_MOTOR_DEVICE_ENABLED
+
 #include "utools.h"
+#include "circbuffer.h"
+
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// corresponding stepper motor interrupt. Also custom inline functions are required as below.
+#define SEQ_LOCK_CUSTOM_INLINE
+
+__attribute__((always_inline))
+static inline void enter_writer_crit_section(volatile struct sequential_lock* lk) {
+    NVIC_DisableIRQ((IRQn_Type)(lk->context));
+}
+__attribute__((always_inline))
+static inline void leave_writer_crit_section(volatile struct sequential_lock* lk) {
+    NVIC_EnableIRQ((IRQn_Type)(lk->context));
+}
+
+__attribute__((always_inline))
+static inline void enter_reader_crit_section(volatile struct sequential_lock* lk) {
+    UNUSED(lk);
+}
+__attribute__((always_inline))
+static inline void leave_reader_crit_section(volatile struct sequential_lock* lk) {
+    UNUSED(lk);
+}
+
+
+#include <string.h>
+
 #include "step_motor.h"
 #include "step_motor_commands.h"
 #include "sys_tick_counter.h"
 #include "extihub.h"
+#include "step_motor_conf.h"
 
-#ifdef STEP_MOTOR_DEVICE_ENABLED
 
 STEP_MOTORS_BUFFERS
 STEP_MOTOR_MOTOR_DESCRIPTORS
@@ -52,7 +81,7 @@ volatile PStepMotorDevice g_step_motor_devs[] = STEP_MOTOR_DEVICES;
 extern PFN_STEP_MOTOR_CMD_FUNC g_step_motor_cmd_map[STEP_MOTOR_CMD_COUNT];
 
 
-static inline uint16_t step_motor_fetch_cmd(volatile PCircBuffer circ, volatile PStepMotorCmd cmd);
+static inline uint16_t step_motor_fetch_cmd(volatile struct CircBuffer* circ, volatile PStepMotorCmd cmd);
 static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift);
 
 void STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER(uint16_t dev_index) {
@@ -583,7 +612,7 @@ void step_motor_init(void) {
     }
 }
 
-static inline uint16_t step_motor_fetch_cmd(volatile PCircBuffer circ, volatile PStepMotorCmd cmd) {
+static inline uint16_t step_motor_fetch_cmd(volatile struct CircBuffer* circ, volatile PStepMotorCmd cmd) {
     uint8_t c;
     uint16_t bytes_remain = 0;
     circbuf_start_read(circ);
@@ -658,7 +687,7 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
             do {
                 // Check if new command should be read
                 if (cmd->state==STEP_MOTOR_CMDSTATUS_DONE) {
-                    uint16_t bytes_remain = step_motor_fetch_cmd((volatile PCircBuffer)&(mcontext->circ_buffer), cmd);
+                    uint16_t bytes_remain = step_motor_fetch_cmd((volatile struct CircBuffer*)&(mcontext->circ_buffer), cmd);
                     DISABLE_IRQ
                     mstatus->bytes_remain = bytes_remain;
                     ENABLE_IRQ
@@ -757,7 +786,7 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
 
         // Handle motor context
         if (full_reset) {
-            circbuf_init((volatile PCircBuffer) &mcontext->circ_buffer, mdescr->buffer, mdescr->buffer_size);
+            circbuf_init((volatile struct CircBuffer*) &mcontext->circ_buffer, mdescr->buffer, mdescr->buffer_size, (void*)dev->timer_irqn);
 
             mcontext->step_wait = mdescr->default_speed;
 
@@ -798,7 +827,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     volatile PStepMotorStatus mstatus;
 
     // read the buffer and copy commands to motor circular buffers
-    volatile PCircBuffer circ = (volatile PCircBuffer)&mcontext->circ_buffer;
+    volatile struct CircBuffer* circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
 
     for (uint16_t i=0; i<length; i+=len) {
         // Read command byte
@@ -809,7 +838,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         if (cmd & STEP_MOTOR_SELECT) {
             mindex = cmd & (~STEP_MOTOR_SELECT);
             mcontext = MOTOR_CONTEXT(dev, mindex);
-            circ = (volatile PCircBuffer)&mcontext->circ_buffer;
+            circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
             len = 1;
             continue;
         }
@@ -835,7 +864,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     mcontext = MOTOR_CONTEXT(dev, 0);
     mstatus = MOTOR_STATUS(dev, 0);
     for (uint8_t i=0; i<dev->motor_count; i++, mstatus++, mcontext++) {
-        circ = (volatile PCircBuffer)&mcontext->circ_buffer;
+        circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
         uint16_t bytes_remain = circbuf_len(circ);
 
         DISABLE_IRQ

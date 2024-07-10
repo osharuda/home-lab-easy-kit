@@ -19,14 +19,14 @@
  *   \brief RTC (Real Time Clock) device C source file.
  *   \author Oleh Sharuda
  */
+#include "fw.h"
+#ifdef RTC_DEVICE_ENABLED
 
 #include <string.h>
-#include "fw.h"
 #include "utools.h"
 #include "i2c_bus.h"
 #include "rtc.h"
-
-#ifdef RTC_DEVICE_ENABLED
+#include "rtc_conf.h"
 
 volatile DeviceContext rtc_context __attribute__ ((aligned));
 uint32_t rtc_data = 0;

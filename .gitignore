@@ -42,6 +42,7 @@ software/testtool/circbuffer.c
 software/testtool/circbuffer.h
 software/testtool/utools.c
 software/testtool/utools.h
+software/testtool/seqlock.h
 software/testtool/CMakeLists.txt
 
 # Generated directories for known JSON files
@@ -57,4 +58,5 @@ software/testtool/CMakeLists.txt
 /RPiExtender
 /spiproxy
 /step_motors
-
+/testbench
+/timetrackerdev

@@ -38,10 +38,19 @@ TimeTrackerDev::~TimeTrackerDev() {
 
 void TimeTrackerDev::send_command(int flags) {
     static const char* const func_name = "TimeTrackerDev::send_command";
+    EKIT_ERROR  err;
     EKitTimeout to(get_timeout());
+    CommResponseHeader hdr;
     BusLocker   blocker(bus, get_addr(), to);
 
-    EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flags, to);
+    auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
+    do {
+        err = fw->get_status(hdr, false, to);
+    } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
+    assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
+
+
+     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flags, to);
     if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
@@ -65,6 +74,15 @@ void TimeTrackerDev::stop() {
 void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to, bool& ovf) {
     static const char* const func_name = "TimeTrackerDev::get_priv";
     size_t buffer_data_size = sizeof(uint64_t)*count;
+    EKIT_ERROR err;
+    CommResponseHeader hdr;
+
+    auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
+
+    do {
+        err = fw->get_status(hdr, false, to);
+    } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
+    assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
 
     if (buffer_data_size > config->dev_buffer_len) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "Internal buffer is not sufficient for this request.");
@@ -75,7 +93,7 @@ void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to, bool& ovf) {
 
     // read data into internal buffer
     ovf = false;
-    EKIT_ERROR err = bus->read((uint8_t*)dev_status, data_size, to);
+    err = bus->read((uint8_t*)dev_status, data_size, to);
     if (err == EKIT_OVERFLOW) {
         ovf = true;
     } else

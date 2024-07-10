@@ -21,12 +21,12 @@
  */
 
 #include "fw.h"
+#ifdef STEP_MOTOR_DEVICE_ENABLED
+
 #include "utools.h"
 #include "step_motor.h"
 #include "step_motor_commands.h"
-#include "circbuffer.h"
 
-#ifdef STEP_MOTOR_DEVICE_ENABLED
 /// \addtogroup group_step_motor_dev_impl
 /// @{
 

@@ -169,6 +169,7 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device, E
 	} while (true);
 
 	last_op_crc = hdr.last_crc;
+    assert(hdr.dummy == COMM_DUMMY_BYTE);
 
 	if (wait_device && (hdr.comm_status & COMM_STATUS_BUSY) != 0) {
 		// Device is busy, wait more
@@ -224,7 +225,7 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     // Prepare buffer
-    PCommCommandHeader phdr = (PCommCommandHeader)pbuf;
+    CommCommandHeader* phdr = (CommCommandHeader*)pbuf;
     assert(vdev_addr>=0 && vdev_addr <= COMM_MAX_DEV_ADDR);
     phdr->command_byte = vdev_addr | flags;
     phdr->length = len;
@@ -271,7 +272,7 @@ EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){
 	buf.resize(buf_len);
 	uint8_t* pbuf = buf.data();
 	uint8_t* pdata = pbuf+sizeof(CommResponseHeader);
-	PCommResponseHeader phdr = (PCommResponseHeader)pbuf;
+	CommResponseHeader* phdr = (CommResponseHeader*)pbuf;
 	CommResponseHeader rhdr;
 
 	do {

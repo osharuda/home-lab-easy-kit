@@ -20,13 +20,14 @@
  *   \author Oleh Sharuda
  */
 
-#include <string.h>
 #include "fw.h"
+#ifdef EXTIHUB_DEVICE_ENABLED
+
+#include <string.h>
 #include "utools.h"
 #include "extihub.h"
 #include "sys_tick_counter.h"
-
-#ifdef EXTIHUB_DEVICE_ENABLED
+#include "exti_conf.h"
 
 /// \addtogroup group_exti_hub_group
 /// @{

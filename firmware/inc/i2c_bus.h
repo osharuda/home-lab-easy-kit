@@ -82,7 +82,7 @@
 
 /// \typedef ON_COMMAND
 /// \brief Defines command callback function that virtual device uses in order to get commands from software side.
-/// \param cmd_byte - command byte received from software. Corresponds to tag_CommCommandHeader#command_byte
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
 typedef void (*ON_COMMAND)(uint8_t cmd_byte, uint8_t* data, uint16_t length);
@@ -119,7 +119,7 @@ typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
 
     volatile uint8_t* buffer;           ///< Device linear buffer. May be zero if linear buffer is not used. If set to non-zero #circ_buffer must be zero
 
-    volatile PCircBuffer circ_buffer;   ///< Specify circular buffer. If set to non-zero #buffer must be zero
+    volatile struct CircBuffer* circ_buffer;   ///< Specify circular buffer. If set to non-zero #buffer must be zero
 
     uint16_t dev_index;			        ///< This field is used for non-exclusive devices to store device index.
 
@@ -144,7 +144,7 @@ void comm_done(uint8_t status);
 /// \details Non-exclusive device may call #comm_register_device several times for several indexed device.
 /// \details But all the callbacks in #tag_DeviceContext are the same, so callbacks should be able to get index of the device.
 /// \details index of the device is read by virtual device code from tag_DeviceContext#dev_index
-/// \param cmd_byte - command byte (tag_CommCommandHeader#command_byte) obtained through the communication from software
+/// \param cmd_byte - command byte (CommCommandHeader#command_byte) obtained through the communication from software
 /// \returns #tag_DeviceContext for that specific indexed device
 PDeviceContext comm_dev_context(uint8_t cmd_byte);
 /// @}
@@ -183,12 +183,13 @@ PDeviceContext comm_dev_context(uint8_t cmd_byte);
 ///      - I2C may work in different speed modes. My test hardware is setup for standard (100kHz) speed.
 
 
-/// \def CHECK_SR1SR2_FLAGS
+/// \def TEST_SR1SR2_FLAGS
 /// \brief Use this macro to check required status values read from I2C SR1 and SR2 registers (I2C_SR1_XXX and I2C_SR2_XXX in CMSIS library)
 /// \param f - 32 bit value that represents SR1 (higher 16 bits) and SR2 (lower 16 bits) values
 /// \param _sr1 - flag mask for SR1 (I2C_SR1_XXX from CMSIS library)
 /// \param _sr2 - flag mask for SR2 (I2C_SR2_XXX from CMSIS library)
-#define CHECK_SR1SR2_FLAGS(f, _sr1, _sr2) (((f) & (((_sr1) << 16) | (_sr2)))==(((_sr1) << 16) | (_sr2)))
+#define TEST_SR1SR2_FLAGS(f, _sr1, _sr2) (((f) & (((_sr1) << 16) | (_sr2)))==(((_sr1) << 16) | (_sr2)))
+
 
 /// \brief This function initializes I2C based communication. Must be called from #main() before registering any virtual devices with #comm_register_device()
 void i2c_bus_init(void);
@@ -202,47 +203,9 @@ void i2c_check_command(void);
 ///        some device.
 void i2c_pool_devices(void);
 
-/// \brief This function re-initializes I2C communication peripherals in order to prepare communication for the next
-///        receive/transmit from the software side
-/// \note When this function is being executed I2C is not available and software may get failure in attempt to read/write
-///       from I2C device. Thus, software should be prepared and treat such failures as #COMM_STATUS_BUSY
-/// \note This function is called in the following situations:\n
-///       - first initialization of I2C peripherals
-///       - stop condition is received but command was not dispatched to corresponding virtual device (#g_cmd_type is #BUS_CMD_NONE)
-///       - after virtual device tag_DeviceContext#on_command() is executed (#g_cmd_type is #BUS_CMD_WRITE)
-///       - after virtual device tag_DeviceContext#on_read_done() is executed (#g_cmd_type is #BUS_CMD_READ)
-void i2c_bus_reinit(void);
 
-/// \brief This function initializes I2C communication when I2C peripherals receive address byte (I2C_SR1_ADDR flag).
-///        It prepares communication for receive or transmit, it depends on parameters being passed.
-/// \param transmit - non-zero if transmit operation. Zero for receive operation. Transmit is detected by I2C_SR1_TXE or
-///        I2C_SR2_TRA flags from CMSIS library.
-/// \param first_byte_sent - indicates that first byte is already sent (for transmit operation only)
-/// \note Firmware must write first byte into data register as soon as possible, otherwise there is a risks software will
-///       receive invalid data (device address will be received). Thus, if I2C_SR1_TXE flag indicates empty data register,
-///       it should be filled immediately, and all other initialization must be accomplished later in i2c_addr_init() call.
-///       first_byte_sent parameter is required in order to initialize internal data correctly
-void i2c_addr_init(uint8_t transmit, uint8_t first_byte_sent);
 
-/// \brief This function allows to write some value that belongs to I2C communication implementation from #main() infinite
-///        loop context synchronously.
-/// \param v - pointer to value to be set.
-/// \param nv - new value to be set
-/// \details This function is required in order to set #g_cmd_type safely from #main() infinite loop. This variable shouldn't
-///          be set if I2C communication is ongoing. Ongoing communication is specified by #g_i2c_busy variable, thus
-///          this function check it in order to write safely. Also this function disables interrupts for synchronous operation.
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
-void i2c_set_sync(volatile uint8_t* v, uint8_t nv);
 
-/// \brief This function is called from I2C event interrupt handler to handle receive of new byte from master (software).
-void i2c_receive_byte(void);
-
-/// \brief This function is called from I2C event interrupt handler to send a byte to master (software).
-void i2c_transmit_byte(void);
-
-/// \brief This function is called from I2C event and error interrupt handlers to stop I2C bus communication with master (software)
-void i2c_stop(void);
 
 /// @}
 

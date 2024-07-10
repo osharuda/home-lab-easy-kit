@@ -89,6 +89,31 @@ def update_caches(key: str, digest):
     hashes_text = json.dumps(hashes, indent=4, cls=Sorted_JSON_Encoder)
     write_text_file(HASHES_JSON, hashes_text)
 
+def get_feature_define_dict():
+    feature_detect_dict = dict()
+    feature_detect_dict[AD9850DevCustomizer.__name__] = "AD9850DEV_DEVICE_ENABLED"
+    feature_detect_dict[ADCDevCustomizer.__name__] = "ADCDEV_DEVICE_ENABLED"
+    feature_detect_dict[CanCustomizer.__name__] = "CAN_DEVICE_ENABLED"
+    feature_detect_dict[DeskDevCustomizer.__name__] = "DESKDEV_DEVICE_ENABLED"
+    feature_detect_dict[GPIODevCustomizer.__name__] = "GPIODEV_DEVICE_ENABLED"
+    feature_detect_dict[InfoCustomizer.__name__] = "INFO_DEVICE_ENABLED"
+    feature_detect_dict[IRRCCustomizer.__name__] = "IRRC_DEVICE_ENABLED"
+    feature_detect_dict[LCD1602aCustomizer.__name__] = "LCD1602a_DEVICE_ENABLED"
+    feature_detect_dict[RTCCustomizer.__name__] = "RTC_DEVICE_ENABLED"
+    feature_detect_dict[SPIDACCustomizer.__name__] = "SPIDAC_DEVICE_ENABLED"
+    feature_detect_dict[SPIProxyCustomizer.__name__] = "SPIPROXY_DEVICE_ENABLED"
+    feature_detect_dict[SPWMCustomizer.__name__] = "SPWM_DEVICE_ENABLED"
+    feature_detect_dict[StepMotorDevCustomizer.__name__] = "STEP_MOTOR_DEVICE_ENABLED"
+    feature_detect_dict[UartProxyCustomizer.__name__] = "UART_PROXY_DEVICE_ENABLED"
+    feature_detect_dict[PaceMakerDevCustomizer.__name__] = "PACEMAKERDEV_DEVICE_ENABLED"
+    feature_detect_dict[TimeTrackerDevCustomizer.__name__] = "TIMETRACKERDEV_DEVICE_ENABLED"
+    feature_detect_dict[EXTIHubCustomizer.__name__] = "EXTIHUB_DEVICE_ENABLED"
+
+    # ADD_FEATURE_DEFINE
+
+    return feature_detect_dict
+
+
 
 def get_shared_headers_dict():
     shared_headers = dict()
@@ -182,6 +207,7 @@ def customize_firmware(json_file_name: str):
 
     configuration["generation"] = dict()
     configuration["generation"]["shared"] = get_shared_headers_dict()
+    configuration["generation"][KW_FEATURE_DEFINES] = get_feature_define_dict()
 
     # Check if customization is actually required
     if not is_outdated(hash_key, configuration_hash):
@@ -304,7 +330,9 @@ def customize_firmware(json_file_name: str):
 
         info_customizer.add_devices(config_dict, dt)
 
-        fw_customizer.add_fw_header(customizer.fw_header)
+        feature_define = configuration["generation"][KW_FEATURE_DEFINES][customizer_name]
+        fw_customizer.add_fw_feature_define(feature_define)
+        #fw_customizer.add_fw_header(customizer.fw_header)
         fw_customizer.add_sw_header(customizer.sw_header)
         fw_customizer.add_allocated_dev_ids(customizer.get_dev_ids())
 
@@ -318,12 +346,16 @@ def customize_firmware(json_file_name: str):
         dev_requires = extihub_customizer.customize(configuration)
         required_resources.extend(get_leaf_values(dev_requires))
         required_features.update(configuration["devices"]["EXTIHubCustomizer"].get("required_features", set()))
-        fw_customizer.add_fw_header(extihub_customizer.fw_header)
+        #fw_customizer.add_fw_header(extihub_customizer.fw_header)
+        feature_define = configuration["generation"][KW_FEATURE_DEFINES][EXTIHubCustomizer.__name__]
+        fw_customizer.add_fw_feature_define(feature_define)
 
     # Customize Info device
     info_customizer.customize()
     fw_customizer.add_sw_header(info_customizer.sw_header)
-    fw_customizer.add_fw_header(info_customizer.fw_header)
+    #fw_customizer.add_fw_header(info_customizer.fw_header)
+    feature_define = configuration["generation"][KW_FEATURE_DEFINES][InfoCustomizer.__name__]
+    fw_customizer.add_fw_feature_define(feature_define)
     fw_customizer.add_allocated_dev_ids(info_customizer.get_dev_ids())
 
     fw_customizer.customize()

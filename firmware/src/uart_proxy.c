@@ -21,17 +21,23 @@
  */
 
 #include "fw.h"
+
+#ifdef UART_PROXY_DEVICE_ENABLED
+/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
+/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
+#define SEQ_LOCK_I2C_READER
+
 #include "utools.h"
 #include "i2c_bus.h"
 #include "uart_proxy.h"
+#include "uart_proxy_conf.h"
 
-#ifdef UART_PROXY_DEVICE_ENABLED
 
 DEFINE_UART_PROXY_BUFFERS;
 UartProxyDevInstance g_uart_proxies[] = UART_PROXY_DESCRIPTOR;
 
 void UART_PROXY_COMMON_IRQ_HANDLER(uint16_t index) {
-	assert_param(index < UART_PROXY_DEVICE_NUMBER);
+    assert_param(index < UART_PROXY_DEVICE_NUMBER);
 
 	UartProxyDevInstance* dev_instance = g_uart_proxies + index;
 
@@ -75,7 +81,7 @@ void uart_proxy_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
 void uart_proxy_read_done(uint8_t device_id, uint16_t length) {
 	uint16_t index = comm_dev_context(device_id)->dev_index;
-	PCircBuffer circ_buffer = g_uart_proxies[index].dev_ctx.circ_buffer;
+    volatile struct CircBuffer* circ_buffer = g_uart_proxies[index].dev_ctx.circ_buffer;
 	circbuf_stop_read(circ_buffer, length);
 	circbuf_clear_ovf(circ_buffer);
     comm_done(0);
@@ -106,7 +112,7 @@ void uart_proxy_init(void)
 		USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 		USART_Init(g_uart_proxies[i].uart_port, &USART_InitStructure);
 
-		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len);
+		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len, 0);
 		PDeviceContext dev_ctx = (PDeviceContext)&(g_uart_proxies[i].dev_ctx);
 		dev_ctx->device_id = g_uart_proxies[i].dev_id;
 		dev_ctx->buffer = 0;

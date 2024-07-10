@@ -23,31 +23,9 @@
 #include <stm32f10x_flash.h>
 #include "fw.h"
 #include "utools.h"
-#include "sys_tick_counter.h"
 #include "i2c_bus.h"
-#include "info_dev.h"
-#include "deskdev.h"
-#include "rtc.h"
 #include "i2c_proto.h"
-#include "gpio_dev.h"
-#include "lcd_1602A.h"
-#include "uart_proxy.h"
-#include "irrc.h"
-#include "spwm.h"
-#include "adcdev.h"
-#include "step_motor.h"
-#include "extihub.h"
-#include "can.h"
-#include "spiproxy.h"
-#include "ad9850dev.h"
-#include "spidac.h"
-// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
-#include "pacemakerdev.h"
-// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
-// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
-#include "timetrackerdev.h"
-// -> INCLUDE_HEADER | HASH: 9BA7E83CC589F7CED899199627E31E91C4ED136F
-// INCLUDE_HEADER
+
 
 void init_NVIC() {
     // Configure NVIC Priorities
@@ -123,83 +101,96 @@ int main(void)
     init_NVIC();
 
 #if ENABLE_SYSTICK!=0
+    void systick_init();
     systick_init();
 #endif
 
     i2c_bus_init();
 
 #ifdef EXTIHUB_DEVICE_ENABLED
+    void exti_hub_init();
     exti_hub_init();
 #endif
 
 #ifdef INFO_DEVICE_ENABLED
+    void info_dev_init();
     info_dev_init();
 #endif
 
 #ifdef LCD1602a_DEVICE_ENABLED
+    void lcd_init();
     lcd_init();
-
-    lcd_string((uint8_t*)LCD1602a_WELCOME_1, LCD1602a_LINE_1);
-    lcd_string((uint8_t*)LCD1602a_WELCOME_2, LCD1602a_LINE_2);
 #endif
 
 #ifdef DESKDEV_DEVICE_ENABLED
+    void deskdev_init();
     deskdev_init();
 #endif
 
 #ifdef RTC_DEVICE_ENABLED
+    void rtc_init();
     rtc_init();
 #endif
 
 #ifdef UART_PROXY_DEVICE_ENABLED
+    void uart_proxy_init();
     uart_proxy_init();
 #endif
 
-#ifdef IRRC_DEVICE_ENABLED    
+#ifdef IRRC_DEVICE_ENABLED
+    void irrc_init();
     irrc_init();
 #endif    
 
-#ifdef GPIODEV_DEVICE_ENABLED    
+#ifdef GPIODEV_DEVICE_ENABLED
+    void gpio_init();
     gpio_init();
 #endif
 
 #ifdef SPWM_DEVICE_ENABLED
+    void spwm_init();
     spwm_init();
 #endif
 
 #ifdef ADCDEV_DEVICE_ENABLED
+    void adc_init();
     adc_init();
 #endif
 
 #ifdef STEP_MOTOR_DEVICE_ENABLED
+    void step_motor_init();
     step_motor_init();
 #endif
 
 #ifdef CAN_DEVICE_ENABLED
+    void can_init();
     can_init();
 #endif
 
 #ifdef SPIPROXY_DEVICE_ENABLED
+    void spiproxy_init();
     spiproxy_init();
 #endif
 
 #ifdef AD9850DEV_DEVICE_ENABLED
+    void ad9850dev_init();
     ad9850dev_init();
 #endif
 
 #ifdef SPIDAC_DEVICE_ENABLED
+    void spidac_init();
     spidac_init();
 #endif
-// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+
 #ifdef PACEMAKERDEV_DEVICE_ENABLED
+    void pacemakerdev_init();
     pacemakerdev_init();
 #endif
-// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
-// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
+
 #ifdef TIMETRACKERDEV_DEVICE_ENABLED
+    void timetrackerdev_init();
     timetrackerdev_init();
 #endif
-// -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 // ADD_DEVICE
 
     enable_debug_pins();

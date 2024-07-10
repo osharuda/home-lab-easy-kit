@@ -38,7 +38,7 @@
 
 typedef struct __attribute__ ((aligned)) tag_UartProxyDevInstance {
     volatile DeviceContext dev_ctx __attribute__ ((aligned));
-    CircBuffer      circ_buffer;
+    struct CircBuffer circ_buffer;
     USART_TypeDef*  uart_port;
     GPIO_TypeDef *  rx_port;
     GPIO_TypeDef *  tx_port;

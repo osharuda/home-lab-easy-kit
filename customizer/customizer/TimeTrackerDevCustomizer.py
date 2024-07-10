@@ -72,7 +72,7 @@ class TimeTrackerDevCustomizer(DeviceCustomizer):
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
             exti_pin_descr = self.mcu_hw.GPIO_to_GPIO_Descr(interrupt_pin, exti_type, 0)
             near_full_pin_descr = self.mcu_hw.GPIO_to_GPIO_Descr(near_full_pin, near_full_pin_type, 0)
-            fw_device_descriptors.append(f"""{{ {{0}}, {{0}}, {{ {{0}}, 0}}, {exti_pin_descr}, {near_full_pin_descr}, {fw_buffer_name}, {buffer_size}, {exti_control_reg}, {dev_id}, {exti_raise}, {exti_fall} }}""")
+            fw_device_descriptors.append(f"""{{ {self.device_context_initializer}, {self.circular_buffer_initializer}, {{ {{0}}, 0}}, {exti_pin_descr}, {near_full_pin_descr}, {fw_buffer_name}, {buffer_size}, {exti_control_reg}, {dev_id}, {exti_raise}, {exti_fall} }}""")
             sw_device_desсriptors.append(f"""{{ {dev_id}, "{dev_name}", {buffer_size}, {self.mcu_hw.systick_frequency()} }}""")
             fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
