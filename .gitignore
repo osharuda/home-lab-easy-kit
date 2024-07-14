@@ -45,6 +45,22 @@ software/testtool/utools.h
 software/testtool/seqlock.h
 software/testtool/CMakeLists.txt
 
+# Sensetive information
+.rsa_key
+.rsa_key.pub
+misc/devconsole/hlek_dev_console.cfg
+
+# misc projects shouldn't show generated sym links
+misc/*/build/
+misc/*/customize.sh
+misc/*/customizer
+misc/*/firmware
+misc/*/global.json
+misc/*/hashes
+misc/*/hlekio
+misc/*/libhlek/
+misc/*/software
+
 # Generated directories for known JSON files
 /adctest
 /alldev
