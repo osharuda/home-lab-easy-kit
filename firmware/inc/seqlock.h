@@ -25,8 +25,23 @@
 #include <stdint.h>
 #include <utools.h>
 
-
 #if defined(SEQ_LOCK_I2C_READER)
+#define ENTER_CRITICAL_SECTION_WRITER(lk) \
+        ASSERT_IRQ_ENABLED                \
+        __disable_irq();
+
+#define LEAVE_CRITICAL_SECTION_WRITER(lk) \
+        __enable_irq();
+
+
+// It is known that I2C EV IRQ handler has the highest priority, therefor it can't be superceeded by any of the IRQ
+// handlers. In this case we ommit synchronisation for state reader functions
+#define ENTER_CRITICAL_SECTION_READER(lk) (void)(0)
+#define LEAVE_CRITICAL_SECTION_READER(lk) (void)(0)
+
+#define SEQ_LOCK_DEFINED 1
+
+#elif defined(SEQ_LOCK_I2C_READER_IRQ_BASED)
 
     // Global flag to avoid I2C bus enabling before preempted interrupt leaved critical section
     extern volatile uint32_t g_i2c_bus_writer_lock_flag;

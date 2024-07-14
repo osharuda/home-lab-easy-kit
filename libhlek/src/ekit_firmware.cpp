@@ -50,26 +50,36 @@ bool EKitFirmware::check_address(int dev_id) {
 	return res;
 }
 
-EKIT_ERROR EKitFirmware::status_to_ext_error(uint8_t cs) const{
+EKIT_ERROR EKitFirmware::status_to_ext_error(uint8_t cs) {
+    EKIT_ERROR err_fail = EKIT_OK;
+    EKIT_ERROR err_crc = EKIT_OK;
+    EKIT_ERROR err_ovf = EKIT_OK;
+    EKIT_ERROR err_busy = EKIT_OK;
+
 	if (vdev_addr!=(COMM_MAX_DEV_ADDR & cs)){
 		return EKIT_WRONG_DEVICE;
 	}
 
-	if ((cs & COMM_STATUS_BUSY) != 0) {
-		return EKIT_DEVICE_BUSY;
-	}
-
-	if ((cs & COMM_STATUS_CRC) != 0) {
-		return EKIT_CRC_ERROR;
-	}
-
 	if ((cs & COMM_STATUS_FAIL) != 0) {
-		return EKIT_COMMAND_FAILED;
+        err_fail = on_status_fail();
 	}
+
+    if ((cs & COMM_STATUS_CRC) != 0) {
+        err_crc = on_status_crc();
+    }
 
 	if ((cs & COMM_STATUS_OVF) != 0) {
-		return EKIT_OVERFLOW;
+        err_ovf = on_status_ovf();
 	}
+
+    if ((cs & COMM_STATUS_BUSY) != 0) {
+        err_busy = on_status_busy();
+    }
+
+    if (err_fail != EKIT_OK) { return err_fail; }
+    else if (err_crc != EKIT_OK) { return err_crc; }
+    else if (err_ovf != EKIT_OK) { return err_ovf; }
+    else if (err_busy != EKIT_OK) { return err_busy; }
 
 	return EKIT_OK;
 }
@@ -155,6 +165,7 @@ EKIT_ERROR EKitFirmware::unlock(){
 // bool wait_device: true if read until COMM_STATUS_BUSY is cleared, otherwise false
 // Returns: corresponding EKIT_ERROR code
 //------------------------------------------------------------------------------------
+/// \brief Returns status of the device
 EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to){
 	uint8_t last_op_crc;
 	EKIT_ERROR err;
@@ -237,6 +248,7 @@ EKIT_ERROR EKitFirmware::write(const void* ptr, size_t len, EKitTimeout& to){
     do {
             err = bus->write(pbuf, buf_len, to);
     } while (err == EKIT_WRITE_FAILED);
+
 
     if (err == EKIT_OK) {
         // wait device since command may take a while
@@ -358,4 +370,41 @@ EKIT_ERROR EKitFirmware::suspend(EKitTimeout& to) {
 
 EKIT_ERROR EKitFirmware::resume(EKitTimeout& to) {
 	return bus->resume(to);
+}
+
+EKIT_ERROR EKitFirmware::register_vdev(int dev_id, EKitFirmwareCallbacks* vdev) {
+    std::lock_guard<std::mutex> lock(data_lock);
+    auto ins = registered_devices.emplace(dev_id, vdev);
+    return ins.second ? EKIT_OK : EKIT_ALREADY_CONNECTED;
+}
+
+EKIT_ERROR EKitFirmware::unregister_vdev(int dev_id, EKitFirmwareCallbacks* vdev) {
+    std::lock_guard<std::mutex> lock(data_lock);
+    registered_devices.erase(dev_id);
+    return EKIT_OK;
+}
+
+EKIT_ERROR EKitFirmware::on_status_ovf() {
+    std::lock_guard<std::mutex> lock(data_lock);
+    EKitFirmwareCallbacks* dev_callbacks = registered_devices.at(vdev_addr);
+    EKIT_ERROR err = dev_callbacks->on_status_ovf();
+    return err;
+}
+EKIT_ERROR EKitFirmware::on_status_crc() {
+    std::lock_guard<std::mutex> lock(data_lock);
+    EKitFirmwareCallbacks* dev_callbacks = registered_devices.at(vdev_addr);
+    EKIT_ERROR err = dev_callbacks->on_status_crc();
+    return err;
+}
+EKIT_ERROR EKitFirmware::on_status_fail() {
+    std::lock_guard<std::mutex> lock(data_lock);
+    EKitFirmwareCallbacks* dev_callbacks = registered_devices.at(vdev_addr);
+    EKIT_ERROR err = dev_callbacks->on_status_fail();
+    return err;
+}
+EKIT_ERROR EKitFirmware::on_status_busy() {
+    std::lock_guard<std::mutex> lock(data_lock);
+    EKitFirmwareCallbacks* dev_callbacks = registered_devices.at(vdev_addr);
+    EKIT_ERROR err = dev_callbacks->on_status_busy();
+    return err;
 }

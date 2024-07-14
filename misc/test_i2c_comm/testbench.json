@@ -2,7 +2,7 @@
   "firmware" : {
     "mcu_model" : "stm32f103",
     "i2c_bus" : {
-      "clock_speed" : 100000,
+      "clock_speed" : 400000,
       "buffer_size" : 128,
       "address" : 45,
       "requires" :  {"i2c" : "I2C1"}},

@@ -48,8 +48,8 @@ typedef volatile TimeTrackerDevPrivData* PTimeTrackerDevPrivData;
 /// \brief Structure that describes TimeTrackerDev virtual device
 typedef struct __attribute__ ((aligned)) tag_TimeTrackerDevInstance {
         volatile DeviceContext      dev_ctx __attribute__ ((aligned));  ///< Virtual device context
-        volatile struct CircBuffer         circ_buffer;                        ///< Circular buffer control structure
-        volatile TimeTrackerDevPrivData   privdata;                     ///< Private data used by this TimeTrackerDev device
+        volatile struct CircBuffer         circ_buffer __attribute__ ((aligned));                        ///< Circular buffer control structure
+        volatile TimeTrackerDevPrivData   privdata __attribute__ ((aligned));                     ///< Private data used by this TimeTrackerDev device
         volatile GPIO_descr         interrup_line;                      ///< Line dedicated for interrupts
         volatile GPIO_descr         near_full_line;                     ///< Line dedicated for buffer nearly full warning
         volatile uint8_t*           buffer;                             ///< Internal buffer

@@ -37,7 +37,7 @@
 /// \brief When this macro is not zero, a special array is filled with debug information related to the I2C communication.
 ///        It is possible to dump this array with 'p/x g_i2c_track' gdb command, and to use output value to get the latest
 ///        event inside I2C bus. If disabled tracking is not used.
-#define USE_I2C_TRACKING 1
+#define USE_I2C_TRACKING 0
 
 #if USE_I2C_TRACKING
 struct _I2C_DBG_STRUCT {
@@ -136,7 +136,7 @@ volatile uint16_t g_recv_total_pos=0;
 volatile uint16_t g_recv_data_pos=0;
 
 // Transmit variables
-/// \brief Buffer for #tag_CommResponseHeader structure to be sent to the master(software)
+/// \brief Buffer for #CommResponseHeader structure to be sent to the master(software)
 struct CommResponseHeader g_resp_header;
 
 /// \brief Pointer to the #g_resp_header. This variable is used for clearer code to avoid multiple type conversions.
@@ -396,12 +396,16 @@ void comm_done(uint8_t status) {
 
 static inline void i2c_call_command_callback(void) {
 			g_cur_device->on_command(g_cmd_header.command_byte, g_recv_buffer, g_recv_data_pos);
-			i2c_bus_reset();	// Re-enable I2C
+    /* REMOVE IT
+     i2c_bus_reset();	// Re-enable I2C
+     */
 }
 
 static inline void i2c_call_readdata_callback(void) {
-			g_cur_device->on_read_done(g_cur_device->device_id, g_tran_dev_pos);
-			i2c_bus_reset();	// Re-enable I2C
+    g_cur_device->on_read_done(g_cur_device->device_id, g_tran_dev_pos);
+    /* REMOVE IT
+     i2c_bus_reset();	// Re-enable I2C
+     */
 }
 
 // Called to check if there were command and to call device callbacks
@@ -624,7 +628,7 @@ void i2c_transmit_byte(void) {
 /// \brief This function is called from I2C event and error interrupt handlers to stop I2C bus communication with master (software)
 __attribute__((always_inline)) static inline
 void i2c_stop(void) {
-    set_debug_pin_2();
+    //set_debug_pin_1();
 	if (g_transmit==1 && g_tran_total>1) {
 		// special case : if series of bytes are transmitted one (the last) byte is always discarded because it is stored in data register, while NACK
 		// is returned when shift register becomes empty. In the same time DR is not empty, therefore we have to reverse this byte back
@@ -670,16 +674,17 @@ void i2c_stop(void) {
 
 	g_i2c_busy = 0;
 
+    /* REMOVE IT
 	if (g_cmd_type == BUS_CMD_NONE) {
 		// No callback will be called, enable i2c here
 		i2c_bus_reset();
 	}
+    */
 
     // region I2C_TRACE #0xD5
     I2C_STATUS_TRACK(g_crc, g_last_byte, 0xD5);
     // endregion
-
-    clear_debug_pin_2();
+    //clear_debug_pin_1();
 }
 
 /// \def READ_FLAGS
@@ -706,7 +711,7 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
     sr2 = I2C_BUS_PERIPH->SR2;
     sr1 = I2C_BUS_PERIPH->SR1;
 
-    set_debug_pin_0();
+    //set_debug_pin_0();
 
     if (IS_SET(sr1, I2C_SR1_ADDR | I2C_SR1_TXE) && IS_SET(sr2, I2C_SR2_BUSY)) {
         // SPECIAL CASE: We have to write first byte of the CommResponseHeader structure here ASAP. The first byte will be CRC sum for the previous operation
@@ -772,7 +777,7 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
     READ_FLAGS;
     I2C_STATUS_TRACK(sr1, sr2, 5);
     I2C_EV_COUNT;
-    clear_debug_pin_0();
+    //clear_debug_pin_0();
 // endregion
 
     UNUSED(sr1);
@@ -782,12 +787,10 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
 MAKE_ISR(I2C_BUS_ER_ISR) {
     uint16_t sr1,sr2;
 
-    set_debug_pin_1();
-
-
     READ_FLAGS;
 // region I2C_TRACE #0xF0
     I2C_STATUS_TRACK(sr1, sr2, 0xF0);
+    //set_debug_pin_2();
 // endregion
 
     if (sr1 & (I2C_SR1_OVR | I2C_SR1_AF)) {
@@ -803,6 +806,9 @@ MAKE_ISR(I2C_BUS_ER_ISR) {
         I2C_STATUS_TRACK(sr1, sr2, 0xF1);
         I2C_STATUS_TRACK(0xFFFF, 0xFFFF, 0xFF);
 // endregion
+    } else {
+        /* TEST CODE */
+        assert_param(0);
     }
 
     if (sr1 & (I2C_SR1_SB | I2C_SR1_ADDR | I2C_SR1_ADD10 | I2C_SR1_RXNE | I2C_SR1_TXE | I2C_SR1_BERR | I2C_SR1_ARLO |
@@ -812,9 +818,8 @@ MAKE_ISR(I2C_BUS_ER_ISR) {
 
 // region I2C_TRACE EV++
     I2C_EV_COUNT;
+    //clear_debug_pin_2();
 // endregion
-
-    clear_debug_pin_1();
 
     UNUSED(sr1);
     UNUSED(sr2);

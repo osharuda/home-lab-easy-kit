@@ -49,8 +49,11 @@ volatile TimeTrackerDevInstance g_timetrackerdev_devs[] = TIMETRACKERDEV_FW_DEV_
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
-static uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev);
-static uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv);
+static void timetrackerdev_reset(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv);
+static void timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv);
+
+/* TEST CODE */
+static volatile uint64_t g_systick_verify __attribute__ ((aligned)) = 0;
 
 void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = (uint32_t)(ctx);
@@ -61,6 +64,10 @@ void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
     if (data) {
         *data = clock;
         circbuf_commit_block(circbuf);
+
+        assert_param(g_systick_verify < *data);
+        g_systick_verify = *data;
+
 
         dev->privdata.status.event_number++;
         GPIO_WriteBit(dev->near_full_line.port,
@@ -82,6 +89,10 @@ void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t ind
     devctx->dev_index    = index;
     devctx->on_command   = timetrackerdev_execute;
     devctx->on_read_done = timetrackerdev_read_done;
+
+
+    IS_SIZE_ALIGNED(&dev->privdata.status.first_event_ts);
+    IS_SIZE_ALIGNED(&dev->privdata.status.event_number);
 
     dev->privdata.status.status = 0;
 
@@ -112,7 +123,7 @@ void timetrackerdev_init_vdev(volatile TimeTrackerDevInstance* dev, uint16_t ind
 
 
     dev->privdata.status.status = 0;
-    timetrackerdev_reset(dev);
+    timetrackerdev_reset(dev, &dev->privdata);
 }
 
 void timetrackerdev_init() {
@@ -122,56 +133,52 @@ void timetrackerdev_init() {
     }
 }
 
-uint8_t timetrackerdev_start(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
-    DISABLE_IRQ
+void timetrackerdev_start(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
+    /// Writes to bytes are always atomic
     priv->status.status = TIMETRACKERDEV_STATUS_STARTED;
-    ENABLE_IRQ
 
     exti_unmask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
-    return 0;
 }
 
-uint8_t timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
+void timetrackerdev_stop(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
     exti_mask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
 
-    DISABLE_IRQ
+    /// Writes to bytes are always atomic
     priv->status.status = TIMETRACKERDEV_STATUS_STOPPED;
-    ENABLE_IRQ
-
-    return 0;
 }
 
-uint8_t timetrackerdev_reset(volatile TimeTrackerDevInstance* dev) {
-    DISABLE_IRQ
+void timetrackerdev_reset(volatile TimeTrackerDevInstance* dev, volatile TimeTrackerDevPrivData* priv) {
+
     circbuf_reset((volatile struct CircBuffer*)&dev->circ_buffer);
+
+    /// Note: timetrackerdev_reset() should always run when timetracker device is stopped, therefor we shouldn't disable interrupts
+    ///       to sync access to status.
+    assert_param(priv->status.status == TIMETRACKERDEV_STATUS_STOPPED);
+
     dev->privdata.status.event_number = 0;
     dev->privdata.status.first_event_ts = UINT64_MAX;
     GPIO_WriteBit(dev->near_full_line.port, dev->near_full_line.pin_mask, dev->near_full_line.default_val);
-    ENABLE_IRQ
-
-    return 0;
 }
 
 void timetrackerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
     volatile TimeTrackerDevInstance* dev = (volatile TimeTrackerDevInstance*)g_timetrackerdev_devs + devctx->dev_index;
     volatile TimeTrackerDevPrivData* priv = &(dev->privdata);
-    uint8_t res;
+
+    timetrackerdev_stop(dev, priv);
 
     if (cmd_byte & TIMETRACKERDEV_RESET) {
-        timetrackerdev_reset(dev);
+        timetrackerdev_reset(dev, priv);
     }
 
     if (cmd_byte & TIMETRACKERDEV_START) {
-        res = timetrackerdev_start(dev, priv);
-    } else {
-        res = timetrackerdev_stop(dev, priv);
+       timetrackerdev_start(dev, priv);
     }
 
     UNUSED(data);
     UNUSED(length);
 
-    comm_done(res);
+    comm_done(0);
 }
 
 void timetrackerdev_read_done(uint8_t device_id, uint16_t length) {
@@ -183,16 +190,12 @@ void timetrackerdev_read_done(uint8_t device_id, uint16_t length) {
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
 
-    DISABLE_IRQ
     uint16_t curlen = circbuf_len(circbuf);
     dev->privdata.status.event_number =  curlen / sizeof(uint64_t);
     // Either length is less than size of the status or number of bytes read from buffer consist of complete 8 byte blocks
     assert_param( (length < sizeof(TimeTrackerStatus)) ||
                  ((length - sizeof(TimeTrackerStatus)) % sizeof(uint64_t)) == 0);
 
-    // Check data is read by uint64_t portions
-    assert_param(curlen == dev->privdata.status.event_number*sizeof(uint64_t) );
-    ENABLE_IRQ
 
     GPIO_WriteBit(dev->near_full_line.port,
                   dev->near_full_line.pin_mask,

@@ -31,9 +31,6 @@
 
 
 
-#define IRQ_PRIORITY_SPWM 3
-
-
 volatile uint16_t g_current_pwm_index;
 volatile uint8_t g_pwm_buffer[SPWM_BUFFER_SIZE];
 

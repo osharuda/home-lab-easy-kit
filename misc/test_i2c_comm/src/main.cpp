@@ -46,31 +46,102 @@ void help() {
 std::atomic_bool g_exit(false);
 
 void adc_thread_func(std::shared_ptr<ADCDev> adc) {
+    constexpr double mean_value = 3.3l / 2.0l;
+    constexpr double value_error = 0.5l / 2.0l;
+    constexpr double min_val = mean_value - value_error;
+    constexpr double max_val = mean_value + value_error;
+
     std::map<size_t, uint8_t> sampling_info;
     sampling_info[0]=ADC_SampleTime_28Cycles5;
     std::vector<std::vector<double>> samples;
 
+
     while (!g_exit.load()) {
-        adc.reset();
-        adc->configure(1.0e3L, 5, sampling_info);
+        adc->stop();
+        adc->clear();
+        adc->configure(0.001, 1, sampling_info);
         adc->start(0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         adc->get(samples);
         adc->stop();
+
+        // Check all values for reasonable value
+        size_t n = samples.size();
+
+        if (n==0) {
+            std::cout << "[ADCDev] No values." << std::endl;
+        } else {
+            double acc = 0.0l;
+            double min_x = std::numeric_limits<double>::max();
+            double max_x = 0.0l;
+
+            for (auto v: samples) {
+                double x = v[0];
+                min_x = std::min(x, min_x);
+                max_x = std::max(x, max_x);
+                assert( x >= min_val);
+                assert( x <= max_val);
+                acc += x / (double)n;
+            }
+
+            std::cout << "[ADCDev] Vmean=" << acc << " N=" << n << " Vmin=" << min_x << " Vmax=" << max_x << std::endl;
+        }
+
+
         samples.clear();
     }
 }
 
 void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
+
+    constexpr double frequency = 1.0e4l; // 10 KHz
+    constexpr double mean_value = 1.0l / (2 * frequency);
+    constexpr double value_error = mean_value * 0.9;
+    constexpr double min_val = mean_value - value_error;
+    constexpr double max_val = mean_value + value_error;
+    bool running;
+    uint64_t first_ts = 0;
+
     std::vector<double> timestamps;
     while (!g_exit.load()) {
         tt->start(true);
 
         // SPWM is set to 10 KHZ, so we would have 200 events in 100ms
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds (10));
 
+        uint64_t t;
+        tt->get_status(running, t);
+        assert(first_ts < t);
+        first_ts = t;
         tt->read_all(timestamps, true);
         tt->stop();
+
+        // Check all timestamps: all timestamp should go with reasonable distance between values
+        double last_value;
+        double acc = 0.0l;
+        size_t n = timestamps.size();
+
+        if (n > 1) {
+            double min_hp = std::numeric_limits<double>::max();
+            double max_hp = 0.0l;
+            auto ts = timestamps.begin();
+            last_value = *ts;
+
+            for (++ts; ts!=timestamps.end(); ++ts) {
+                double value = *ts;
+                double half_period = value - last_value;
+                max_hp = std::max(half_period, max_hp);
+                min_hp = std::min(half_period, min_hp);
+                assert(half_period >= min_val);
+                assert(half_period <= max_val);
+                acc += half_period / static_cast<double>(n-1);
+                last_value = *ts;
+            }
+
+            std::cout << "[TimeTrackDev] Vmean=" << acc << " N=" << n << " Vmin=" << min_hp << " Vmax=" << max_hp << std::endl;
+        } else {
+            std::cout << "[TimeTrackDev] No Timestamps." << std::endl;
+        }
         timestamps.clear();
     }
 }
@@ -85,7 +156,7 @@ int main(int argc, char* argv[]) {
     const char* func_name = __FUNCTION__;
     std::vector<double> ts;
     try {
-        if (argc != 2) {
+        if (argc != 3 ) {
             throw EKitException(__FUNCTION__, EKIT_BAD_PARAM, "Wrong number of arguments");
         }
 
@@ -110,16 +181,33 @@ int main(int argc, char* argv[]) {
         // Open firmware protocol for AD9850 (via I2C) and create devices
         std::shared_ptr<EKitBus> fw (new EKitFirmware(i2cbus, testbench::INFO_I2C_ADDRESS));
         std::shared_ptr<INFODev> info(new INFODev(fw, testbench::info_config_ptr));
+        info->check();
+        std::cout << "InfoDev - [OK]" << std::endl;
+
         std::shared_ptr<ADCDev> adc(new ADCDev(fw, testbench::adc_adc_dma_config));
+        adc->set_crc_callback([](){
+            std::cout << "ADCDev: Overflow" << std::endl;
+            return EKIT_OK;
+        });
+
+        adc->set_fail_callback([](){
+            std::cout << "ADCDev: Failed command" << std::endl;
+            return EKIT_COMMAND_FAILED;
+        });
+
+
         std::shared_ptr<SPWMDev> spwm(new SPWMDev(fw, testbench::spwm_config_ptr));
         std::shared_ptr<TimeTrackerDev> tt(new TimeTrackerDev(fw, testbench::timetrackerdev_timetrackerdev_0_config_ptr));
+
+
 
         // Switch spwm at 10KHz
         spwm->reset();
         SPWM_STATE state;
+        spwm->set_pwm_freq(1.0e4);
         state[testbench::SPWM_PWM] = 0xFFFF / 2;
         spwm->set(state);
-        spwm->set_pwm_freq(1.0e5);
+
 
 
         // Start two threads reading data from ADC and time tracker devices

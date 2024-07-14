@@ -2,7 +2,7 @@
 <p align="center"><img src="../images/hlek.svg"></p>
 
 Purpose:
-Test I2C bus, circular buffer with long loaded from multithreaded application.
+To test I2C bus and circular buffer with long continuous load induced by test application.
 Testing is done by using four devices:
 
 * INFODev - access from linear buffer

@@ -85,7 +85,7 @@ void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t
     uint8_t* adc_channel_sampling = adc_config_buffer.data() + sizeof(ADCDevConfig);
     double  expected;
 
-    if ((average_samples <= 0) && (average_samples > config->measurements_per_sample)) {
+    if ((average_samples <= 0) || (average_samples > config->measurements_per_sample)) {
         throw EKitException(
             func_name, EKIT_BAD_PARAM, "Average sampling number doesn't match with device configuration.");
     }
@@ -186,7 +186,7 @@ size_t ADCDev::status_priv(uint16_t* flags, EKitTimeout& to) {
         err = fw->get_status(hdr, false, to);
     } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
     assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
-
+/*
     if (hdr.comm_status & COMM_STATUS_OVF) {
         throw EKitException(func_name, EKIT_OVERFLOW, "Device buffer overflow.");
     }
@@ -198,7 +198,7 @@ size_t ADCDev::status_priv(uint16_t* flags, EKitTimeout& to) {
     if (hdr.comm_status & COMM_STATUS_FAIL) {
         throw EKitException(func_name, EKIT_COMMAND_FAILED, "Communication with firmware has failed.");
     }
-
+*/
     if (((hdr.length - sizeof(uint16_t)) % (config->input_count * sizeof(uint16_t)))!=0) {
         throw EKitException(func_name, EKIT_UNALIGNED, "Device buffer seems to be unaligned.");
     }

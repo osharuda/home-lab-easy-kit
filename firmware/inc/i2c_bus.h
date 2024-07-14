@@ -137,7 +137,7 @@ typedef volatile DeviceContext *PDeviceContext;
 void comm_register_device(PDeviceContext dev_ctx);
 
 /// \brief Virtual device calls this function inside tag_DeviceContext#on_read_done to instruct communication that virtual device confirmed read
-/// \param status - value to be set as communication status (read by software with tag_CommResponseHeader#comm_status)
+/// \param status - value to be set as communication status (read by software with CommResponseHeader#comm_status)
 void comm_done(uint8_t status);
 
 /// \brief This command takes command byte and returns virtual device index for non-exclusive devices

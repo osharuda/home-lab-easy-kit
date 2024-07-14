@@ -32,12 +32,15 @@ volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned)) = 0;
 
 MAKE_ISR(SYS_TICK_ISR) {
     if (SYS_TICK_PERIPH->SR & TIM_IT_Update) {
+        //set_debug_pin_1();
         g_systick_irq_cnt++;
         TIM_ClearITPendingBit(SYS_TICK_PERIPH, TIM_IT_Update);
+        //clear_debug_pin_1();
     }
 }
 
 void systick_init(void) {
+    IS_SIZE_ALIGNED(&g_systick_irq_cnt);
     timer_start_periodic(SYS_TICK_PERIPH, SYSTICK_PRESCALLER, SYSTICK_PERIOD, SYS_TICK_IRQ, IRQ_PRIORITY_SYSTICK);
 }
 #endif // of ENABLE_SYSTICK

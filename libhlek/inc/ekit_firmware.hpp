@@ -40,9 +40,19 @@
 /// EKitFirmware implements software to firmware communication protocol.
 ///
 
+class EKitFirmwareCallbacks {
+    public:
+
+    virtual EKIT_ERROR on_status_ovf() = 0;
+    virtual EKIT_ERROR on_status_crc() = 0;
+    virtual EKIT_ERROR on_status_fail() = 0;
+    virtual EKIT_ERROR on_status_busy() = 0;
+};
+
 /// \class EKitFirmware
 /// \brief Software to firmware communication protocol implementation.
-class EKitFirmware final : public EKitBus {
+class EKitFirmware final : public EKitBus,
+                           public EKitFirmwareCallbacks {
     /// \typedef super
     /// \brief Defines parent class
     typedef EKitBus super;
@@ -52,10 +62,15 @@ class EKitFirmware final : public EKitBus {
 	uint8_t flags = 0;            ///< Virtual device specific command flags.
 	int firmware_addr;            ///< Firmware address on a bus
 
+    /// \brief Container to store virtual devices connected to the firmware bus
+    ///        Keys are virtual device ids, values EKitFirmwareCallbacks interface implementations.
+    std::map<int, EKitFirmwareCallbacks*> registered_devices;
+    tools::safe_mutex data_lock;
+
 	/// \brief Helper function that converts virtual device communication status to #EKIT_ERROR.
 	/// \param cs - virtual device communication status.
     /// \return Corresponding EKIT_ERROR error code.
-    EKIT_ERROR status_to_ext_error(uint8_t cs) const;
+    EKIT_ERROR status_to_ext_error(uint8_t cs);
 
 public:
 
@@ -158,6 +173,17 @@ public:
 	/// \param wait_device - wait until virtual device will not clear #COMM_STATUS_BUSY.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to);
+
+    /// \brief Registers virtual device
+    EKIT_ERROR register_vdev(int dev_id, EKitFirmwareCallbacks* vdev);
+
+    /// \brief Unregister virtual device
+    EKIT_ERROR unregister_vdev(int dev_id, EKitFirmwareCallbacks* vdev);
+
+    EKIT_ERROR on_status_ovf() override;
+    EKIT_ERROR on_status_crc() override;
+    EKIT_ERROR on_status_fail() override;
+    EKIT_ERROR on_status_busy() override;
 };
 
 /// @}

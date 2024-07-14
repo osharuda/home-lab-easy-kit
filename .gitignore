@@ -58,5 +58,5 @@ software/testtool/CMakeLists.txt
 /RPiExtender
 /spiproxy
 /step_motors
-/testbench
+/misc/test_i2c_comm/testbench
 /timetrackerdev

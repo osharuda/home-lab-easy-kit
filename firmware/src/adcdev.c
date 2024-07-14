@@ -166,25 +166,37 @@ ADCDEV_FW_TIMER_IRQ_HANDLERS
 //---------------------------- IMPLEMENTATION (COMMON FUNCTIONS) ----------------------------
 //region COMMON FUNCTIONS
 
+#define ADC_DISABLE_IRQs                                                    \
+    uint32_t scan_complete_state = NVIC_IRQ_STATE(dev->scan_complete_irqn); \
+    NVIC_DISABLE_IRQ(dev->scan_complete_irqn, scan_complete_state);         \
+    uint32_t timer_state = NVIC_IRQ_STATE(dev->timer_irqn);                 \
+    NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);
+
+#define ADC_RESTORE_IRQs                                                    \
+    NVIC_RESTORE_IRQ(dev->scan_complete_irqn, scan_complete_state);         \
+    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);
+
 static inline void adc_suspend(volatile ADCDevFwInstance* dev) {
     // Special note: it seems like SR may not be set until conversion is stopped. ADC is configured in scan mode (group),
     // therefor we have these options:
     // 1. Disable ADC. It is ineffective because this requires ADC configuration, calibration, etc.
-    // 2. Disable scan mode, which should be more efficient. Below this option is made.
+    // 2. Disable scan mode, which should be more efficient. Below this option is implemented.
     CLEAR_FLAGS(dev->adc->CR2, (uint32_t)(ADC_CR2_FLAG_EXT_TRIG | ADC_CR2_FLAG_DMA | ADC_CR2_FLAG_CONT));
     CLEAR_FLAGS(dev->adc->CR1, (uint32_t)(ADC_CR1_FLAG_SCAN));
     dev->adc->SR = 0;
 }
 
 void adc_stop(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) {
-    DISABLE_IRQ
+    ADC_DISABLE_IRQs;
+
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {
         adc_suspend(dev);
         timer_disable_no_irq(dev->timer, dev->timer_irqn);
         NVIC_DisableIRQ(dev->scan_complete_irqn);
         CLEAR_FLAGS(pdata->status, (uint16_t) (ADCDEV_STATUS_STARTED | ADCDEV_STATUS_SAMPLING));
     }
-    ENABLE_IRQ
+
+    ADC_RESTORE_IRQs;
 }
 
 
@@ -195,9 +207,7 @@ void adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     volatile ADCDevConfig* cfgdata    = (volatile ADCDevConfig*)data;
     volatile ADCDevCommand* startdata = (volatile ADCDevCommand*)data;
 
-    DISABLE_IRQ
     uint8_t adc_started = IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED);
-    ENABLE_IRQ
 
     uint8_t status = COMM_STATUS_FAIL;
     uint8_t start_adc = CHECK_FLAGS(cmd_byte, COMM_CMDBYTE_DEV_SPECIFIC_MASK, ADCDEV_START);
@@ -309,14 +319,14 @@ void adc_read_done(uint8_t device_id, uint16_t length) {
 
 static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev) {
     volatile struct CircBuffer* circ_buffer = (volatile struct CircBuffer*)&(dev->circ_buffer);
-    DISABLE_IRQ
+    ADC_DISABLE_IRQs;
     circbuf_init(circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size, 0);
     circbuf_init_block_mode(circ_buffer, dev->sample_block_size);
     circbuf_init_status(circ_buffer,
                         (volatile uint8_t*)&(dev->privdata.status),
                         STRUCT_MEMBER_SIZE(ADCDevFwPrivData,status));
     dev->dev_ctx.bytes_available = 0;
-    ENABLE_IRQ
+    ADC_RESTORE_IRQs;
 }
 
 void adc_init() {
@@ -328,6 +338,9 @@ void adc_init() {
         volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)g_adc_devs+i;
         volatile ADCDevFwPrivData* pdata = &(dev->privdata);
         volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
+
+        IS_SIZE_ALIGNED(&pdata->status);
+
         memset((void*)devctx, 0, sizeof(DeviceContext));
 
         // Initialize device context structure

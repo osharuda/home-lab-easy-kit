@@ -65,6 +65,7 @@ const char* errname(const EKIT_ERROR err) {
         CASE_ERROR_NAME(EKIT_TOO_FAST);
         CASE_ERROR_NAME(EKIT_NOT_STARTED);
         CASE_ERROR_NAME(EKIT_NOT_STOPPED);
+        CASE_ERROR_NAME(EKIT_REPEAT);
         default:
             if (err < 0) {
                 // Errno is used instead of EKIT_ERROR codes

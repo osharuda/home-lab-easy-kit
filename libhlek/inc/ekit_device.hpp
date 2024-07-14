@@ -26,6 +26,8 @@
 #include <atomic>
 #include "ekit_bus.hpp"
 #include "ekit_error.hpp"
+#include "ekit_firmware.hpp"
+#include <functional>
 
 /// \addtogroup group_communication
 /// @{
@@ -101,10 +103,13 @@ public:
     }
 };
 
+using VDEV_CALLBACK = std::function<EKIT_ERROR()>;
+
 
 /// \class EKitVirtualDevice
 /// \brief Generic implementation for virtual devices (the ones that work through MCU).
-class EKitVirtualDevice : public EKitDeviceBase{
+class EKitVirtualDevice : public EKitDeviceBase,
+                          public EKitFirmwareCallbacks {
 
     ///< \brief Device address
     int dev_addr = 0;
@@ -112,6 +117,12 @@ class EKitVirtualDevice : public EKitDeviceBase{
     /// \typedef super
     /// \brief Defines parent class
 	typedef EKitDeviceBase super;
+
+    VDEV_CALLBACK clb_overflow;
+    VDEV_CALLBACK clb_crc;
+    VDEV_CALLBACK clb_busy;
+    VDEV_CALLBACK clb_failed_cmd;
+
 public:
 
     /// \brief Copy construction is forbidden
@@ -127,6 +138,8 @@ public:
 	EKitVirtualDevice(std::shared_ptr<EKitBus>& ebus, int addr, const char* name) : EKitDeviceBase(ebus, name), dev_addr(addr) {
 		static const char* const func_name = "EKitVirtualDevice::EKitVirtualDevice";
                 bus->check_bus(EKitBusType::BUS_I2C_FIRMWARE);
+                auto ekit_firmware = std::dynamic_pointer_cast<EKitFirmware>(bus);
+                ekit_firmware->register_vdev(addr, dynamic_cast<EKitFirmwareCallbacks*>(this));
 	}
 
     /// \brief Returns device address.
@@ -137,6 +150,59 @@ public:
 
     /// \brief Destructor (virtual)
     ~EKitVirtualDevice() override {
+        auto ekit_firmware = std::dynamic_pointer_cast<EKitFirmware>(bus);
+        ekit_firmware->unregister_vdev(dev_addr, dynamic_cast<EKitFirmwareCallbacks*>(this));
+    }
+
+
+    void set_ovf_callback(VDEV_CALLBACK func) {
+        clb_overflow = func;
+    }
+
+    void set_fail_callback(VDEV_CALLBACK func) {
+        clb_failed_cmd = func;
+    }
+
+    void set_busy_callback(VDEV_CALLBACK func) {
+        clb_busy = func;
+    }
+
+    void set_crc_callback(VDEV_CALLBACK func) {
+        clb_crc = func;
+    }
+
+
+    protected:
+    EKIT_ERROR on_status_ovf() override {
+        if (clb_overflow) {
+            return clb_overflow();
+        } else {
+            return EKIT_OK;
+        }
+    }
+
+    EKIT_ERROR on_status_crc() override {
+        if (clb_crc) {
+            return clb_crc();
+        } else {
+            return EKIT_CRC_ERROR;
+        }
+    }
+
+    EKIT_ERROR on_status_fail() override {
+        if (clb_failed_cmd) {
+            return clb_failed_cmd();
+        } else {
+            return EKIT_COMMAND_FAILED;
+        }
+    }
+
+    EKIT_ERROR on_status_busy() override {
+        if (clb_busy) {
+            return clb_busy();
+        } else {
+            return EKIT_REPEAT;
+        }
     }
 };
 

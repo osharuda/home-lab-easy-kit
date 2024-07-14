@@ -556,11 +556,8 @@ void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBu
 }
 
 void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev) {
-    DISABLE_IRQ
     volatile struct CircBuffer* circbuf = devctx->circ_buffer;
     circbuf_reset(devctx->circ_buffer);
-    dev->privdata.status.data_len = circbuf_total_len_no_irq(circbuf);
-    ENABLE_IRQ
 }
 
 #endif

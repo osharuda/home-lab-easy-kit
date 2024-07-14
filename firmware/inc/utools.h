@@ -241,6 +241,10 @@ extern volatile uint8_t g_irq_disabled;
 
 #else
 
+#define ASSERT_IRQ_ENABLED (void)(0);
+
+#define ASSERT_IRQ_DISABLED (void)(0);
+
 /// \brief Disables interrupt generation
 /// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
 #define DISABLE_IRQ __disable_irq();
@@ -432,6 +436,20 @@ void fail_assert(uint8_t* src, uint32_t line);
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/// \brief This macro remembers IRQ state (enabled or disabled). Use returned value to disable/recover IRQ.
+/// \param irqn - IRQn to specify in state
+#define NVIC_IRQ_STATE(irqn)            NVIC->ISER[((uint32_t)(irqn) >> 5)] & (1 << ((uint32_t)(irqn) & 0x1F))
+
+/// \brief This macro allows to disable IRQ.
+/// \param irqn - IRQn to specify in state
+/// \param state - IRQn state returned by NVIC_IRQ_STATE macro
+#define NVIC_DISABLE_IRQ(irqn, state)   NVIC->ICER[((uint32_t)(irqn) >> 5)] = (state)
+
+/// \brief This macro recovers state of IRQ.
+/// \param irqn - IRQn to specify in state
+/// \param state - IRQn state returned by NVIC_IRQ_STATE macro
+#define NVIC_RESTORE_IRQ(irqn, state)   NVIC->ISER[((uint32_t)(irqn) >> 5)] = (state)
 
 /// \brief This function is used to calculate optimal prescaller and period values to schedule timer.
 /// \param us - input number of microseconds, must not be greater than #MCU_MAXIMUM_TIMER_US.

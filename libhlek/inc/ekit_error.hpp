@@ -83,6 +83,7 @@ typedef int32_t EKIT_ERROR;
 #define EKIT_TOO_FAST             30 ///< Selected speed is too fast for the device.
 #define EKIT_NOT_STARTED          31 ///< Device is not started.
 #define EKIT_NOT_STOPPED          32 ///< Device is not stopped.
+#define EKIT_REPEAT               33 ///< Device is not stopped.
 // <\__LIBHLEK_ERROR_DEFINES__>
 
 /// \brief Translates EKIT_ERROR to string for error message formatting purposes.
