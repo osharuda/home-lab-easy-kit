@@ -497,7 +497,6 @@ void test_circbuffer_single_block() {
 
         // reserve, write and commit one block
         block = (uint8_t*)circbuf_reserve_block(&circ);
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -513,7 +512,6 @@ void test_circbuffer_single_block() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = 0;
 
@@ -614,15 +612,11 @@ void test_circbuffer_single_block() {
 
         // reserve one more block (success)
         block = (uint8_t*)circbuf_reserve_block(&circ);
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
         assert(circbuf_get_ovf(&circ)==0);
 
-        // cancel block
-        circbuf_cancel_block(&circ);
-        refcirc.current_block = 0;
         refcirc.data_len = 0;
         assert(circ.put_pos == 0);
 
@@ -630,7 +624,6 @@ void test_circbuffer_single_block() {
 
         // reserve, write and commit one block (success)
         block = (uint8_t*)circbuf_reserve_block(&circ);
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -646,7 +639,6 @@ void test_circbuffer_single_block() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = 0;
 
@@ -782,37 +774,8 @@ void test_circbuffer_asserts() {
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         circbuf_commit_block(&circ);
-        assert(g_assert_param_count==2); // undefined behaviour, assertion must be triggered (one for not being in block mode, another for unalocated block)
+        assert(g_assert_param_count==1); // undefined behaviour, assertion must be triggered (one for not being in block mode, another for unalocated block)
     }    
-
-    REPORT_CASE
-    {
-        g_assert_param_count = 0;
-        CircBuffer circ;
-        CircBuffer refcirc;
-        memset(&circ, 0, sizeof(circ));
-        memset(&refcirc, 0, sizeof(refcirc));
-        const uint16_t buffer_size = 8;
-        const uint16_t block_size = 4;
-        uint8_t* block;
-        uint8_t buffer[buffer_size] = {0};
-        uint8_t refbuffer[buffer_size] = {0};
-        circbuf_init(&circ, buffer, buffer_size, &g_test_mutex);
-        refcirc.lock = circ.lock;
-        uint8_t opres,b,res;    
-
-        refcirc.buffer=buffer;
-        refcirc.buffer_size=buffer_size;
-        refcirc.free_size=buffer_size-1;
-        refcirc.block_size=1;
-        refcirc.warn_high_thr = refcirc.buffer_size;
-        assert(circbuf_len(&circ)==0);
-
-        COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
-
-        circbuf_cancel_block(&circ);
-        assert(g_assert_param_count==2); // undefined behaviour, assertion must be triggered (one for not being in block mode, another for unalocated block)
-    }
 
     REPORT_CASE // block mode: attempt to init with buffer not multiple by block size
     {
@@ -969,68 +932,6 @@ void test_circbuffer_asserts() {
         circbuf_put_byte(&circ, b);
         assert(g_assert_param_count>0); // not ok - in block mode
     }    
-
-    REPORT_CASE // block mode attempt to call circbuf_commit_block() when block is not allocated
-    {
-        g_assert_param_count = 0;        
-        CircBuffer circ;
-        CircBuffer refcirc;
-        memset(&circ, 0, sizeof(circ));
-        memset(&refcirc, 0, sizeof(refcirc));
-        const uint16_t buffer_size = 16;
-        const uint16_t block_size = 16;
-        uint8_t* block;
-        uint8_t buffer[buffer_size] = {0};
-        uint8_t refbuffer[buffer_size] = {0};
-        circbuf_init(&circ, buffer, buffer_size, &g_test_mutex);
-        refcirc.lock = circ.lock;
-        uint8_t opres,b,res;    
-
-        refcirc.buffer=buffer;
-        refcirc.buffer_size=buffer_size;
-        refcirc.free_size=buffer_size-1;
-        refcirc.block_size=1;
-        refcirc.warn_high_thr = refcirc.buffer_size;
-        assert(circbuf_len(&circ)==0);
-
-        COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
-
-        circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==0); // must be ok
-        circbuf_commit_block(&circ);
-        assert(g_assert_param_count>0); // not ok - block was not reserved
-    }        
-
-    REPORT_CASE // block mode attempt to call circbuf_cancel_block() when block is not allocated
-    {
-        g_assert_param_count = 0;        
-        CircBuffer circ;
-        CircBuffer refcirc;
-        memset(&circ, 0, sizeof(circ));
-        memset(&refcirc, 0, sizeof(refcirc));
-        const uint16_t buffer_size = 16;
-        const uint16_t block_size = 16;
-        uint8_t* block;
-        uint8_t buffer[buffer_size] = {0};
-        uint8_t refbuffer[buffer_size] = {0};
-        circbuf_init(&circ, buffer, buffer_size, &g_test_mutex);
-        refcirc.lock = circ.lock;
-        uint8_t opres,b,res;    
-
-        refcirc.buffer=buffer;
-        refcirc.buffer_size=buffer_size;
-        refcirc.free_size=buffer_size-1;
-        refcirc.block_size=1;
-        refcirc.warn_high_thr = refcirc.buffer_size;
-        assert(circbuf_len(&circ)==0);
-
-        COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
-
-        circbuf_init_block_mode(&circ, block_size);
-        assert(g_assert_param_count==0); // must be ok
-        circbuf_cancel_block(&circ);
-        assert(g_assert_param_count>0); // not ok - block was not reserved
-    }            
 }
 
 
@@ -1128,7 +1029,6 @@ void test_circbuffer_block_mode_work() {
         refbuffer[2] = 3;
         refbuffer[3] = 4;        
 
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -1137,7 +1037,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = block_size;
 
@@ -1146,22 +1045,12 @@ void test_circbuffer_block_mode_work() {
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
-
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
-
-        // cancel block
-        circbuf_cancel_block(&circ);
-        refcirc.current_block = 0;
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
-
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
@@ -1180,7 +1069,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size*2;
         refcirc.put_pos = 0;
 
@@ -1277,9 +1165,6 @@ void test_circbuffer_block_mode_work() {
         // reserve block again
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer;
-        assert(block==refcirc.current_block);
-
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // write
@@ -1298,7 +1183,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size*2;
         refcirc.put_pos = 4;
 
@@ -1411,7 +1295,6 @@ void test_circbuffer_block_mode_work() {
         block[0] = 6;
         refbuffer[0] = 6;
 
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -1420,7 +1303,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = block_size;
 
@@ -1429,22 +1311,12 @@ void test_circbuffer_block_mode_work() {
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
-
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
-
-        // cancel block
-        circbuf_cancel_block(&circ);
-        refcirc.current_block = 0;
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
-
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
@@ -1456,7 +1328,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size*2;
         refcirc.put_pos = 0;
 
@@ -1502,9 +1373,6 @@ void test_circbuffer_block_mode_work() {
         // reserve block again
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer;
-        assert(block==refcirc.current_block);
-
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // write
@@ -1516,7 +1384,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = 1;
 
@@ -1629,8 +1496,6 @@ void test_circbuffer_block_mode_work() {
             block[0] = start_val+i;
             refbuffer[i] = start_val+i;
 
-            refcirc.current_block = buffer+i;
-            //refcirc.start_pos = 0;
             assert(block==buffer+i);
 
             COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -1639,7 +1504,6 @@ void test_circbuffer_block_mode_work() {
             // commit block
             circbuf_commit_block(&circ);
 
-            refcirc.current_block = 0;
             refcirc.data_len = block_size*(i+1);
             refcirc.put_pos = block_size*(i+1) % buffer_size;
             //refcirc.start_pos = 0;
@@ -1708,7 +1572,6 @@ void test_circbuffer_block_mode_work() {
         block[0] = start_val+4;
         refbuffer[0] = start_val+4;
 
-        refcirc.current_block = buffer;
         assert(block==buffer);
 
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
@@ -1717,7 +1580,6 @@ void test_circbuffer_block_mode_work() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = buffer_size;
         refcirc.put_pos = 1;
 
@@ -2535,7 +2397,6 @@ void test_circbuffer_block_mode_work_with_status() {
         refbuffer[2] = 3;
         refbuffer[3] = 4;
 
-        refcirc.current_block = buffer;
         assert(block==buffer);
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
         assert(memcmp(buffer,refbuffer,buffer_size)==0);
@@ -2543,7 +2404,6 @@ void test_circbuffer_block_mode_work_with_status() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size;
         refcirc.put_pos = block_size;
 
@@ -2552,20 +2412,13 @@ void test_circbuffer_block_mode_work_with_status() {
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
-        // cancel block
-        circbuf_cancel_block(&circ);
-        refcirc.current_block = 0;
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // reserve a block
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer+block_size;
-        assert(block==refcirc.current_block);
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         block[0] = 5;
@@ -2583,7 +2436,6 @@ void test_circbuffer_block_mode_work_with_status() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size*2;
         refcirc.put_pos = 0;
 
@@ -2683,8 +2535,6 @@ void test_circbuffer_block_mode_work_with_status() {
         // reserve block again
         block = (uint8_t*)circbuf_reserve_block(&circ);
 
-        refcirc.current_block = buffer;
-        assert(block==refcirc.current_block);
         COMPARE_CIRC_WITH_REF_CIRC(circ, refcirc);
 
         // write
@@ -2703,7 +2553,6 @@ void test_circbuffer_block_mode_work_with_status() {
         // commit block
         circbuf_commit_block(&circ);
 
-        refcirc.current_block = 0;
         refcirc.data_len = block_size*2;
         refcirc.put_pos = 4;
 

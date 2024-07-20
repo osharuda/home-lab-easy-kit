@@ -35,8 +35,8 @@
 volatile DeviceContext g_info_devctx __attribute__ ((aligned));
 volatile uint8_t g_info_uuid[] = INFO_UUID;
 
-void info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
-void info_read_done(uint8_t device_id, uint16_t length);
+uint8_t info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+uint8_t info_read_done(uint8_t device_id, uint16_t length);
 
 void info_dev_init() {
     assert(INFO_UUID_LEN==sizeof(g_info_uuid));
@@ -51,18 +51,17 @@ void info_dev_init() {
     comm_register_device(&g_info_devctx);
 }
 
-void info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
     UNUSED(data);
     UNUSED(length);
-    assert_param(0); // commands are not supported
-    comm_done(COMM_STATUS_FAIL);
+    return COMM_STATUS_FAIL;
 }
 
-void info_read_done(uint8_t device_id, uint16_t length) {
+uint8_t info_read_done(uint8_t device_id, uint16_t length) {
 	UNUSED(device_id);
 	UNUSED(length);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 

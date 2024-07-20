@@ -200,7 +200,7 @@ void adc_stop(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) 
 }
 
 
-void adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     uint16_t index = comm_dev_context(cmd_byte)->dev_index;
     volatile ADCDevFwInstance* dev    = (volatile ADCDevFwInstance*)g_adc_devs+index;
     volatile ADCDevFwPrivData* pdata  = &(dev->privdata);
@@ -255,7 +255,7 @@ void adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
     status = COMM_STATUS_OK;
 done:
-    comm_done(status);
+    return status;
 }
 
 void adc_configure(volatile ADCDevFwInstance* dev,
@@ -307,14 +307,14 @@ void adc_start( volatile ADCDevFwInstance* dev,
                    1);
 }
 
-void adc_read_done(uint8_t device_id, uint16_t length) {
+uint8_t adc_read_done(uint8_t device_id, uint16_t length) {
     uint16_t index = comm_dev_context(device_id)->dev_index;
     volatile ADCDevFwInstance* dev = g_adc_devs+index;
     volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
     uint8_t status = circbuf_get_ovf(circbuf) ? COMM_STATUS_OVF : COMM_STATUS_OK;
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
-    comm_done(status);
+    return status;
 }
 
 static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev) {

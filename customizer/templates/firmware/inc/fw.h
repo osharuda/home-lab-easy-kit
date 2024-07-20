@@ -42,7 +42,7 @@
 
 // Priority levels
 #define IRQ_PRIORITY_I2C_EV                0
-#define IRQ_PRIORITY_I2C_ER                1
+#define IRQ_PRIORITY_I2C_ER                0
 #define IRQ_PRIORITY_SYSTICK               2
 
 #define IRQ_PRIORITY_PACEMAKER_MAIN        3

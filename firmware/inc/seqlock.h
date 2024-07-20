@@ -28,10 +28,12 @@
 #if defined(SEQ_LOCK_I2C_READER)
 #define ENTER_CRITICAL_SECTION_WRITER(lk) \
         ASSERT_IRQ_ENABLED                \
+        set_debug_pin_2();                \
         __disable_irq();
 
 #define LEAVE_CRITICAL_SECTION_WRITER(lk) \
-        __enable_irq();
+        __enable_irq();                   \
+        clear_debug_pin_2();
 
 
 // It is known that I2C EV IRQ handler has the highest priority, therefor it can't be superceeded by any of the IRQ
@@ -88,11 +90,19 @@
 
     #define SEQ_LOCK_DEFINED 1
 #elif defined(SEQ_LOCK_DISABLED_IRQ)
-    #define ENTER_CRITICAL_SECTION_WRITER(lk) __disable_irq()
-    #define LEAVE_CRITICAL_SECTION_WRITER(lk) __enable_irq()
+    #define ENTER_CRITICAL_SECTION_WRITER(lk) \
+        set_debug_pin_2();                    \
+        __disable_irq()
+    #define LEAVE_CRITICAL_SECTION_WRITER(lk) \
+        __enable_irq();                       \
+        clear_debug_pin_2();
 
-    #define ENTER_CRITICAL_SECTION_READER(lk) __disable_irq()
-    #define LEAVE_CRITICAL_SECTION_READER(lk) __enable_irq()
+    #define ENTER_CRITICAL_SECTION_READER(lk) \
+        set_debug_pin_2();                    \
+        __disable_irq()
+    #define LEAVE_CRITICAL_SECTION_READER(lk) \
+        __enable_irq();                       \
+        clear_debug_pin_2();
 
     #define SEQ_LOCK_DEFINED 1
 #elif defined(SEQ_LOCK_TEST)
@@ -151,6 +161,42 @@ static inline void seq_lock_read_acquire_release(volatile struct sequential_lock
         }                                                       \
     } while (1);                                                \
     }
+
+
+
+#define seq_lock_write_acquire_optimized(lock)                  \
+    {                                                           \
+        uint32_t lock_counter_copy;                             \
+        uint32_t do_update;                                     \
+        uint32_t do_not_update;                                 \
+        do {                                                    \
+            lock_counter_copy = (lock)->counter;
+
+#define seq_lock_write_update_optimized(lock)                   \
+            ENTER_CRITICAL_SECTION_WRITER((lock));              \
+            do_update = lock_counter_copy==(lock)->counter;     \
+            do_not_update = !do_update;
+
+#define seq_lock_update_variable_optimized(dest, source)        \
+            (dest) = ( do_not_update * (dest) ) | ( do_update * (source))
+
+#define seq_lock_write_release_optimized(lock)                  \
+            LEAVE_CRITICAL_SECTION_WRITER((lock));              \
+        } while (do_not_update);                                \
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 #else
 
 // We are not allowed to use sequential lock if critical section type is undefined
@@ -179,5 +225,13 @@ static inline void seq_lock_read_release(volatile struct sequential_lock* lock) 
 #define seq_lock_write_update(lock) assert_param(0)
 
 #define seq_lock_write_release(lock) assert_param(0)
+
+#define seq_lock_write_acquire_optimized(lock)  assert_param(0)
+
+#define seq_lock_write_update_optimized(lock) assert_param(0)
+
+#define seq_lock_update_variable_optimized(dest, source) assert_param(0)
+
+#define seq_lock_write_release_optimized(lock) assert_param(0)
 #endif
 

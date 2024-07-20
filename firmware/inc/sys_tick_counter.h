@@ -48,22 +48,15 @@ void systick_init(void);
 
 __attribute__((always_inline))
 static inline void systick_get(volatile uint64_t* timestamp) {
-    uint64_t irq_cnt;
-    uint16_t cnt1, cnt2;
-
-    ASSERT_IRQ_ENABLED;
+    uint16_t dr;
+    uint32_t irq_cnt_1, irq_cnt_2;
 
     do {
-        cnt1 = SYS_TICK_PERIPH->CNT;
-
-        __disable_irq();
-        irq_cnt = g_systick_irq_cnt;
-        __enable_irq();
-
-        cnt2 = SYS_TICK_PERIPH->CNT;
-    } while (cnt1 > cnt2);
-
-    *timestamp = ( irq_cnt << (sizeof(uint16_t)*CHAR_BIT) ) + cnt1;
+        irq_cnt_1 = g_systick_irq_cnt;
+        dr = SYS_TICK_PERIPH->CNT;
+        irq_cnt_2 = g_systick_irq_cnt;
+    } while (irq_cnt_1 != irq_cnt_2);
+    *timestamp = ( irq_cnt_1 << (sizeof(uint16_t)*CHAR_BIT) ) + dr;
 }
 
 __attribute__((always_inline))

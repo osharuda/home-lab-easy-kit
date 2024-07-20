@@ -42,7 +42,7 @@ class BaseCustomizer:
 
         self.device_context_initializer = "{0}"
         self.sequential_lock_initializer = "{0,0}"
-        self.circular_buffer_initializer = f"{{ {self.sequential_lock_initializer},0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }}"
+        self.circular_buffer_initializer = f"{{ {self.sequential_lock_initializer},0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }}"
 
         # get info uuid length
         h, hash_len = hash_dict_as_c_array("")

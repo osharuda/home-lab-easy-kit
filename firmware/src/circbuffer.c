@@ -45,7 +45,6 @@ void circbuf_init_data(volatile struct CircBuffer* circ, uint8_t* buffer, uint16
     IS_SIZE_ALIGNED(&(circ->lock.counter));
     IS_SIZE_ALIGNED(&(circ->buffer));
     IS_SIZE_ALIGNED(&(circ->status));
-    IS_SIZE_ALIGNED(&(circ->current_block));
     IS_SIZE_ALIGNED(&(circ->buffer_size));
     IS_SIZE_ALIGNED(&(circ->status_size));
     IS_SIZE_ALIGNED(&(circ->put_pos));

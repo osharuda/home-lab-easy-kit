@@ -81,18 +81,19 @@
 ///
 
 /// \typedef ON_COMMAND
-/// \brief Defines command callback function that virtual device uses in order to get commands from software side.
+/// \brief Defines command callback function that virtual device povides to execute it's commands, sent by from software.
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-typedef void (*ON_COMMAND)(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Updated device status (later synchronously copied to g_comm_status)
+typedef uint8_t (*ON_COMMAND)(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \typedef ON_READDONE
-/// \brief Defines command callback function that virtual device uses in order to get notifications that device's buffer
-///        was read by software.
+/// \brief Defines command callback function virtual device provides to complete data read from it's buffer.
 /// \param device_id - device id of the device whose data was read
 /// \param length - length of the read (transmitted) data.
-typedef void (*ON_READDONE)(uint8_t device_id, uint16_t length);
+/// \return Updated device status (later synchronously copied to g_comm_status)
+typedef uint8_t (*ON_READDONE)(uint8_t device_id, uint16_t length);
 
 /// \typedef ON_POLLING
 /// \brief Defines command callback function that virtual device uses to get periodically notified.
@@ -128,6 +129,9 @@ typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
     uint8_t device_id;                  ///< Device identifier, used by software to specify destination virtual device
 
     uint8_t next_pooling_ovrrun; 	    ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
+
+    uint8_t i2c_circular_buffer;        ///< 0 if linear buffer, 1 if circular buffer. Note these two values must be identical to the
+                                        ///< i2c bus finite state machine values (
 } DeviceContext;
 
 typedef volatile DeviceContext *PDeviceContext;
@@ -136,9 +140,11 @@ typedef volatile DeviceContext *PDeviceContext;
 /// \param dev_ctx #tag_DeviceContext structure that describes the virtual device
 void comm_register_device(PDeviceContext dev_ctx);
 
+/*
 /// \brief Virtual device calls this function inside tag_DeviceContext#on_read_done to instruct communication that virtual device confirmed read
 /// \param status - value to be set as communication status (read by software with CommResponseHeader#comm_status)
 void comm_done(uint8_t status);
+*/
 
 /// \brief This command takes command byte and returns virtual device index for non-exclusive devices
 /// \details Non-exclusive device may call #comm_register_device several times for several indexed device.

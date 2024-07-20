@@ -69,12 +69,14 @@ void timetrackerdev_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void timetrackerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Communication status to be applied after command execution.
+uint8_t timetrackerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all TimeTrackerDev devices
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
-void timetrackerdev_read_done(uint8_t device_id, uint16_t length);
+/// \return Communication status to be applied after read completion.
+uint8_t timetrackerdev_read_done(uint8_t device_id, uint16_t length);
 
 /// @}
 #endif

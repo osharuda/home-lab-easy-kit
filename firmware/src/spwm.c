@@ -39,7 +39,7 @@ volatile uint16_t  g_pwm_entries_count;
 volatile SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
 volatile DeviceContext spwm_ctx __attribute__ ((aligned));
 
-void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
     uint8_t status = 0;
     if (length>SPWM_BUFFER_SIZE) {
@@ -59,7 +59,13 @@ void spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     CLEAR_FLAGS(SPWM_TIMER->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
 
 done:
-    comm_done(status);
+    return status;
+}
+
+uint8_t spwm_dev_read_done(uint8_t device_id, uint16_t length) {
+    UNUSED(device_id);
+    UNUSED(length);
+    return COMM_STATUS_OK;
 }
 
 // possibly this function may be optimized by using 32-bit BSRR
@@ -121,6 +127,9 @@ void spwm_init(void) {
     memset((void*)&spwm_ctx, 0, sizeof(spwm_ctx));
     spwm_ctx.device_id = SPWM_ADDR;
     spwm_ctx.on_command = spwm_dev_execute;
+    spwm_ctx.buffer = g_pwm_buffer;
+    spwm_ctx.bytes_available = SPWM_BUFFER_SIZE;
+
     comm_register_device(&spwm_ctx);
 }
 

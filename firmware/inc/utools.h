@@ -423,7 +423,23 @@ __attribute__((always_inline)) static inline
 void clear_debug_pin_2(void) {
     GPIOC->BRR = GPIO_Pin_15;
 }
-
+#else
+__attribute__((always_inline)) static inline
+void counted_break(uint32_t cnt) {UNUSED(cnt);}
+__attribute__((always_inline)) static inline
+void enable_debug_pins(void) {}
+__attribute__((always_inline)) static inline
+void set_debug_pin_0(void) {}
+__attribute__((always_inline)) static inline
+void clear_debug_pin_0(void) {}
+__attribute__((always_inline)) static inline
+void set_debug_pin_1(void) {}
+__attribute__((always_inline)) static inline
+void clear_debug_pin_1(void) {}
+__attribute__((always_inline)) static inline
+void set_debug_pin_2(void) {}
+__attribute__((always_inline)) static inline
+void clear_debug_pin_2(void) {}
 #endif // of EMERGENCY_DEBUG_TOOLS
 
 /// \brief call this function to fail some assertion. Execution will stuck inside until reset.

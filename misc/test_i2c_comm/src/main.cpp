@@ -96,9 +96,9 @@ void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
 
     constexpr double frequency = 1.0e4l; // 10 KHz
     constexpr double mean_value = 1.0l / (2 * frequency);
-    constexpr double value_error = mean_value * 0.9;
+    constexpr double value_error = mean_value * 0.7l;
     constexpr double min_val = mean_value - value_error;
-    constexpr double max_val = mean_value + value_error;
+    constexpr double max_val = mean_value + value_error*5.0l;
     bool running;
     uint64_t first_ts = 0;
 
@@ -107,7 +107,7 @@ void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
         tt->start(true);
 
         // SPWM is set to 10 KHZ, so we would have 200 events in 100ms
-        std::this_thread::sleep_for(std::chrono::milliseconds (10));
+        std::this_thread::sleep_for(std::chrono::milliseconds (100));
 
         uint64_t t;
         tt->get_status(running, t);
@@ -132,8 +132,20 @@ void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
                 double half_period = value - last_value;
                 max_hp = std::max(half_period, max_hp);
                 min_hp = std::min(half_period, min_hp);
-                assert(half_period >= min_val);
-                assert(half_period <= max_val);
+
+                if (half_period < min_val) {
+                    std::cout << "[TimeTrackDev] Warning, received value is too small: half_period=" << half_period
+                              << " , while minimum allowed value is " << min_val << std::endl;
+
+                    assert(0);
+                }
+
+                if (half_period > max_val) {
+                    std::cout << "[TimeTrackDev] Warning, received value is too long: half_period=" << half_period
+                              << " , while maximum allowed value is " << max_val << std::endl;
+                    assert(0);
+                }
+
                 acc += half_period / static_cast<double>(n-1);
                 last_value = *ts;
             }

@@ -117,34 +117,32 @@ struct CircBuffer {
 
     /* CONST */ volatile uint8_t *status;       ///< Optional status buffer to be prepended to the data to be sent to the software.
 
-    /* DEBUG */ volatile uint8_t *current_block; ///< Pointer to the currently reserved block (for block mode only).
+    /* CONST */ uint16_t buffer_size;  ///< size of the #buffer, in bytes.
 
-    /* CONST */ volatile uint16_t buffer_size;  ///< size of the #buffer, in bytes.
+    /* CONST */ uint16_t status_size;  ///< Size of the #status_buffer;
 
-    /* CONST */ volatile uint16_t status_size;  ///< Size of the #status_buffer;
+    /* STATE */ uint16_t put_pos;      ///< Position, where next byte or block will be placed
 
-    /* STATE */ volatile uint16_t put_pos;      ///< Position, where next byte or block will be placed
+    /* STATE */ uint16_t data_len;     ///< Total amount of actual (or valid) data in the buffer
 
-    /* STATE */ volatile uint16_t data_len;     ///< Total amount of actual (or valid) data in the buffer
+    /* READ CACHE */ uint16_t read_pos;     ///< Current read position (since the last circbuf_start_read() call)
 
-    /* READ CACHE */ volatile uint16_t read_pos;     ///< Current read position (since the last circbuf_start_read() call)
+    /* READ CACHE */ uint16_t bytes_read;   ///< Amount of bytes read (since the last circbuf_start_read() call)
 
-    /* READ CACHE */ volatile uint16_t bytes_read;   ///< Amount of bytes read (since the last circbuf_start_read() call)
-
-    /* CONST */ volatile uint16_t free_size;    ///< Precalculated value that can be used to check if there is free space in buffer
+    /* CONST */ uint16_t free_size;    ///< Precalculated value that can be used to check if there is free space in buffer
                                     ///< (free_size>=data_len)
 
-    /* CONST */ volatile uint16_t warn_low_thr;///< Low warning check threshold
+    /* CONST */ uint16_t warn_low_thr;///< Low warning check threshold
 
-    /* CONST */ volatile uint16_t warn_high_thr; ///< High warning check threshold
+    /* CONST */ uint16_t warn_high_thr; ///< High warning check threshold
 
-    /* CONST */ volatile uint16_t block_size;   ///< Circular buffer block size. If block size is more than 1 circular buffer works
+    /* CONST */ uint16_t block_size;   ///< Circular buffer block size. If block size is more than 1 circular buffer works
                                     ///< in block mode. When block mode is enabled block mode functions only should be
                                     ///< used to put data. In this case circbuf_put_byte() must not be used. When block
                                     ///< mode is disabled (byte mode) circbuf_put_byte() must be used; block mode functions
                                     ///< must not be used in byte mode.
 
-    /* CONST */ volatile uint8_t block_mode;    ///< Switches on block mode. 0: block mode disabled, non-zero block mode enabled.
+    /* CONST */ uint8_t block_mode;    ///< Switches on block mode. 0: block mode disabled, non-zero block mode enabled.
 
     /* FLAGS */ volatile uint8_t ovf;           ///< indicates overflow, cleared by circbuf_clear_ovf()
 
@@ -208,32 +206,29 @@ void circbuf_init_block_mode(volatile struct CircBuffer* circ, uint16_t bs);
 ///          the latest value should be used.
 __attribute__((always_inline))
 static inline uint8_t circbuf_check_warning(volatile struct CircBuffer* circ){
-    if (circ->data_len <= circ->warn_low_thr) {
-        circ->wrn = 0;
-    } else if (circ->data_len >= circ->warn_high_thr) {
-        circ->wrn = 1;
-    }
+    uint16_t dl = circ->data_len;
+    circ->wrn = circ->wrn && (dl > circ->warn_low_thr);
+    circ->wrn = circ->wrn || (dl >= circ->warn_high_thr);
     return circ->wrn;
 }
 
 /// \brief Resets content of the buffer
 /// \param circ - pointer to the circular buffer structure
-/// \warning This function writes to circular buffer state, therefor corresponding lock will be obtained.
 __attribute__((always_inline))
 static inline void circbuf_reset  (volatile struct CircBuffer* circ) {
-    seq_lock_write_acquire(&circ->lock);
-    seq_lock_write_update(&circ->lock);
-    assert_param(circ->current_block==0); // must not be called during any of operation
-    circ->put_pos = 0;
-    circ->data_len = 0;
+    seq_lock_write_acquire_optimized(&circ->lock);
+    seq_lock_write_update_optimized(&circ->lock);
+    seq_lock_update_variable_optimized(circ->put_pos, 0);
+    seq_lock_update_variable_optimized(circ->data_len, 0);
+    seq_lock_write_release_optimized(&circ->lock);
+
     circ->read_pos = 0;
     circ->bytes_read = 0;
     circ->free_size = circ->buffer_size - circ->block_size;
-    circ->current_block = 0;
     circ->ovf = 0;
     circ->wrn = (circ->data_len > circ->warn_high_thr);
     circbuf_check_warning(circ);
-    seq_lock_write_release(&circ->lock);
+
 }
 
 
@@ -263,10 +258,15 @@ __attribute__((always_inline))
 static inline void circbuf_put_byte(volatile struct CircBuffer* circ, uint8_t b) {
     assert_param(circ->block_size == 1);
     assert_param(circ->block_mode == 0);
-    seq_lock_write_acquire(&circ->lock);
+    seq_lock_write_acquire_optimized(&circ->lock);
     uint16_t data_len = circ->data_len;
     uint16_t put_pos = circ->put_pos++;
     uint8_t ovf = 0;
+
+    UNUSED(data_len);
+    UNUSED(put_pos);
+    UNUSED(ovf);
+
     if (data_len<circ->buffer_size) {
         circ->buffer[put_pos++] = b;
         data_len++;
@@ -276,11 +276,11 @@ static inline void circbuf_put_byte(volatile struct CircBuffer* circ, uint8_t b)
         ovf=1;
     }
 
-    seq_lock_write_update(&circ->lock);
-    circ->data_len = data_len;
-    circ->put_pos = put_pos;
-    circ->ovf = ovf;
-    seq_lock_write_release(&circ->lock);
+    seq_lock_write_update_optimized(&circ->lock);
+    seq_lock_update_variable_optimized(circ->data_len,data_len);
+    seq_lock_update_variable_optimized(circ->put_pos, put_pos);
+    seq_lock_update_variable_optimized(circ->ovf, ovf);
+    seq_lock_write_release_optimized(&circ->lock);
 }
 
 /// \brief Initializes read operation from circular buffer.
@@ -289,6 +289,7 @@ static inline void circbuf_put_byte(volatile struct CircBuffer* circ, uint8_t b)
 __attribute__((always_inline))
 static inline void circbuf_start_read(volatile struct CircBuffer* circ) {
     seq_lock_read_acquire(&circ->lock);
+
     if (circ->put_pos >= circ->data_len) {
         circ->read_pos = circ->put_pos - circ->data_len;
     } else {
@@ -309,6 +310,23 @@ __attribute__((always_inline))
 static inline uint8_t circbuf_get_byte(volatile struct CircBuffer* circ, volatile uint8_t *b) {
     uint8_t res = 1;
     seq_lock_read_acquire(&circ->lock);
+
+    if (circ->bytes_read < circ->status_size) {
+        *b = circ->status[circ->bytes_read++];
+    } else if (circ->bytes_read < (circ->data_len + circ->status_size)) {
+        *b = circ->buffer[circ->read_pos++];
+        if (circ->read_pos>=circ->buffer_size) {
+            circ->read_pos = 0;
+        }
+        circ->bytes_read++;
+    } else {
+        circ->ovf = 1;
+        *b = COMM_BAD_BYTE;
+        res = 0;
+    }
+
+
+    /*
     if (circ->bytes_read >= (circ->data_len + circ->status_size) ) {
         circ->ovf = 1;
         *b = COMM_BAD_BYTE;
@@ -322,6 +340,7 @@ static inline uint8_t circbuf_get_byte(volatile struct CircBuffer* circ, volatil
     } else {
         *b = circ->status[circ->bytes_read++];
     }
+     */
     seq_lock_read_release(&circ->lock);
     return res;
 }
@@ -360,13 +379,15 @@ static inline uint16_t circbuf_stop_read(volatile struct CircBuffer* circ, uint1
 
     assert_param((num_bytes % circ->block_size)==0); // Do not allow reading from buffer by unaligned blocks.
 
-    seq_lock_write_acquire(&circ->lock);
-    if (num_bytes>circ->data_len) {
-        num_bytes = circ->data_len;
+    seq_lock_write_acquire_optimized(&circ->lock);
+    uint16_t data_len = circ->data_len;
+    if (num_bytes>data_len) {
+        num_bytes = data_len;
     }
-    seq_lock_write_update(&circ->lock);
-    circ->data_len-=num_bytes;
-    seq_lock_write_release(&circ->lock);
+    data_len -= num_bytes;
+    seq_lock_write_update_optimized(&circ->lock);
+    seq_lock_update_variable_optimized(circ->data_len, data_len);
+    seq_lock_write_release_optimized(&circ->lock);
 
     done:
     return circ->data_len;
@@ -387,12 +408,9 @@ static inline volatile void* circbuf_reserve_block(volatile struct CircBuffer* c
     assert_param(circ->block_size > 0);
     assert_param(circ->block_mode == 1); // we must be in block mode
 
-    // check for double allocation in debug only
-    assert_param(circ->current_block == 0);
-
-    seq_lock_write_acquire(&circ->lock);
+    seq_lock_write_acquire_optimized(&circ->lock);
     ovf = circ->ovf;
-    current_block = circ->current_block;
+
     if (circ->free_size<circ->data_len) {
         ovf = 1;
         current_block = 0;
@@ -401,11 +419,11 @@ static inline volatile void* circbuf_reserve_block(volatile struct CircBuffer* c
         current_block = (volatile uint8_t*)(circ->buffer + circ->put_pos);
     }
 
-    seq_lock_write_update(&circ->lock);
-    circ->current_block = current_block;
-    circ->ovf = ovf;
-    seq_lock_write_release(&circ->lock);
+    seq_lock_write_update_optimized(&circ->lock);
+    seq_lock_update_variable_optimized(circ->ovf, ovf);
+    seq_lock_write_release_optimized(&circ->lock);
 
+    UNUSED(ovf);
     return current_block;
 }
 
@@ -419,35 +437,22 @@ static inline void circbuf_commit_block(volatile struct CircBuffer* circ) {
     assert_param(circ->block_size > 0);
     assert_param(circ->block_mode == 1); // we must be in block mode
     // check for unallocated block commit in debug only
-    assert_param(circ->current_block != 0);
 
-    seq_lock_write_acquire(&circ->lock);
+    seq_lock_write_acquire_optimized(&circ->lock);
+
     uint16_t put_pos = circ->put_pos + circ->block_size;
     uint16_t data_len = circ->data_len + circ->block_size;
+
+    UNUSED(data_len);
+    UNUSED(put_pos);
 
     if (put_pos >= circ->buffer_size)
         put_pos = 0;
 
-    seq_lock_write_update(&circ->lock);
-    circ->current_block = 0;
-    circ->put_pos = put_pos;
-    circ->data_len = data_len;
-    seq_lock_write_release(&circ->lock);
-}
-
-
-/// \brief Cancel reserved memory block
-/// \param circ - pointer to the circular buffer structure
-/// \warning This function must be used for circular buffer working in block mode only (byte mode is disabled).
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
-__attribute__((always_inline))
-static inline void circbuf_cancel_block(volatile struct CircBuffer* circ) {
-    assert_param(circ->block_size > 0);
-    assert_param(circ->block_mode == 1); // we must be in block mode
-    assert_param(circ->current_block != 0); // check for unallocated block commit in debug only
-    // cancel it
-    circ->current_block = 0;
+    seq_lock_write_update_optimized(&circ->lock);
+    seq_lock_update_variable_optimized(circ->put_pos, put_pos);
+    seq_lock_update_variable_optimized(circ->data_len, data_len);
+    seq_lock_write_release_optimized(&circ->lock);
 }
 
 /// @}
