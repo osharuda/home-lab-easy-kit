@@ -1,0 +1,12 @@
+#pragma once
+void test_circbuffer_initialization();
+void test_circbuffer_failed_initialization();
+void test_circbuffer_single_byte();
+void test_circbuffer_byte_mode();
+void test_circbuffer_byte_mode_with_status();
+void test_circbuffer_single_block();
+void test_circbuffer_block_mode_work();
+void test_circbuffer_block_mode_work_with_status();
+void test_circbuffer_asserts();
+void test_circ_buffer_warning();
+void test_circ_buffer_multithreaded();

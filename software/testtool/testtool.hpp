@@ -23,22 +23,43 @@
 #pragma once
 #include <cstddef>
 #include "tools.hpp"
+#include <setjmp.h>
+
+
+extern jmp_buf jmpbuf;
+extern int g_assert_param_count;
 
 #define MDIFF(X,Y) (std::max((X),(Y)) - std::min((X),(Y)));
 #define DECLARE_TEST(y) const char* func_name = #y; \
                         size_t _test_counter = 0;
-#define REPORT_CASE tools::debug_print("%s : %d (%s:%d)", func_name, _test_counter++, __FILE__, __LINE__);
+#define REPORT_CASE tools::debug_print("%s : %d (%s:%d)", func_name, _test_counter++, __FILE__, __LINE__); \
+                    g_assert_param_count = 0;
 
-#define TRY_SIGNAL(s)                              \
+#define TRY_SIGNAL(s) \
     struct sigaction new_action;                   \
     struct sigaction old_action;                   \
     memset(&new_action, 0, sizeof(new_action));    \
     new_action.sa_handler = s ## _HANDLER;         \
     new_action.sa_flags = SA_NODEFER | SA_NOMASK;  \
-    sigaction( s, &new_action, &old_action);      \
+    sigaction( s, &new_action, &old_action);       \
     if (setjmp(jmpbuf)==0) {
 
-#define CATCH_SIGNAL(s) \
-} else {                \
-    sigaction((s), &old_action, &new_action);\
-}
+#define CATCH_SIGNAL(s)                            \
+    }                                              \
+    sigaction((s), &old_action, &new_action);
+
+
+void SIGFPE_HANDLER(int signum);
+void SIGABRT_HANDLER(int signum);
+
+#define MUST_FAIL assert(g_assert_param_count > 0);
+
+#define TEST_ASSERTION_BEGIN TRY_SIGNAL(SIGABRT);
+
+#define TEST_ASSERTION_END   CATCH_SIGNAL(SIGABRT);  \
+                             MUST_FAIL;
+
+#define TEST_SIGFPE_BEGIN TRY_SIGNAL(SIGFPE);
+
+#define TEST_SIGFPE_END   CATCH_SIGNAL(SIGFPE);  \
+                             MUST_FAIL;
