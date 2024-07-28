@@ -69,8 +69,8 @@
 
 
 void irrc_init();
-void irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length);
-void irrc_readdone(uint8_t device_id, uint16_t length);
+uint8_t irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+uint8_t irrc_readdone(uint8_t device_id, uint16_t length);
 
 /// @}
 

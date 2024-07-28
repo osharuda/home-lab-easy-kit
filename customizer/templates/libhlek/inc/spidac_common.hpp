@@ -33,18 +33,18 @@
 /// \addtogroup group_spidac
 /// @{{
 
-/// \struct tag_SPIDACChannelDescriptor
+/// \struct SPIDACChannelDescriptor
 /// \brief Describes SPIDAC channel
-typedef struct tag_SPIDACChannelDescriptor {{
+struct SPIDACChannelDescriptor {{
     const char*     name;           ///< Name of the channel
     double          min_value;      ///< Minimum value
     double          max_value;      ///< Maximum value
     double          default_value;  ///< Default value
-}} SPIDACChannelDescriptor;
+}};
 
-/// \struct tag_SPIDACConfig
+/// \struct SPIDACConfig
 /// \brief Describes SPIDAC configuration
-typedef struct tag_SPIDACConfig {{
+struct SPIDACConfig {{
     const char*     dev_name;           ///< Name of the SPIDAC virtual device as given in JSON configuration file
     size_t          dev_buffer_len;     ///< Length of the SPIDAC internal buffer
     size_t          frames_per_sample;  ///< Amount of sample per frame
@@ -56,6 +56,6 @@ typedef struct tag_SPIDACConfig {{
     size_t          bits_per_sample;    ///< Number of bits per one sample
     uint32_t        timer_freq;         ///< Timer clock frequency
     const SPIDACChannelDescriptor* channels;  ///< Channels description
-}} SPIDACConfig;
+}};
 
 /// @}}

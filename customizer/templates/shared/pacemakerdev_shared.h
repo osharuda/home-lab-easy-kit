@@ -40,9 +40,9 @@
 /// \brief This structure describes PaceMakerDev command
 #pragma pack(push, 1)
 
-/// \struct tag_PaceMakerStatus
+/// \struct PaceMakerStatus
 /// \brief Structure that describes status of the PaceMaker device
-typedef struct tag_PaceMakerStatus {{
+struct PaceMakerStatus {{
     uint32_t main_counter;                        /// Number of main cycles remains to the finish. If zero and started
                                                   /// is set, then infinite cycling is used.
     EKIT_ERROR last_error;                        /// Last error code
@@ -50,31 +50,30 @@ typedef struct tag_PaceMakerStatus {{
         uint16_t started        : 1;              /// If set, signal generation is running, otherwise cleared.
         uint16_t internal_index : 15;             /// Index of the current internal transition
     }};
-}} PaceMakerStatus;
-typedef volatile PaceMakerStatus* PPaceMakerStatus;
+}};
 
-/// \struct tag_PaceMakerTransition
+/// \struct PaceMakerTransition
 /// \brief Structure that describes signal transition
-typedef struct tag_PaceMakerTransition {{
+struct PaceMakerTransition {{
     uint32_t signal_mask;    /// Pins state
     uint16_t prescaller;     /// Period for the wait timer
     uint16_t counter;        /// Prescaller for the wait timer
-}} PaceMakerTransition;
+}};
 
-/// \struct tag_PaceMakerStartCommand
+/// \struct PaceMakerStartCommand
 /// \brief Structure that describes signal transition
-typedef struct tag_PaceMakerStartCommand {{
+struct PaceMakerStartCommand {{
     uint32_t main_cycles_number;  /// Amount of main cycles until generation is stopped. If zero infinite cycling is used.
     uint16_t main_prescaller;     /// Main cycle prescaller.
     uint16_t main_counter;        /// Main cycle counter.
-}} PaceMakerStartCommand;
+}};
 
-/// \struct tag_PaceMakerDevData
+/// \struct PaceMakerDevData
 /// \brief Structure that describes command for PaceMakerDev
-typedef struct tag_PaceMakerDevData {{
+struct PaceMakerDevData {{
     uint32_t transition_number; /// Amount of described transitions, may not be a zero.
-    PaceMakerTransition transitions[];
-}} PaceMakerDevData;
+    struct PaceMakerTransition transitions[];
+}};
 
 #pragma pack(pop)
 /// @}}

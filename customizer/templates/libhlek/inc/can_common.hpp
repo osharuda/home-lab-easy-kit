@@ -31,12 +31,12 @@
 /// \addtogroup group_can
 /// @{{
 
-/// \struct tag_CANConfig
+/// \struct CANConfig
 /// \brief CAN configuration structure.
-typedef struct tag_CANConfig{{
+struct CANConfig{{
     uint8_t         dev_id;             ///< Device ID for Can virtual device
     const char*     dev_name;           ///< Name of the Can virtual device as given in JSON configuration file
     uint16_t        dev_buffer_len;     ///< Length of the Can internal buffer
-}} CANConfig;
+}};
 
 /// @}}

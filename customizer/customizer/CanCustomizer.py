@@ -119,7 +119,7 @@ class CanCustomizer(DeviceCustomizer):
             dev_requires = dev_config[KW_REQUIRES]
             dev_id       = dev_config[KW_DEV_ID]
             bitrate     = dev_config["bitrate"]
-            buffer_size = "sizeof(CanRecvMessage)*{0}".format(dev_config["buffered_msg_count"])
+            buffer_size = "sizeof(struct CanRecvMessage)*{0}".format(dev_config["buffered_msg_count"])
 
             (can_prescaller, can_seg1, can_sample_point, can_seg2) = self.get_can_timings(bitrate)
 
@@ -175,12 +175,12 @@ class CanCustomizer(DeviceCustomizer):
             sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
                 dev_id, dev_name, buffer_size))
 
-            fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+            fw_device_buffers.append("uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
 
             sw_config_name = "can_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const CANConfig* {sw_config_name};")
+            sw_config_declarations.append(f"extern const struct CANConfig* {sw_config_name};")
             sw_configs.append(
-                f"const CANConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+                f"const struct CANConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 

@@ -43,15 +43,15 @@ extern int g_assert_param_count;
 #include <limits.h>
 #include "stm32f10x_conf.h"
 
-/// \struct tag_GPIO_descr
+/// \struct GPIO_descr
 /// \brief Structure that describes a pin
-typedef struct tag_GPIO_descr {
+struct GPIO_descr {
     GPIOMode_TypeDef type;          /// Input/Output type
     GPIO_TypeDef*    port;          /// Port
     uint16_t         pin_mask;      /// Pin mask
     uint8_t          pin_number;    /// Number of the pin
     uint8_t          default_val;   /// Default pin state (depends on type)
-} GPIO_descr;
+};
 
 /// \defgroup group_utools uTools
 /// \brief Multipurpose micro tools library
@@ -134,8 +134,6 @@ extern volatile uint8_t g_irq_disabled;
 /// \note This macro will check statically that variables being passed are the same in type size.
 ///       If static assert doesn't allow compilation, make sure types have the same size or use explicit type casting.
 #define SET_BIT_FIELD(x, mask, value) { _Static_assert(sizeof(x) == sizeof(mask), "Types size are not the same");   \
-                                        _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same");  \
-                                        _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same");  \
                                         _Static_assert(sizeof(x) == sizeof(value), "Types size are not the same"); }\
                                       (x) = (((x) & (~(mask))) | ((value)&(mask)))
 

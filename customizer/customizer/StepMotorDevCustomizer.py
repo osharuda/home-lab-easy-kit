@@ -77,7 +77,7 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             dev_mstatus_size = "STEP_MOTOR_" + dev_name.upper() + "_STATUS_SIZE"
             fw_motor_dev_counts.append("#define {0} ({1})".format(dev_mcount_def, motors_count))
             fw_motor_dev_counts.append(
-                "#define {0} (sizeof(StepMotorDevStatus) + {1}*sizeof(StepMotorStatus))".format(dev_mstatus_size,
+                "#define {0} (sizeof(struct StepMotorDevStatus) + {1}*sizeof(struct StepMotorStatus))".format(dev_mstatus_size,
                                                                                                 dev_mcount_def))
 
             # motor status structures
@@ -106,38 +106,38 @@ class StepMotorDevCustomizer(DeviceCustomizer):
                 mot_descriptor = self.get_motor_description(True, used_pins, mot_name, mot_cfg, dev_name, dev_requires,
                                                             mot_buffer_name, mot_buf_size, default_speed, drive_type)
                 fw_motor_descriptors.append(
-                    "volatile StepMotorDescriptor {0} = {{ {1} }}; \\".format(mot_descriptor_name, mot_descriptor))
+                    "struct StepMotorDescriptor {0} = {{ {1} }}; \\".format(mot_descriptor_name, mot_descriptor))
                 dev_motor_descr_list.append("&" + mot_descriptor_name)
                 sw_dev_motor_descr_list.append("&" + mot_descriptor_name)
 
                 mot_descriptor = self.get_motor_description(False, used_pins, mot_name, mot_cfg, dev_name, dev_requires,
                                                             mot_buffer_name, mot_buf_size, default_speed, drive_type)
                 sw_motor_descriptors.append(
-                    "const StepMotorDescriptor {0} = {{ {1} }};".format(mot_descriptor_name, mot_descriptor))
+                    "const struct StepMotorDescriptor {0} = {{ {1} }};".format(mot_descriptor_name, mot_descriptor))
 
             # Motor descriptors
             motor_descriptors_array_name = "g_" + dev_name.lower() + "_motor_descriptors"
             fw_motor_descriptor_arrays.append(
-                "volatile StepMotorDescriptor* {0}[] = {{ {1} }};\\".format(motor_descriptors_array_name,
+                "struct StepMotorDescriptor* {0}[] = {{ {1} }};\\".format(motor_descriptors_array_name,
                                                                             ", ".join(dev_motor_descr_list)))
             sw_motor_descriptor_arrays.append(
-                "const StepMotorDescriptor* {0}[] = {{ {1} }};".format(motor_descriptors_array_name,
+                "const struct StepMotorDescriptor* {0}[] = {{ {1} }};".format(motor_descriptors_array_name,
                                                                            ", ".join(sw_dev_motor_descr_list)))
 
             # Motor contexts
             motor_context_arrays_name = "g_" + dev_name.lower() + "_motor_contexts"
             fw_motor_context_arrays.append(
-                "volatile StepMotorContext {0}[{1}] = {{0}}; \\".format(motor_context_arrays_name, motors_count))
+                "struct StepMotorContext {0}[{1}] = {{0}}; \\".format(motor_context_arrays_name, motors_count))
 
             # Motor statuses
             motor_status_arrays_name = "g_" + dev_name.lower() + "_motor_statuses"
             fw_motor_status_arrays.append(
-                "volatile StepMotorStatus {0}[{1}] = {{0}}; \\".format(motor_status_arrays_name, motors_count))
+                "struct StepMotorStatus {0}[{1}] = {{0}}; \\".format(motor_status_arrays_name, motors_count))
 
             # Device descriptors
             dev_motor_descr_list.append(dev_descriptor_name)
             fw_device_descriptors.append(
-                "volatile StepMotorDevice {0} = {{ {{0}}, {{0}}, {4}, (volatile PStepMotorContext){6}, (volatile PStepMotorDevStatus){7}, {8}, {5}, (volatile StepMotorDescriptor**){3}, {2}, {1} }}; \\".format(
+                "struct StepMotorDevice {0} = {{ {{0}}, {{0}}, {4}, (struct StepMotorContext*){6}, (struct StepMotorDevStatus*){7}, {8}, {5}, (struct StepMotorDescriptor**){3}, {2}, {1} }}; \\".format(
                     dev_descriptor_name,                #0
                     dev_id,                             #1
                     motors_count,                       #2
@@ -151,12 +151,12 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             sw_devices_descriptors.append(
                 '{{ "{3}", {2}, {1}, {0} }}'.format(dev_id, motors_count, motor_descriptors_array_name, dev_name))
 
-            fw_devices_array.append("(volatile PStepMotorDevice)&" + dev_descriptor_name)
+            fw_devices_array.append("(struct StepMotorDevice*)&" + dev_descriptor_name)
 
             sw_config_name = "step_motor_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const StepMotorConfig* {sw_config_name};")
+            sw_config_declarations.append(f"extern const struct StepMotorConfig* {sw_config_name};")
             sw_configs.append(
-                f"const StepMotorConfig* {sw_config_name} = {sw_config_array_name} + {indx};")
+                f"const struct StepMotorConfig* {sw_config_name} = {sw_config_array_name} + {indx};")
 
             indx += 1
 

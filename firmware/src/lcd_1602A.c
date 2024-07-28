@@ -36,7 +36,7 @@
 /// \brief Simple LCD1602a screen support
 /// @{
 /// \brief LCDDev #tag_DeviceContext structure
-volatile DeviceContext g_lcd_ctx __attribute__ ((aligned));
+struct DeviceContext g_lcd_ctx __attribute__ ((aligned));
 
 /// \brief Specifies if backlight is currently on
 volatile uint8_t         g_lcd_light_on = 0;
@@ -99,9 +99,9 @@ uint8_t lcd_positional_write(uint8_t* data, uint16_t length) {
 	uint8_t status = 0;
 	uint8_t text_len;
 	uint8_t tmp;
-	PLcdPositionalText pos_text = (PLcdPositionalText)data;
+	struct LcdPositionalText* pos_text = (struct LcdPositionalText*)data;
 
-	if (length<sizeof(LcdPositionalText)) {
+	if (length<sizeof(struct LcdPositionalText)) {
 		status = COMM_STATUS_FAIL;
 		goto done;
 	}
@@ -112,7 +112,7 @@ uint8_t lcd_positional_write(uint8_t* data, uint16_t length) {
 		goto done;
 	}
 
-	text_len = length-sizeof(LcdPositionalText);
+	text_len = length-sizeof(struct LcdPositionalText);
 	if (pos_text->position>=LCD1602a_WIDTH ||
 		pos_text->position+text_len>LCD1602a_WIDTH) {
 		status = COMM_STATUS_FAIL;
@@ -148,7 +148,7 @@ done:
 	return status;
 }
 
-void lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	uint8_t status = 0;
 
 	// Manage back light
@@ -168,7 +168,7 @@ void lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	}
 
 done:
-    comm_done(status);
+    return status;
 }
 
 void lcd_toggle_enabled()

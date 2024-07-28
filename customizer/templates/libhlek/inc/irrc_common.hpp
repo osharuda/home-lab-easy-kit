@@ -26,10 +26,10 @@
 
 #include <stdint.h>
 
-/// \struct tag_IRRCConfig
+/// \struct IRRCConfig
 /// \brief IRRC configuration structure.
-typedef struct tag_IRRCConfig{{
+struct IRRCConfig{{
 	uint8_t device_id;        ///< Configured device ID
 	const char* device_name;  ///< Configured device name.
 	size_t buffer_len;        ///< Length of the internal buffer.
-}} IRRCConfig;
+}};

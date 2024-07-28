@@ -73,11 +73,14 @@ class TimeTrackerDev final : public EKitVirtualDevice {
 	~TimeTrackerDev() override;
 
     /// \brief Start device.
-    /// \param reset - reset device before starting.
-    void start(bool reset);
+    void start();
 
     /// \brief Stops device.
     void stop();
+
+    /// \brief Reset device.
+    /// \warning Device must be stopped (running == false) to be be capable reset it.
+    void reset();
 
     /// \brief Obtain status of the device
     /// \param running - output parameter, it is set to true if device is running, otherwise it is set to false.
@@ -98,14 +101,14 @@ class TimeTrackerDev final : public EKitVirtualDevice {
     /// \param relative - if true, all events are returned relative to first event since reset.
     void read_all(std::vector<double>& data, bool relative);
 private:
-    PTimeTrackerStatus dev_status;
+    struct TimeTrackerStatus* dev_status;
     uint64_t* data_buffer;
     std::vector<uint8_t> raw_buffer;
     static constexpr size_t max_timestamps_per_i2c_transaction = 512;
 
     /// \brief Sends a command to the devive
-    /// \param flags - command byte flags to be used.
-    void send_command(int flags);
+    /// \param command - command byte flags to be used.
+    void send_command(int command);
 
     /// \brief Read status and data from device into internal buffer.
     /// \param status - pointer to the device status.

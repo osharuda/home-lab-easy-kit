@@ -35,36 +35,33 @@
 /// \image latex under_construction.eps
 ///
 
-/// \struct tag_{DevName}PrivData
+/// \struct {DevName}PrivData
 /// \brief Structure that describes private {DevName} data
-typedef struct tag_{DevName}PrivData {
+ struct {DevName}PrivData {
     uint8_t priv_data;  ///< Some private data.
 } {DevName}PrivData;
-typedef volatile {DevName}PrivData* P{DevName}PrivData;
 
 
-/// \struct tag_{DevName}Instance
+/// \struct {DevName}Instance
 /// \brief Structure that describes {DevName} virtual device
-typedef struct __attribute__ ((aligned)) tag_{DevName}Instance {
-        volatile DeviceContext      dev_ctx __attribute__ ((aligned));            ///< Virtual device context
+struct __attribute__ ((aligned)) {DevName}Instance {
+        DeviceContext      dev_ctx __attribute__ ((aligned));            ///< Virtual device context
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
-        volatile CircBuffer         circ_buffer;        ///< Circular buffer control structure
+        CircBuffer         circ_buffer;        ///< Circular buffer control structure
 #endif
 
-        volatile {DevName}PrivData   privdata;          ///< Private data used by this {DevName} device
+        {DevName}PrivData   privdata;          ///< Private data used by this {DevName} device
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
-        volatile uint8_t*           buffer;             ///< Internal buffer
+        uint8_t*           buffer;             ///< Internal buffer
 
         uint16_t                    buffer_size;        ///< Buffer size
 #endif
 
         uint8_t                     dev_id;             ///< Device ID for {DevName} virtual device
 
-} {DevName}Instance;
-
-typedef volatile {DevName}Instance* P{DevName}Instance;
+};
 
 /// \brief Initializes all {DevName} virtual devices
 void {devname}_init();

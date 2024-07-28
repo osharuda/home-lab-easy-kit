@@ -36,11 +36,11 @@
 /// \brief Defines {DevName} command specific flag 0
 #define {DEVNAME}_RESERVED_0             16
 
-/// \struct tag_{DevName}Command
+/// \struct {DevName}Command
 /// \brief This structure describes {DevName} command
 #pragma pack(push, 1)
-typedef struct tag_{DevName}Command {{
+struct {DevName}Command {{
     uint16_t data;  ///< Some data. Customize it for particular device.
-}} {DevName}Command;
+}};
 #pragma pack(pop)
 /// @}}

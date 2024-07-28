@@ -63,7 +63,7 @@ void step_motor_init_cmd_map(void) {
     }
 }
 
-uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, volatile PStepMotorContext mcontext) {
+uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, struct StepMotorContext* mcontext) {
     uint64_t max_cor = wait >> corr_factor;
     if (max_cor==0) { // correction is not allowed
         return wait;
@@ -81,23 +81,23 @@ uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, volatile 
     }
 }
 
-void step_motor_handle_error(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd) {
+void step_motor_handle_error(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
     UNUSED(dev);
     UNUSED(mindex);
     UNUSED(cmd);
     assert_param(0);
 }
 
-uint8_t step_motor_invalid_cmd(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
+uint8_t step_motor_invalid_cmd(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
     UNUSED(cmd);
     UNUSED(dev);
     UNUSED(mindex);
     return STE_MOTOR_CMD_RESULT_FAIL;
 }
 
-uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_general_enable(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_ENABLE_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_RESET);
@@ -110,9 +110,9 @@ uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex,
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_general_sleep(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_SLEEP_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_RESET);
@@ -126,9 +126,9 @@ uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_general_disable(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_ENABLE_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_SET);
@@ -141,9 +141,9 @@ uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_general_wakeup(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_general_wakeup(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_SLEEP_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_SET);
@@ -156,8 +156,8 @@ uint8_t step_motor_general_wakeup(volatile PStepMotorDevice dev, uint8_t mindex,
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_general_reset(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+uint8_t step_motor_general_reset(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
     uint8_t res = STE_MOTOR_CMD_RESULT_OK;
 
     switch (cmd->state) {
@@ -175,9 +175,9 @@ uint8_t step_motor_general_reset(volatile PStepMotorDevice dev, uint8_t mindex, 
 
     return res;
 }
-uint8_t step_motor_general_wait(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
+uint8_t step_motor_general_wait(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
     uint8_t res = STE_MOTOR_CMD_RESULT_OK;
-    volatile PStepMotorContext mcontext;
+    struct StepMotorContext* mcontext;
     UNUSED(dev);
     UNUSED(mindex);
     switch (cmd->state) {
@@ -195,8 +195,8 @@ uint8_t step_motor_general_wait(volatile PStepMotorDevice dev, uint8_t mindex, S
     return res;
 }
 
-uint8_t step_motor_general_config(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_general_config(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t value = STEP_MOTOR_CONFIG_BYTE_TO_FLAGS(cmd->param);
     DISABLE_IRQ
     SET_BIT_FIELD(mstatus->motor_state, STEP_MOTOR_CONFIG_MASK, value);
@@ -205,10 +205,10 @@ uint8_t step_motor_general_config(volatile PStepMotorDevice dev, uint8_t mindex,
     return STE_MOTOR_CMD_RESULT_OK;
 }
 
-uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
+uint8_t step_motor_set_dir_cw(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_DIR_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_SET);
@@ -223,10 +223,10 @@ uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, Ste
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
+uint8_t step_motor_set_dir_ccw(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
 
     if (mdescr->config_flags & STEP_MOTOR_DIR_IN_USE) {
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_RESET);
@@ -241,10 +241,10 @@ uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, St
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
-uint8_t step_motor_set_microstep(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
+uint8_t step_motor_set_microstep(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
     uint8_t result = STE_MOTOR_CMD_RESULT_OK;
     BitAction m1,m2,m3;
 
@@ -278,8 +278,8 @@ done:
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return result;
 }
-uint8_t step_motor_set_step_wait(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
+uint8_t step_motor_set_step_wait(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
     uint8_t result = STE_MOTOR_CMD_RESULT_OK;
     if (cmd->param<STEP_MOTOR_MIN_STEP_WAIT) {
         result = STE_MOTOR_CMD_RESULT_FAIL;
@@ -292,8 +292,8 @@ uint8_t step_motor_set_step_wait(volatile PStepMotorDevice dev, uint8_t mindex, 
     return result;
 }
 
-uint8_t step_motor_set_cw_sft_limit(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_set_cw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint8_t result = STE_MOTOR_CMD_RESULT_OK;
     int64_t limit = (int64_t)cmd->param;
 
@@ -313,8 +313,8 @@ uint8_t step_motor_set_cw_sft_limit(volatile PStepMotorDevice dev, uint8_t minde
     return result;
 }
 
-uint8_t step_motor_set_ccw_sft_limit(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_set_ccw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint8_t result = STE_MOTOR_CMD_RESULT_OK;
     int64_t limit = (int64_t)cmd->param;
 
@@ -332,10 +332,10 @@ uint8_t step_motor_set_ccw_sft_limit(volatile PStepMotorDevice dev, uint8_t mind
     return result;
 }
 
-uint8_t step_motor_move(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorContext  mcontext = MOTOR_CONTEXT(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorContext*  mcontext = MOTOR_CONTEXT(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);
     uint8_t res = STE_MOTOR_CMD_RESULT_OK;
 

@@ -42,6 +42,6 @@ namespace {__NAMESPACE_NAME__} {{
     {__CPP_GPIO_DEV_PINS_DECLARATION__}
     /// @}}
 
-    extern const GPIOConfig* gpio_config_ptr;
+    extern const struct GPIOConfig* gpio_config_ptr;
 }}
 /// @}}

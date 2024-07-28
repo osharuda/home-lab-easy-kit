@@ -28,13 +28,10 @@
 #if defined(SEQ_LOCK_I2C_READER)
 #define ENTER_CRITICAL_SECTION_WRITER(lk) \
         ASSERT_IRQ_ENABLED                \
-        set_debug_pin_2();                \
         __disable_irq();
 
 #define LEAVE_CRITICAL_SECTION_WRITER(lk) \
-        __enable_irq();                   \
-        clear_debug_pin_2();
-
+        __enable_irq();
 
 // It is known that I2C EV IRQ handler has the highest priority, therefor it can't be superceeded by any of the IRQ
 // handlers. In this case we ommit synchronisation for state reader functions
@@ -91,18 +88,14 @@
     #define SEQ_LOCK_DEFINED 1
 #elif defined(SEQ_LOCK_DISABLED_IRQ)
     #define ENTER_CRITICAL_SECTION_WRITER(lk) \
-        set_debug_pin_2();                    \
         __disable_irq()
     #define LEAVE_CRITICAL_SECTION_WRITER(lk) \
-        __enable_irq();                       \
-        clear_debug_pin_2();
+        __enable_irq()
 
     #define ENTER_CRITICAL_SECTION_READER(lk) \
-        set_debug_pin_2();                    \
         __disable_irq()
     #define LEAVE_CRITICAL_SECTION_READER(lk) \
-        __enable_irq();                       \
-        clear_debug_pin_2();
+        __enable_irq()
 
     #define SEQ_LOCK_DEFINED 1
 #elif defined(SEQ_LOCK_TEST)

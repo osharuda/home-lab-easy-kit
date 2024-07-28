@@ -56,13 +56,13 @@
 
 
 
-/// \struct tag_InfoDeviceDescriptor
+/// \struct InfoDeviceDescriptor
 /// \brief Describes virtual device
-typedef struct tag_InfoDeviceDescriptor {{
+struct InfoDeviceDescriptor {{
     uint8_t type;   ///< Type of the virtual device (one of the @ref group_info_dev_dev_type values).
     uint8_t hint;   ///< Hint for the virtual device (one of the @ref group_info_dev_dev_hint values).
     const char* name; ///< Name of the virtual device.
-}} InfoDeviceDescriptor, *PInfoDeviceDescriptor;
+}};
 
 /// \def INFO_DEVICE_ADDRESSES
 /// \brief Number of virtual device addresses available (including INFODev device)
@@ -72,13 +72,13 @@ typedef struct tag_InfoDeviceDescriptor {{
 /// \brief Length of the uuid
 #define INFO_UUID_LEN {__INFO_UUID_LEN__}
 
-/// \struct tag_InfoConfig
+/// \struct InfoConfig
 /// \brief Describes all project information available to #INFODev
-typedef struct tag_InfoConfig {{
+struct InfoConfig {{
 	uint8_t device_id;                  ///< Configured device ID
 	const char* device_name;            ///< Configured device name.
     uint8_t uuid[INFO_UUID_LEN];
     const InfoDeviceDescriptor devices[INFO_DEVICE_ADDRESSES];
-}} InfoConfig;
+}};
 
 /// @}}

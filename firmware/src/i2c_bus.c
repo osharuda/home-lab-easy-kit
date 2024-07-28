@@ -195,10 +195,10 @@ struct CommResponseHeader g_resp_header_remove_later;
 
 // Registered device
 /// \brief Array of the device context pointers. This array is field
-volatile PDeviceContext g_devices[COMM_MAX_DEV_ADDR + 1];
+struct DeviceContext* g_devices[COMM_MAX_DEV_ADDR + 1];
 
 /// \brief Pointer to the current virtual device context
-PDeviceContext g_cur_device = 0;
+struct DeviceContext* g_cur_device = 0;
 /// @}
 
 /// \brief This function initializes I2C communication peripherals
@@ -274,7 +274,7 @@ void i2c_bus_init(void)
 #endif
 }
 
-void comm_register_device(PDeviceContext dev_ctx) {
+void comm_register_device(struct DeviceContext* dev_ctx) {
 	IS_ALIGNED(dev_ctx, sizeof(uint64_t));
 	IS_ALIGNED(&(dev_ctx->polling_period), sizeof(uint64_t));
 	IS_ALIGNED(&(dev_ctx->next_pooling_ev), sizeof(uint64_t));
@@ -303,7 +303,7 @@ void comm_register_device(PDeviceContext dev_ctx) {
 }
 
 
-PDeviceContext comm_dev_context(uint8_t cmd_byte) {
+struct DeviceContext* comm_dev_context(uint8_t cmd_byte) {
 	return g_devices[cmd_byte & COMM_MAX_DEV_ADDR];
 }
 
@@ -336,7 +336,7 @@ void i2c_pool_devices(void) {
 	if (g_last_usClock >= now) {
 		// overrun
 		for (uint32_t i=0; i <= COMM_MAX_DEV_ADDR; i++) {
-			PDeviceContext pdev = g_devices[i];
+			struct DeviceContext* pdev = g_devices[i];
 			if (pdev!=0) {
 				g_devices[i]->next_pooling_ovrrun = 0;
 			}
@@ -344,7 +344,7 @@ void i2c_pool_devices(void) {
 	}
 
 	for (uint8_t i=0; i <= COMM_MAX_DEV_ADDR; i++) {
-		PDeviceContext pdev = g_devices[i];
+        struct DeviceContext* pdev = g_devices[i];
 		if (pdev!=0 &&
 			pdev->on_polling!=0 &&
 			pdev->polling_period>0 &&
@@ -469,7 +469,6 @@ void i2c_receive_byte(void) {
 
     I2C_STATUS_TRACK(g_crc, g_last_byte, 0xC0);
 
-    set_debug_pin_0();
 	if (IS_SET(g_comm_status, COMM_STATUS_BUSY))	{
 		// Do not do anything until BUSY flag is not cleared by device
         I2C_STATUS_TRACK(0, 0, 0xC1);
@@ -508,8 +507,6 @@ void i2c_receive_byte(void) {
     // region I2C_TRACE #0xD3
     I2C_STATUS_TRACK(g_crc, g_last_byte, 0xD3);
     // endregion
-
-    clear_debug_pin_0();
 }
 
 /// \brief This function is called from I2C event interrupt handler to send a byte to master (software).
@@ -679,23 +676,11 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
         I2C_STATUS_TRACK(sr1, sr2, 0);
         I2C_STATUS_TRACK(COMM_CRC_INIT_VALUE, g_crc, 0xD0);
         // endregion
-
-
-        set_debug_pin_0();
-        /// TEST CODE - Mark we just sent a byte
-        clear_debug_pin_0();
-        set_debug_pin_0();
 #endif
 
         do {
             I2C_BUS_PERIPH->DR = COMM_DUMMY_BYTE;
             READ_FLAGS_CLEAR_ADDR;
-
-            /// TEST CODE - Mark we just sent a byte
-#if ISR_EV_DEBUG_TRANSMIT
-            clear_debug_pin_0();
-            set_debug_pin_0();
-#endif
         } while (IS_SET(sr1, I2C_SR1_TXE));
 
 #if ISR_EV_DEBUG_TRANSMIT
@@ -708,9 +693,6 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
         i2c_init_transmit_cache();
     } else if (IS_SET(I2C_BUS_PERIPH->SR1, I2C_SR1_ADDR)) {
 //------------------------------ ADDR NO TXE -------------------------------------------------
-#if ISR_EV_DEBUG_TRANSMIT
-        set_debug_pin_0();
-#endif
         READ_FLAGS_CLEAR_ADDR;
         if (IS_SET(sr2, I2C_SR2_TRA)) {
 #if ISR_EV_DEBUG_TRANSMIT
@@ -732,10 +714,6 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
 //------------------------------ OTHER -------------------------------------------------
 
         READ_FLAGS;
-
-#if ISR_EV_DEBUG_TRANSMIT
-        set_debug_pin_0();
-#endif
         // region I2C_TRACE #0x03
         I2C_STATUS_TRACK(sr1, sr2, 3);
         // endregion
@@ -753,10 +731,6 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
     // --------------------- TRANSMITING DATA ---------------------
     while (IS_SET(sr1, I2C_SR1_TXE)) {
         i2c_transmit_byte();
-#if ISR_EV_DEBUG_TRANSMIT
-        clear_debug_pin_0();
-        set_debug_pin_0();
-#endif
         i2c_update_transmit_cache();
         READ_FLAGS;
     }
@@ -784,10 +758,6 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
     I2C_EV_COUNT;
 // endregion
 
-#if ISR_EV_DEBUG_TRANSMIT
-    clear_debug_pin_0();
-#endif
-
     UNUSED(sr1);
     UNUSED(sr2);
 }
@@ -796,8 +766,6 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
 
 MAKE_ISR(I2C_BUS_ER_ISR) {
     uint16_t sr1,sr2;
-
-    set_debug_pin_1();
 
     READ_FLAGS;
 // region I2C_TRACE #0xF0
@@ -809,12 +777,6 @@ MAKE_ISR(I2C_BUS_ER_ISR) {
         // 1. Overflow on receive.
         // 2. Underrun on transmit.
         // 3. Acknowledge has failed.
-
-        if (sr1 & I2C_SR1_OVR) {
-            clear_debug_pin_1();
-            set_debug_pin_1();
-        }
-
         i2c_stop();
         CLEAR_FLAGS(I2C_BUS_PERIPH->SR1, (uint16_t)(I2C_SR1_OVR | I2C_SR1_AF));
 
@@ -835,7 +797,6 @@ MAKE_ISR(I2C_BUS_ER_ISR) {
 
 // region I2C_TRACE EV++
     I2C_EV_COUNT;
-    clear_debug_pin_1();
 // endregion
 
     UNUSED(sr1);

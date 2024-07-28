@@ -40,23 +40,23 @@
 #define GPIO_DEV_OUTPUT        0
 
 
-/// \struct tag_GPIO_descr
+/// \struct GPIO_descr
 /// \brief Describes configured GPIO line.
-typedef struct tag_GPIOPin {{
+struct GPIOPin {{
     uint8_t pin_id;         ///< Pin identifier or pin index. Must be in range [0 ... #GPIO_PIN_COUNT). Note, there are constants
                             ///  defined for each pin_id here @ref group_gpio_dev_pin_indexes.
     uint8_t pin_type;       ///< Type of the pin. Must be either #GPIO_DEV_INPUT or #GPIO_DEV_OUTPUT.
     uint8_t default_val;    ///< Default pin value. Is meaningful for outputs only.
     const char* pin_name;   ///< Name of the pin given in JSON configuration file.
-}} GPIOPin;
+}};
 
 /// \struct tag_GPIOConfig
 /// \brief GPIO configuration structure.
-typedef struct tag_GPIOConfig{{
+struct GPIOConfig{{
 	uint8_t device_id;        ///< Configured device ID
 	const char* device_name;  ///< Configured device name.
 	size_t pin_number;
 	const GPIOPin* pins;
-}} GPIOConfig;
+}};
 
 /// @}}

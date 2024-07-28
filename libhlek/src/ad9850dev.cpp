@@ -57,7 +57,7 @@ void AD9850Dev::reset() {
 
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, 0, to);
     if (err != EKIT_OK) {
-        throw EKitException(func_name, err, "Failed to clear reset flag");
+        throw EKitException(func_name, err, "Failed to reset reset flag");
     }
 }
 

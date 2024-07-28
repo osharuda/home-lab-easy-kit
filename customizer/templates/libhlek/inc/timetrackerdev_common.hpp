@@ -30,6 +30,8 @@
 
 #include "ekit_error.hpp"
 
+#include "i2c_proto.h"
+
 {__TIMETRACKERDEV_SHARED_HEADER__}
 
 /// \addtogroup group_timetrackerdev
@@ -37,11 +39,11 @@
 
 /// \struct TimeTrackerDevConfig
 /// \brief TimeTrackerDev configuration structure.
-typedef struct tag_TimeTrackerDevConfig{{
+struct TimeTrackerDevConfig{{
     uint8_t         dev_id;             ///< Device ID for TimeTrackerDev virtual device
     const char*     dev_name;           ///< Name of the TimeTrackerDev virtual device as given in JSON configuration file
     size_t          dev_buffer_len;     ///< Length of the TimeTrackerDev internal buffer
     size_t          tick_freq;          ///< Tick frequency
-}} TimeTrackerDevConfig;
+}};
 
 /// @}}

@@ -20,11 +20,9 @@
 
 
 #pragma pack(push, 1)
-/// \struct tag_RtcData
+/// \struct RtcData
 /// \brief RTC data
-typedef struct tag_RtcData {{
+struct RtcData {{
 	uint32_t rtcval;    ///< RTC value in seconds since epoch.
-}} RtcData;
+}};
 #pragma pack(pop)
-
-typedef volatile RtcData* PRtcData;

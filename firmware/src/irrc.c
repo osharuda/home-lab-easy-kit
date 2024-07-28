@@ -35,7 +35,7 @@
 #include "irrc_conf.h"
 
 
-typedef struct tag_IRRCPrivData{
+struct IRRCPrivData{
     uint64_t signal_start;
     uint64_t last_bit_start;
     struct CircBuffer circ;
@@ -46,11 +46,11 @@ typedef struct tag_IRRCPrivData{
     uint8_t last_ir_address;
     uint8_t last_ir_command;
     uint8_t buffer[IRRC_BUF_LEN];
-} IRRCPrivData, *PIRRCPrivData;
+};
 
 
-IRRCPrivData irrc_data;
-volatile DeviceContext irrc_ctx __attribute__ ((aligned));
+struct IRRCPrivData irrc_data;
+struct DeviceContext irrc_ctx __attribute__ ((aligned));
 
 void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx);
 
@@ -62,10 +62,10 @@ void irrc_recv_init() {
 }
 
 void irrc_init() {
-    memset((void*)&irrc_data, 0, sizeof(IRRCPrivData));
-    circbuf_init(&irrc_data.circ,irrc_data.buffer,IRRC_BUF_LEN, 0);
+    memset((void*)&irrc_data, 0, sizeof(struct IRRCPrivData));
+    circbuf_init(&irrc_data.circ,irrc_data.buffer,IRRC_BUF_LEN);
 
-	memset((void*)&irrc_ctx, 0, sizeof(DeviceContext));
+	memset((void*)&irrc_ctx, 0, sizeof(struct DeviceContext));
 	irrc_ctx.device_id = IRRC_ADDR;
 	irrc_ctx.buffer = 0;
 	irrc_ctx.circ_buffer = &(irrc_data.circ);
@@ -88,18 +88,18 @@ void irrc_init() {
     irrc_recv_init();
 }
 
-void irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	UNUSED(data);
 	UNUSED(length);
 	UNUSED(cmd_byte);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
-void irrc_readdone(uint8_t device_id, uint16_t length) {
+uint8_t irrc_readdone(uint8_t device_id, uint16_t length) {
 	UNUSED(device_id);
 	circbuf_stop_read(&irrc_data.circ, length);
 	circbuf_clear_ovf(&irrc_data.circ);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx) {

@@ -102,7 +102,7 @@ typedef void (*ON_POLLING)(uint8_t device_id);
 
 /// \struct tag_DeviceContext
 /// \brief DeviceContext is used by communication in order to work with virtual device.
-typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
+struct __attribute__ ((aligned (8))) DeviceContext {
     uint64_t polling_period;    ///< Specify polling period for on_polling callback (in micro seconds)
 
     uint64_t next_pooling_ev;	///< Used by communication part to calculate when on_polling() should be called for the next time
@@ -118,13 +118,14 @@ typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
                                         ///< It is called by communication periodically when no communication happens.
                                         ///< Virtual device may use it to do some simple tasks. May be zero if not required.
 
-    volatile uint8_t* buffer;           ///< Device linear buffer. May be zero if linear buffer is not used. If set to non-zero #circ_buffer must be zero
+    uint8_t* buffer;                    ///< Device linear buffer. May be zero if linear buffer is not used. If set to non-zero #circ_buffer must be zero
 
-    volatile struct CircBuffer* circ_buffer;   ///< Specify circular buffer. If set to non-zero #buffer must be zero
+    struct CircBuffer* circ_buffer;     ///< Specify circular buffer. If set to non-zero #buffer must be zero
 
     uint16_t dev_index;			        ///< This field is used for non-exclusive devices to store device index.
 
-    uint16_t bytes_available;           ///< Specify amount of bytes available in virtual device buffer for read. May be zero.
+    uint16_t bytes_available;           ///< Specify amount of bytes available in liniar virtual device buffer for read. May be zero.
+                                        ///< Ignored in the case of cicular buffer.
 
     uint8_t device_id;                  ///< Device identifier, used by software to specify destination virtual device
 
@@ -132,19 +133,11 @@ typedef struct __attribute__ ((aligned (8))) tag_DeviceContext {
 
     uint8_t i2c_circular_buffer;        ///< 0 if linear buffer, 1 if circular buffer. Note these two values must be identical to the
                                         ///< i2c bus finite state machine values (
-} DeviceContext;
-
-typedef volatile DeviceContext *PDeviceContext;
+};
 
 /// \brief Virtual device calls this function in order to register device for communication with software
 /// \param dev_ctx #tag_DeviceContext structure that describes the virtual device
-void comm_register_device(PDeviceContext dev_ctx);
-
-/*
-/// \brief Virtual device calls this function inside tag_DeviceContext#on_read_done to instruct communication that virtual device confirmed read
-/// \param status - value to be set as communication status (read by software with CommResponseHeader#comm_status)
-void comm_done(uint8_t status);
-*/
+void comm_register_device(struct DeviceContext* dev_ctx);
 
 /// \brief This command takes command byte and returns virtual device index for non-exclusive devices
 /// \details Non-exclusive device may call #comm_register_device several times for several indexed device.
@@ -152,7 +145,7 @@ void comm_done(uint8_t status);
 /// \details index of the device is read by virtual device code from tag_DeviceContext#dev_index
 /// \param cmd_byte - command byte (CommCommandHeader#command_byte) obtained through the communication from software
 /// \returns #tag_DeviceContext for that specific indexed device
-PDeviceContext comm_dev_context(uint8_t cmd_byte);
+struct DeviceContext* comm_dev_context(uint8_t cmd_byte);
 /// @}
 
 /// \defgroup group_communication_i2c_impl I2C bus
@@ -208,11 +201,6 @@ void i2c_check_command(void);
 /// \brief This function is called in #main() infinite loop to check if tag_DeviceContext#on_polling should be called for
 ///        some device.
 void i2c_pool_devices(void);
-
-
-
-
-
 /// @}
 
 /// @}

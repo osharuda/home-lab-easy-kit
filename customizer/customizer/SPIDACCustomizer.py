@@ -204,7 +204,7 @@ class SPIDACCustomizer(DeviceCustomizer):
             samples_number = dev_config["samples_number"]
             channels_descr, channels_count, channels_by_index = get_channels_definition(dev_name, dev_config["channels"])
             channels_descr_varname = f"g_{dev_name.lower()}_channel_descriptors"
-            sw_channels_descriptors.append(f"const SPIDACChannelDescriptor {channels_descr_varname}[] = {{ {channels_descr} }};")
+            sw_channels_descriptors.append(f"const struct SPIDACChannelDescriptor {channels_descr_varname}[] = {{ {channels_descr} }};")
 
             if samples_number <= 0:
                 raise RuntimeError(
@@ -263,13 +263,13 @@ class SPIDACCustomizer(DeviceCustomizer):
             init_frames_default_value_initialization = ", ".join(init_frames_buffer)
             init_frames_default_value_name = "g_spidac_{0}_default_value".format(str(index))
             fw_device_default_value_buffers.append(
-                f"volatile uint8_t {init_frames_default_value_name}[] = {{ {init_frames_default_value_initialization} }};\\")
+                f"uint8_t {init_frames_default_value_name}[] = {{ {init_frames_default_value_initialization} }};\\")
 
             self.check_requirements(spi_confg_dev, dev_requires, "dev_{0}".format(dev_name), exclude_resources)
 
             fw_buffer_name = "g_spidac_{0}_buffer".format(str(index))
             fw_device_buffers.append(
-                f"volatile uint8_t {fw_buffer_name}[{buffer_size}+sizeof(SPIDACStatus)] __attribute__ ((aligned));\\")
+                f"uint8_t {fw_buffer_name}[{buffer_size}+sizeof(struct SPIDACStatus)] __attribute__ ((aligned));\\")
             fw_device_descriptors.append(f"""{{\
     {{0}},                      /* Device context */\\
     {{ {{0}}, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }},  /* Private data structure */\\
@@ -285,7 +285,7 @@ class SPIDACCustomizer(DeviceCustomizer):
     {tx_dma},                   /* DMA controller to be used */\\
     {dma_tx_it},                /* TX DMA interrupt flag */\\
     (1 << {ld_pin}),            /* LD pin bit mask */\\
-    {buffer_size} + sizeof(SPIDACStatus), /* Buffer size (status and samples) */\\
+    {buffer_size} + sizeof(struct SPIDACStatus), /* Buffer size (status and samples) */\\
     {tx_dma_irqn},              /* TX DMA IRQn value */\\
     {timer_irqn},               /* TIMER IRQn value */\\
     {baud_rate_control},        /* Baud rate control value for SPI */\\
@@ -314,9 +314,9 @@ class SPIDACCustomizer(DeviceCustomizer):
     {channels_descr_varname}    /* Channels description */}}""")
 
             sw_config_name = "spidac_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const SPIDACConfig* {sw_config_name};")
+            sw_config_declarations.append(f"extern const struct SPIDACConfig* {sw_config_name};")
             sw_configs.append(
-                f"const SPIDACConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+                f"const struct SPIDACConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 

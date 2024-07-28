@@ -89,12 +89,12 @@
 /// \brief Defines number of lines to be described for stepper motor drive
 #define STEP_MOTOR_LINE_COUNT         (STEP_MOTOR_LINE_CCWENDSTOP+1)
 
-/// \struct tag_StepMotorLine
+/// \struct StepMotorLine
 /// \brief Describes GPIO line required to communicate with step motor driver
-typedef struct tag_StepMotorLine {
+struct StepMotorLine {
         GPIO_TypeDef* port;     ///< port used for this gpio line (see GPIO_TypeDef in CMSIS). 0 indicates unused line.
         uint8_t      pin;       ///< pin number used for this gpio line (see GPIO_TypeDef in CMSIS).
-    } StepMotorLine, *PStepMotorLine;
+};
 /// @}}
 /// @}}
 
@@ -130,11 +130,10 @@ typedef struct tag_StepMotorLine {
 /// \struct tag_StepMotorDevPrivData
 /// \brief This structure is being used by firmware to store stepper motor device specific data (for all motors, but
 ///        for single device).
-typedef struct __attribute__ ((aligned)) tag_StepMotorDevPrivData {
+struct __attribute__ ((aligned)) StepMotorDevPrivData {
         volatile uint64_t last_event_timestamp __attribute__ ((aligned)); ///< Last stepper motor device timer timestamp
-    } StepMotorDevPrivData;
+};
 
-typedef volatile StepMotorDevPrivData* PStepMotorDevPrivData;
 
 #define STEP_MOTOR_CMDSTATUS_INIT       (uint8_t)(0)
 #define STEP_MOTOR_CMDSTATUS_WAIT       (uint8_t)(1)
@@ -142,9 +141,9 @@ typedef volatile StepMotorDevPrivData* PStepMotorDevPrivData;
 #define STEP_MOTOR_CMDSTATUS_STEPWAIT   (uint8_t)(3)
 #define STEP_MOTOR_CMDSTATUS_DONE       (uint8_t)(0xFF)
 
-/// \struct tag_StepMotorCmd
+/// \struct StepMotorCmd
 /// \brief This structure is being used by firmware to store a command sent by software to specific stepper motor
-typedef __attribute__ ((aligned (8))) struct tag_StepMotorCmd {
+struct __attribute__ ((aligned (8))) StepMotorCmd {
         uint64_t param; ///< Parameter passed with the command
 
         uint64_t wait;  ///< Period of time to wait. Once wait is elapsed command (or other command) execution may be
@@ -154,11 +153,11 @@ typedef __attribute__ ((aligned (8))) struct tag_StepMotorCmd {
 
         uint8_t state;  ///< Value indicating state of the command execution. This value is specific to each stepper motor
         ///  command handler.
-    } StepMotorCmd, *PStepMotorCmd;
+};
 
-/// \struct tag_StepMotorContext
+/// \struct StepMotorContext
 /// \brief This structure is being used by firmware to store a motor specific data
-typedef __attribute__ ((aligned (8))) struct tag_StepMotorContext {
+struct __attribute__ ((aligned (8))) StepMotorContext {
         volatile uint64_t                late_us;                   ///< 64-bit value that specifies number of microseconds
         ///  command execution is late. This value is used to
         ///  correct further timer events.
@@ -184,14 +183,14 @@ typedef __attribute__ ((aligned (8))) struct tag_StepMotorContext {
         ///  #STEP_MOTOR_CW_ENDSTOP_TRIGGERED or
         ///  #STEP_MOTOR_CCW_ENDSTOP_TRIGGERED.
 
-        __attribute__ ((aligned (8))) volatile StepMotorCmd current_cmd; ///< #tag_StepMotorCmd structure that describes currently
+        struct __attribute__ ((aligned (8))) StepMotorCmd current_cmd; ///< #tag_StepMotorCmd structure that describes currently
         ///  executed command
 
-        volatile struct CircBuffer       circ_buffer;               ///< Circular buffer to store commands. Note actual
+        struct CircBuffer       circ_buffer;               ///< Circular buffer to store commands. Note actual
         ///  buffer memory pointer is stored in
         ///  tag_StepMotorDescriptor#buffer. This is just
         ///  circular buffer control structure.
-    } StepMotorContext, *PStepMotorContext;
+};
 
 /// @}}
 
@@ -210,7 +209,7 @@ typedef __attribute__ ((aligned (8))) struct tag_StepMotorContext {
 
 /// \struct tag_StepMotorDescriptor
 /// \brief Describes stepper motor default configuration
-typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {
+struct __attribute__ ((aligned)) StepMotorDescriptor {
     uint32_t      config_flags;                 ///< flags used to describe default step motor behaviour. Corresponds to tag_StepMotorStatus#motor_state. See @ref group_step_motor_dev_configuration
     uint16_t      buffer_size;                  ///< stepper motor command buffer size in bytes.
     uint64_t      default_speed;                ///< stepper motor default speed. tag_StepMotorDescriptor#default_speed is a number of microseconds between step pulses. It doesn't take into account microstepping.
@@ -218,11 +217,11 @@ typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {
     int64_t       cw_sft_limit;                 ///< Default software limit for stepper motor position during CW moves. Ignored if hardware end-stop is used
     int64_t       ccw_sft_limit;                ///< Default software limit for stepper motor position during CCW moves. Ignored if hardware end-stop is used
     uint8_t*      buffer;                       ///< Stepper motor buffer (available in firmware part only)
-    StepMotorLine lines[STEP_MOTOR_LINE_COUNT]; ///< Descriptor of lines connected to the stepper motor driver (available in firmware part only). See @ref group_step_motor_dev_motor_lines
+    struct StepMotorLine lines[STEP_MOTOR_LINE_COUNT]; ///< Descriptor of lines connected to the stepper motor driver (available in firmware part only). See @ref group_step_motor_dev_motor_lines
     uint16_t      fault_exticr;                 ///< Fault EXTI control register value; see AFIO_EXTICRXXX constants in CMSIS. (available in firmware part only)
     uint16_t      cw_endstop_exticr;            ///< Hardware CW endstop EXTI control register value; see AFIO_EXTICRXXX constants in CMSIS. (available in firmware part only)
     uint16_t      ccw_endstop_exticr;           ///< Hardware CW endstop EXTI control register value; see AFIO_EXTICRXXX constants in CMSIS. (available in firmware part only)
-} StepMotorDescriptor;
+};
 /// @}
 
 /// \defgroup group_step_motor_dev_device_description Device descriptor
@@ -236,23 +235,21 @@ typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {
 /// Some fields are used in runtime, some fields should remain constant. Be very careful changing them.
 ///
 
-/// \struct tag_StepMotorDevice
+/// \struct StepMotorDevice
 /// \brief This structure is being used by firmware and software as storage of all information needed.
 /// \note This structure describes different field set for firmware and software. Some fields are common, some unique to firmware or software.
-typedef struct __attribute__ ((aligned)) tag_StepMotorDevice {
-    volatile DeviceContext         dev_ctx   __attribute__ ((aligned)); ///< Device context structure (available in firmware part only)
-    volatile StepMotorDevPrivData  priv_data __attribute__ ((aligned)); ///< Private data unique for each stepper motor device.  (available in firmware part only).
+struct __attribute__ ((aligned)) StepMotorDevice {
+    struct   DeviceContext         dev_ctx   __attribute__ ((aligned)); ///< Device context structure (available in firmware part only)
+    struct   StepMotorDevPrivData  priv_data __attribute__ ((aligned)); ///< Private data unique for each stepper motor device.  (available in firmware part only).
     TIM_TypeDef*                   timer;         ///< Timer being used by device (available in firmware part only). Do not change this field.
-    volatile PStepMotorContext     motor_context; ///< Array of the #tag_StepMotorContext structures, one per each stepper motor controlled by the device.  (available in firmware part only).
-    volatile PStepMotorDevStatus   status;        ///< Pointer to the #tag_StepMotorDevStatus. It is used as bufer to read information by software. Firmware code should make changes to this structure with interrupts disabled.  (available in firmware part only)
+    struct   StepMotorContext*     motor_context; ///< Array of the #tag_StepMotorContext structures, one per each stepper motor controlled by the device.  (available in firmware part only).
+    struct   StepMotorDevStatus*   status;        ///< Pointer to the #tag_StepMotorDevStatus. It is used as bufer to read information by software. Firmware code should make changes to this structure with interrupts disabled.  (available in firmware part only)
     uint16_t                       status_size;   ///< Size of the tag_StepMotorDevice#status structure in bytes. (available in firmware part only). Do not change this field.
     IRQn_Type                      timer_irqn;    ///< Timer interrupt number being used by device (available in firmware part only). Do not change this field.
-    volatile StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
+    struct   StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
     uint8_t                        motor_count;   ///< Number of stepper motors controled by this device. Do not change this field.
     uint8_t                        dev_id;        ///< Device ID for the stepper motor device. Do not change this field.
-} StepMotorDevice;
-
-typedef volatile StepMotorDevice* PStepMotorDevice;
+};
 
 extern const StepMotorMicrostepTables g_step_motor_microstep_tables;
 
@@ -266,43 +263,43 @@ void step_motor_init(void);
 ///        than IRQ handler context. This parameter is used to detect when sequence of timer events is started. For the very
 ///        first time this function is being called from #step_motor_dev_execute() function. All subsequent calls are made in
 ///        IRQ handler context.
-void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t is_irq_handler);
+void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t is_irq_handler);
 
 /// \brief Starts execution of stepper motor device commands
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
-void step_motor_dev_start(volatile PStepMotorDevice dev);
+void step_motor_dev_start(struct StepMotorDevice* dev);
 
 /// \brief Stops execution of stepper motor device commands
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \details this function doest full reset, for details see #step_motor_dev_reset()
-void step_motor_dev_stop(volatile PStepMotorDevice dev);
+void step_motor_dev_stop(struct StepMotorDevice* dev);
 
 /// \brief Reset stepper motor device
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param full_reset - non-zero instructs to stop and clear all command buffers and switch stepper motors to their
 ///        default state (full reset). Zero instructs to switch motors into default state, but all commands in buffers are
 ///        intact, current state is also preserved. (partial reset). In other way partial reset behaves as pause.
-void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset);
+void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset);
 
 /// \brief Helper function that wraps initialization of the stepper motor driver line.
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param linenum - line index (see @ref group_step_motor_dev_motor_lines)
-void step_motor_init_motor_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum);
+void step_motor_init_motor_line(struct StepMotorDescriptor* mdescr, uint8_t linenum);
 
 /// \brief Initialize step motor GPIO lines and external interruppts to default state.
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
-void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev);
+void step_motor_init_gpio_and_exti(struct StepMotorDevice* dev);
 
 /// \brief Set motor GPIO lines to default state (including hardware end-stops)
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - index of the motor to initialize
-void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex);
+void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex);
 
 /// \brief Helper function that sets stepper motor line to specified value
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param linenum - line index (see @ref group_step_motor_dev_motor_lines)
 /// \param value - value to set (0 or non-zero)
-void step_motor_set_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value);
+void step_motor_set_line(struct StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value);
 
 /// \brief Helper function that sets stepper motor device tag_StepMotorDevStatus#status
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
@@ -310,16 +307,16 @@ void step_motor_set_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum, 
 /// \param flags - values to be set
 /// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
 ///          use this function when interrupts are disabled.
-void step_motor_set_dev_status(volatile PStepMotorDevice dev, uint8_t mask, uint8_t flags);
+void step_motor_set_dev_status(struct StepMotorDevice* dev, uint8_t mask, uint8_t flags);
 
 /// \brief Helper function that updates tag_StepMotorContext#pos_change_by_step
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param mstatus - pointer to the corresponding stepper motor #tag_StepMotorStatus structure
 /// \param mcontext - pointer to the corresponding stepper motor #tag_StepMotorContext structure
 /// \return 0 if success, non-zero indicates an error due to incorrect micro stepping value
-uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdescr,
-                                             volatile PStepMotorStatus mstatus,
-                                             volatile PStepMotorContext mcontext);
+uint8_t step_motor_update_pos_change_by_step(struct StepMotorDescriptor* mdescr,
+                                             struct StepMotorStatus* mstatus,
+                                             struct StepMotorContext* mcontext);
 
 /// \brief Helper function that suspends stepper motor and switch it's #STEP_MOTOR_LINE_ENABLE and #STEP_MOTOR_LINE_SLEEP
 ///        lines into their default state
@@ -329,16 +326,16 @@ uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdesc
 /// \param error - non-zero if motor is suspending because of error, otherwise zero
 /// \details This function is called in context of #step_motor_timer_event(), it may become inline in future
 /// \details May suspend other motors if stepper motor is configured to affect other motors.
-void step_motor_suspend_motor(volatile PStepMotorDevice dev,
-                              volatile StepMotorDescriptor* mdescr,
-                              volatile PStepMotorStatus mstatus,
+void step_motor_suspend_motor(struct StepMotorDevice* dev,
+                              struct StepMotorDescriptor* mdescr,
+                              struct StepMotorStatus* mstatus,
                               uint8_t error);
 
 /// \brief Helper function that resumes stepper motor and switch it's #STEP_MOTOR_LINE_ENABLE and #STEP_MOTOR_LINE_SLEEP
 ///        lines into their preserved state
 /// \param mdescr - pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor configuration
 /// \param mstatus - pointer to the corresponding stepper motor #tag_StepMotorStatus structure
-void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus);
+void step_motor_resume_motor(struct StepMotorDescriptor* mdescr, struct StepMotorStatus* mstatus);
 
 /// \brief Helper function that implements similar logic for handling hardware end-stops, software position limits and
 ///        faults.
@@ -351,13 +348,14 @@ void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PSte
 ///        Must be one of the following: #STEP_MOTOR_CONFIG_CW_ENDSTOP_ALL, #STEP_MOTOR_CONFIG_CCW_ENDSTOP_ALL,
 ///        #STEP_MOTOR_CONFIG_FAILURE_ALL
 /// \return non-zero if motor (or motors) was suspended, otherwise zero
-uint8_t step_motor_handle_alarm(volatile PStepMotorDevice dev, volatile PStepMotorStatus mstatus, uint32_t ignore_flag, uint32_t all_flag);
+uint8_t step_motor_handle_alarm(struct StepMotorDevice* dev, struct StepMotorStatus* mstatus, uint32_t ignore_flag, uint32_t all_flag);
 
 /// \brief #ON_COMMAND callback for all stepper motor devices
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief Prepares motor for the movement
 /// \param dev_index - stepper motor device index
@@ -365,7 +363,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 /// \param cmd - command this motor should be prepared for (must be either #STEP_MOTOR_MOVE or #STEP_MOTOR_MOVE_NON_STOP)
 /// \return non-zero if command should stop's it's execution, otherwise zero
 /// \details Preparation includes configuration of hardware end-stops or software limits.
-uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, StepMotorCmd* cmd);
+uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Stepper motor device fault handler to be called by @ref group_exti_hub_group
 /// \param clock - timestamp corresponding the moment when IRQ handler was called
@@ -390,21 +388,21 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 ///        stepper motor device
 /// \param dev_index - device index
 /// \return pointer to #tag_StepMotorDevice structure
-#define MOTOR_DEVICE(dev_index)     ((volatile PStepMotorDevice)(g_step_motor_devs[(dev_index)]))
+#define MOTOR_DEVICE(dev_index)     ((struct StepMotorDevice*)(g_step_motor_devs[(dev_index)]))
 
 /// \def MOTOR_DEV_STATUS
 /// \brief This macro returns pointer to #tag_StepMotorDevStatus structure corresponding to selected stepper motor
 ///        device status
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \return pointer to #tag_StepMotorDevStatus structure
-#define MOTOR_DEV_STATUS(dev)       ((volatile PStepMotorDevStatus)((dev)->status))
+#define MOTOR_DEV_STATUS(dev)       ((struct StepMotorDevStatus*)((dev)->status))
 
 /// \def MOTOR_DEV_PRIV_DATA
 /// \brief This macro returns pointer to #tag_StepMotorDevPrivData structure corresponding to selected stepper motor
 ///        device private data
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \return pointer to #tag_StepMotorDevPrivData structure
-#define MOTOR_DEV_PRIV_DATA(dev)    ((volatile PStepMotorDevPrivData)(&((dev)->priv_data)))
+#define MOTOR_DEV_PRIV_DATA(dev)    ((struct StepMotorDevPrivData*)(&((dev)->priv_data)))
 
 /// \def MOTOR_DESCR
 /// \brief This macro returns pointer to #tag_StepMotorDescriptor structure corresponding to selected stepper motor
@@ -412,21 +410,21 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #tag_StepMotorDescriptor structure
-#define MOTOR_DESCR(dev, mindex)    ((volatile StepMotorDescriptor*)(*((dev)->motor_descriptor + (mindex))))
+#define MOTOR_DESCR(dev, mindex)    ((struct StepMotorDescriptor*)(*((dev)->motor_descriptor + (mindex))))
 
 /// \def MOTOR_STATUS
 /// \brief This macro returns pointer to #tag_StepMotorStatus structure corresponding to selected stepper motor status
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #tag_StepMotorStatus structure
-#define MOTOR_STATUS(dev, mindex)   ((volatile PStepMotorStatus)((dev)->status->mstatus + (mindex)))
+#define MOTOR_STATUS(dev, mindex)   ((struct StepMotorStatus*)((dev)->status->mstatus + (mindex)))
 
 /// \def MOTOR_CONTEXT
 /// \brief This macro returns pointer to #tag_StepMotorContext structure corresponding to selected stepper motor context
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #tag_StepMotorContext structure
-#define MOTOR_CONTEXT(dev, mindex)  ((volatile PStepMotorContext)((dev)->motor_context + (mindex)))
+#define MOTOR_CONTEXT(dev, mindex)  ((struct StepMotorContext*)((dev)->motor_context + (mindex)))
 
 /// \def MOTOR_CMD
 /// \brief This macro returns pointer to #tag_StepMotorCmd structure corresponding to selected stepper motor current
@@ -434,7 +432,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 /// \param dev - pointer to #tag_StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #tag_StepMotorCmd structure
-#define MOTOR_CMD(dev, mindex)      ((volatile PStepMotorCmd)(&((dev)->motor_context[(mindex)].current_cmd)))
+#define MOTOR_CMD(dev, mindex)      ((struct StepMotorCmd*)(&((dev)->motor_context[(mindex)].current_cmd)))
 
 /// \def STEP_MOTOR_EXTI_PARAM
 /// \brief This macro is used to encode device index and motor index into 32 bit value to be used as context for

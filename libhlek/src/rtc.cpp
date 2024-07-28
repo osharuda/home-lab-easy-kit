@@ -22,7 +22,7 @@
 
 #include <time.h>
 #include <cstdint>
-#include "rtc_common.hpp"
+//#include "rtc_common.hpp"
 #include "rtc.hpp"
 #include "ekit_error.hpp"
 
@@ -33,7 +33,7 @@ RTCDev::~RTCDev() {}
 uint32_t RTCDev::now_priv(EKitTimeout& to) {
 	static const char* const func_name = "RTCDev::now_priv";
 	EKIT_ERROR err;
-	RtcData data;
+	struct RtcData data;
 
 	// write nothing to update rtc value in MCU
 	err = bus->write(nullptr, 0, to);
@@ -80,7 +80,7 @@ std::time_t RTCDev::sync_rtc() {
 	static const char* const func_name = "RTCDev::sync_rtc";
 	EKIT_ERROR err;
 	std::time_t val = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());	
-	RtcData data;
+	struct RtcData data;
 	data.rtcval = static_cast<uint32_t>(val);
 
     EKitTimeout to(get_timeout());

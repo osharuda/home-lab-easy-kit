@@ -34,11 +34,11 @@
 
 #pragma pack(push, 1)
 
-/// \struct tag_AD9850Command
+/// \struct AD9850Command
 /// \brief Structure that describes status of the AD9850Dev
 /// \note Actual phase is 2*Pi / AD9850Command#phase
 /// \note Actual frequency is F_clk * frequency_word / 4294967295.
-typedef struct tag_AD9850Command {{
+struct AD9850Command {{
     union {{
         struct {{
             /// \brief Phase to set. Note that phase may be set with accuracy of 11.25 degree
@@ -70,8 +70,7 @@ typedef struct tag_AD9850Command {{
     /// \brief Bits 7-0 of the frequency 32-bit word.
     uint8_t freq_b7_b0;
 
-}} AD9850Command;
-typedef volatile AD9850Command* PAD9850Command;
+}};
 
 #pragma pack(pop)
 /// @}}

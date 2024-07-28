@@ -28,7 +28,7 @@
 #include "rtc.h"
 #include "rtc_conf.h"
 
-volatile DeviceContext rtc_context __attribute__ ((aligned));
+struct DeviceContext rtc_context __attribute__ ((aligned));
 uint32_t rtc_data = 0;
 
 void set_rtc_val(uint32_t ts) {
@@ -42,9 +42,9 @@ void set_rtc_val(uint32_t ts) {
 	RTC_WaitForLastTask();
 }
 
-void rtc_on_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t rtc_on_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	UNUSED(cmd_byte);
-	uint8_t status = 0;
+	uint8_t status = COMM_STATUS_OK;
 	if (length==sizeof(rtc_data)) {
 		// set
 		uint32_t ts = *((uint32_t*)data);
@@ -56,7 +56,7 @@ void rtc_on_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
 	rtc_data = RTC_GetCounter();
 
-    comm_done(status);
+    return status;
 }
 
 void rtc_init()

@@ -55,7 +55,7 @@
 /// \brief Prescaller value
 #define SPWM_PRESCALE_VALUE     {__SPWM_PRESCALE_VALUE__}
 
-typedef struct tag_SPWM_GPIO_DESCRIPTOR {{
+struct SPWM_GPIO_DESCRIPTOR {{
     GPIO_TypeDef*    port;
 	uint16_t         mask;
 	uint8_t          n_bits;
@@ -63,7 +63,7 @@ typedef struct tag_SPWM_GPIO_DESCRIPTOR {{
 	// if bit is set it is open_drain_bits it is GPIO_Mode_Out_OD, otherwise push pull pin GPIO_Mode_Out_PP
 	uint16_t         open_drain_bits;
 	uint16_t		 def_vals;
-}} SPWM_GPIO_DESCRIPTOR;
+}};
 
 #define SPWM_GPIO_DESCRIPTION   {{ {__SPWM_GPIO_DESCRIPTION__} }}
 #define SPWM_TIMER              {__SPWM_TIMER__}

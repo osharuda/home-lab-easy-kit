@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__CAN_CONFIGURATION_ARRAY_NAME__}_number = {__CAN_DEVICE_COUNT__};
-    extern const CANConfig {__CAN_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct CANConfig {__CAN_CONFIGURATION_ARRAY_NAME__}[];
 
     {__CAN_CONFIGURATION_DECLARATIONS__}
 }}

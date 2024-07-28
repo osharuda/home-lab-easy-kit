@@ -41,9 +41,9 @@
 /// used and this structure is not the same for software and firmware.
 ///
 
-/// \struct tag_StepMotorDescriptor
+/// \struct StepMotorDescriptor
 /// \brief Describes stepper motor default configuration
-typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {{
+struct __attribute__ ((aligned)) StepMotorDescriptor {{
     uint32_t      config_flags;                 ///< flags used to describe default step motor behaviour. Corresponds to tag_StepMotorStatus#motor_state. See @ref group_step_motor_dev_configuration
     uint16_t      buffer_size;                  ///< stepper motor command buffer size in bytes.
     uint64_t      default_speed;                ///< stepper motor default speed. tag_StepMotorDescriptor#default_speed is a number of microseconds between step pulses. It doesn't take into account microstepping.
@@ -52,7 +52,7 @@ typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {{
     int64_t       ccw_sft_limit;                ///< Default software limit for stepper motor position during CCW moves. Ignored if hardware end-stop is used
     const char*   motor_name;                       ///< Name of the motor given in JSON configuration file. (available in software part only)
     uint16_t      steps_per_revolution;             ///< Number of steps per revolution for this stepper motor. (available in software part only)
-}} StepMotorDescriptor;
+}};
 /// @}}
 
 
@@ -67,13 +67,13 @@ typedef struct __attribute__ ((aligned)) tag_StepMotorDescriptor {{
 /// Some fields are used in runtime, some fields should remain constant. Be very careful changing them.
 ///
 
-/// \struct tag_StepMotorConfig
+/// \struct StepMotorConfig
 /// \brief This structure is being used by firmware and software as storage of all information needed.
-typedef struct __attribute__ ((aligned)) tag_StepMotorConfig {{
+struct __attribute__ ((aligned)) StepMotorConfig {{
 	const char*	     dev_name;      ///< Stepper motor device name. (available in firmware part only). Do not change this field.
-    const StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
+    const struct StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #tag_StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
     uint8_t          motor_count;   ///< Number of stepper motors controled by this device. Do not change this field.
     uint8_t          dev_id;        ///< Device ID for the stepper motor device. Do not change this field.
-}} StepMotorConfig;
+}};
 /// @}}
 

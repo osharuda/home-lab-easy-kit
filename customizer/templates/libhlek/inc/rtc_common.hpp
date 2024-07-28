@@ -31,11 +31,11 @@
 
 {__RTC_SHARED_HEADER__}
 
-/// \struct tag_RTCConfig
+/// \struct RTCConfig
 /// \brief RTC configuration structure.
-typedef struct tag_RTCConfig{{
+struct RTCConfig{{
 	uint8_t device_id;        ///< Configured device ID
 	const char* device_name;  ///< Configured device name.
-}} RTCConfig;
+}};
 
 /// @}}

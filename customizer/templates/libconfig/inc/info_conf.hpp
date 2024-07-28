@@ -40,6 +40,6 @@ namespace {__NAMESPACE_NAME__} {{
     constexpr uint8_t INFO_I2C_ADDRESS = {__INFO_I2C_ADDRESS__};
 
     /// \brief Info configuration
-    extern const InfoConfig* info_config_ptr;
+    extern const struct InfoConfig* info_config_ptr;
 }}
 /// @}}

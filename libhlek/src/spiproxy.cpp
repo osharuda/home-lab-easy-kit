@@ -24,7 +24,7 @@
 #include "ekit_firmware.hpp"
 #include <cstring>
 
-SPIProxyDev::SPIProxyDev(std::shared_ptr<EKitBus>& ebus, const SPIProxyConfig* cfg) :
+SPIProxyDev::SPIProxyDev(std::shared_ptr<EKitBus>& ebus, const struct SPIProxyConfig* cfg) :
     EKitBus(EKitBusType::BUS_SPI),
     super(ebus, cfg->dev_id, cfg->dev_name),
     config(cfg) {
@@ -66,7 +66,7 @@ EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) {
     bool expired = false;
 
     data.resize(sizeof(SPIProxyStatus));
-    PSPIProxyStatus status = (PSPIProxyStatus)data.data();
+    struct SPIProxyStatus* status = (struct SPIProxyStatus*)data.data();
 
     // Lock bus
     BusLocker blocker(bus, get_addr(), to);
@@ -83,7 +83,7 @@ EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) {
     }
 
     // Copy to buffer
-    status = (PSPIProxyStatus)data.data();
+    status = (struct SPIProxyStatus*)data.data();
     std::memcpy(ptr, data.data()+sizeof(SPIProxyStatus), len);
 
     if (status->rx_ovf) {
@@ -104,8 +104,8 @@ EKIT_ERROR SPIProxyDev::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) 
     bool expired = false;
     size_t data_len;
 
-    data.resize(sizeof(SPIProxyStatus));
-    PSPIProxyStatus status;
+    data.resize(sizeof(struct SPIProxyStatus));
+    struct SPIProxyStatus* status;
 
     // Lock bus
     BusLocker blocker(bus, get_addr(), to);
@@ -132,7 +132,7 @@ EKIT_ERROR SPIProxyDev::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) 
     }
 
     // Copy to buffer
-    status = (PSPIProxyStatus)data.data();
+    status = (struct SPIProxyStatus*)data.data();
     buffer.resize(data_len);
     std::memcpy(buffer.data(), data.data()+sizeof(SPIProxyStatus), data_len);
 
@@ -167,7 +167,7 @@ EKIT_ERROR SPIProxyDev::spi_proxy_wait(EKitTimeout& to) {
     size_t recv_buffer_size = config->dev_buffer_len + sizeof(SPIProxyStatus);
     CHECK_SAFE_MUTEX_LOCKED(bus_lock);
     assert(recv_buffer.size()==recv_buffer_size);
-    PSPIProxyStatus status = (PSPIProxyStatus)recv_buffer.data();
+    struct SPIProxyStatus* status = (struct SPIProxyStatus*)recv_buffer.data();
 
     do {
         err = bus->read((void *) status, sizeof(SPIProxyStatus), to);

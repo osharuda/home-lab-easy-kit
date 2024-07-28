@@ -58,7 +58,7 @@ extern const uint16_t g_step_motor_cmd_length_map[];
 /// \param dev - device this command was sent to
 /// \param mindex - target motor index this command was sent to
 /// \param cmd - command is being executed
-void step_motor_handle_error(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+void step_motor_handle_error(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \def STE_MOTOR_CMD_RESULT_OK
 /// \brief Defines successful error code to be returned from #PFN_STEP_MOTOR_CMD_FUNC
@@ -74,7 +74,7 @@ void step_motor_handle_error(volatile PStepMotorDevice dev, uint8_t mindex, vola
 /// \param mindex - motor index
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
-typedef uint8_t (*PFN_STEP_MOTOR_CMD_FUNC)(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+typedef uint8_t (*PFN_STEP_MOTOR_CMD_FUNC)(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Initializes g_step_motor_cmd_map command map. This map is used to access commands by index.
 void step_motor_init_cmd_map(void);
@@ -85,7 +85,7 @@ void step_motor_init_cmd_map(void);
 /// \param mcontext - pointer to the corresponding stepper motor #tag_StepMotorContext structure
 /// \return corrected wait value
 /// \details correction calculation is based on StepMotorContext::late_us value
-uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, volatile PStepMotorContext mcontext);
+uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, struct StepMotorContext* mcontext);
 
 /// \brief Invalid command handler. It is invoked in the case invalid command is sent by a software
 /// \param dev - device this command was sent to
@@ -93,7 +93,7 @@ uint64_t step_motor_correct_timing(uint64_t wait, uint8_t corr_factor, volatile 
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
-uint8_t step_motor_invalid_cmd(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_invalid_cmd(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Enable command handler. This command is sent by a software in order to enable step motor driver
 /// \param dev - device this command was sent to
@@ -101,7 +101,7 @@ uint8_t step_motor_invalid_cmd(volatile PStepMotorDevice dev, uint8_t mindex, vo
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
-uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_enable(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Sleep command handler. This command is sent by a software in order to put step motor driver into sleep state
 /// \param dev - device this command was sent to
@@ -109,7 +109,7 @@ uint8_t step_motor_general_enable(volatile PStepMotorDevice dev, uint8_t mindex,
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
-uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_sleep(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Disable command handler. This command is sent by a software in order to disable motor driver
 /// \param dev - device this command was sent to
@@ -117,7 +117,7 @@ uint8_t step_motor_general_sleep(volatile PStepMotorDevice dev, uint8_t mindex, 
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
-uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_disable(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Wakeup command handler. This command is sent by a software in order to wake up step motor driver from sleep state
 /// \param dev - device this command was sent to
@@ -125,14 +125,14 @@ uint8_t step_motor_general_disable(volatile PStepMotorDevice dev, uint8_t mindex
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
-uint8_t step_motor_general_wakeup(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_wakeup(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Reset command handler. This command is sent by a software in order to reset step motor driver
 /// \param dev - device this command was sent to
 /// \param mindex - target motor index this command was sent to
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
-uint8_t step_motor_general_reset(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_reset(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Wait command handler. This command is sent by a software in order to issue a wait. No actions are made to
 ///        step motor driver
@@ -141,7 +141,7 @@ uint8_t step_motor_general_reset(volatile PStepMotorDevice dev, uint8_t mindex, 
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
 /// \details Wait command requires a parameter that spcifies number of microseconds to wait
-uint8_t step_motor_general_wait(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_wait(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Set software limit for motor position during CW movement.
 /// \param dev - device this command was sent to
@@ -150,7 +150,7 @@ uint8_t step_motor_general_wait(volatile PStepMotorDevice dev, uint8_t mindex, v
 /// \return 0 - Success, nonzero indicates error
 /// \details This command may fail if inappropriate software limit is passed
 /// \details Software limits are ignored if corresponding direction equipped with hardware endstop line is used
-uint8_t step_motor_set_cw_sft_limit(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd);
+uint8_t step_motor_set_cw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Set software limit for motor position during CCW movement.
 /// \param dev - device this command was sent to
@@ -159,7 +159,7 @@ uint8_t step_motor_set_cw_sft_limit(volatile PStepMotorDevice dev, uint8_t minde
 /// \return 0 - Success, nonzero indicates error
 /// \details This command may fail if inappropriate software limit is passed
 /// \details Software limits are ignored if corresponding direction equipped with hardware endstop line is used
-uint8_t step_motor_set_ccw_sft_limit(volatile PStepMotorDevice dev, uint8_t mindex, StepMotorCmd* cmd);
+uint8_t step_motor_set_ccw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Configuration command handler. This command is sent by a software in order to configure step motor
 /// \param dev - device this command was sent to
@@ -168,7 +168,7 @@ uint8_t step_motor_set_ccw_sft_limit(volatile PStepMotorDevice dev, uint8_t mind
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
 ///          Configuration parameter is required. It is described by STEP_MOTOR_CONFIG_XXX flags
-uint8_t step_motor_general_config(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_general_config(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Clockwise direction command handler. This command is sent by a software in order to instruct step motor driver
 ///        to rotate in clockwise direction
@@ -178,7 +178,7 @@ uint8_t step_motor_general_config(volatile PStepMotorDevice dev, uint8_t mindex,
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
 /// \note If step motor rotates in wrong direction, check if coils are connected properly
-uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_set_dir_cw(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Counter clockwise direction command handler. This command is sent by a software in order to instruct step motor driver
 ///        to rotate in counter clockwise direction
@@ -188,7 +188,7 @@ uint8_t step_motor_set_dir_cw(volatile PStepMotorDevice dev, uint8_t mindex, vol
 /// \return 0 - Success, nonzero indicates error
 /// \details This command is executed immediately, timings and command state are not required
 /// \note If step motor rotates in wrong direction, check if coils are connected properly
-uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_set_dir_ccw(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Set microstep command handler. This command is sent by a software in order to instruct step motor driver
 ///        to use specific micro step options.
@@ -199,7 +199,7 @@ uint8_t step_motor_set_dir_ccw(volatile PStepMotorDevice dev, uint8_t mindex, vo
 /// \details Microstep parameter is required. It is described by STEP_MOTOR_SET_MICROSTEP_MXXX flags
 ///          This command is executed immediately, timings and command state are not required
 /// \note Read step motor driver documentation for more details regarding micro steps being supported
-uint8_t step_motor_set_microstep(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_set_microstep(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Set step wait being command handler. This command is sent by a software in order to set duration that
 ///        separates subsequent step pulses. This parameter directly controls rotation speed of the motor.
@@ -210,7 +210,7 @@ uint8_t step_motor_set_microstep(volatile PStepMotorDevice dev, uint8_t mindex, 
 /// \details This command is executed immediately, timings and command state are not required
 /// \details This command requires parameter that specifies wait duration in microseconds
 /// \note Read step motor and step motor driver documentation for supported values. Value is specified in micro seconds.
-uint8_t step_motor_set_step_wait(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_set_step_wait(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// \brief Move and Move non-stop commands handler. This commands is sent by a software in order to instruct step motor
 ///        to move by infinite or a fixed numbed of steps.
@@ -218,7 +218,7 @@ uint8_t step_motor_set_step_wait(volatile PStepMotorDevice dev, uint8_t mindex, 
 /// \param mindex - target motor index this command was sent to
 /// \param cmd - command to be executed
 /// \return 0 - Success, nonzero indicates error
-uint8_t step_motor_move(volatile PStepMotorDevice dev, uint8_t mindex, volatile PStepMotorCmd cmd);
+uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd);
 
 /// @}
 

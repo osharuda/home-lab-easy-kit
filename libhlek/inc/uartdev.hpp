@@ -54,7 +54,7 @@ class UARTProxyDev final : public EKitVirtualDevice,
 
 public:
 
-    const UARTProxyConfig* config;    ///< Pointer to the device descriptor structure.
+    const struct UARTProxyConfig* config;    ///< Pointer to the device descriptor structure.
 
     /// \brief No default constructor
     UARTProxyDev() = delete;

@@ -142,10 +142,10 @@ class SPIProxyCustomizer(DeviceCustomizer):
 
             # Buffers handling
             in_buffer = "g_spi_in_buffer_"+str(index)
-            fw_in_buffers.append(self.tab + f"volatile uint8_t {in_buffer}[sizeof(SPIProxyStatus) + {buffer_size}]; \\")
+            fw_in_buffers.append(self.tab + f"uint8_t {in_buffer}[sizeof(struct SPIProxyStatus) + {buffer_size}]; \\")
 
             out_buffer = "g_spi_out_buffer_" + str(index)
-            fw_out_buffers.append(self.tab + f"volatile uint8_t {out_buffer}[{buffer_size}]; \\")
+            fw_out_buffers.append(self.tab + f"uint8_t {out_buffer}[{buffer_size}]; \\")
 
             fw_device_descriptors.append(f"""{{\\
     {{0}},\\
@@ -182,9 +182,9 @@ class SPIProxyCustomizer(DeviceCustomizer):
             sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size} }}')
 
             sw_config_name = "spiproxy_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const SPIProxyConfig* {sw_config_name};")
+            sw_config_declarations.append(f"extern const struct SPIProxyConfig* {sw_config_name};")
             sw_configs.append(
-                f"const SPIProxyConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+                f"const struct SPIProxyConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 

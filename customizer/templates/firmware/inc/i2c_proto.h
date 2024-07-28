@@ -94,6 +94,14 @@
 /// \brief Says virtual device has circular buffer
 #define DEV_CIRCULAR_BUFFER     2
 
+/// \def COMM_CMDBYTE_SPECIFIC_MASK
+/// \brief Defines bitmask for command byte flags/values bit field
+#define COMM_CMDBYTE_SPECIFIC_MASK   (uint8_t)(0xF0)
+
+/// \def COMM_STATUS_OFFSET
+/// \brief Defines bit offset for command byte flags/values bit field
+#define COMM_CMDBYTE_SPECIFIC_OFFSET (4)
+
 /// \def COMM_CMDBYTE_DEV_SPECIFIC_4
 /// \brief Defines a custom device specific flag in command byte (offset 4)
 #define COMM_CMDBYTE_DEV_SPECIFIC_4  (uint8_t)(1<<4)
@@ -147,25 +155,33 @@ struct CommCommandHeader{{
 /// situations. When transmission is over virtual device ON_READDONE callback is called.
 ///
 
+/// \def COMM_STATUS_MASK
+/// \brief Defines bitmask for communication status bits
+#define COMM_STATUS_MASK             (uint8_t)(0xF0)
+
+/// \def COMM_STATUS_OFFSET
+/// \brief Defines bit offset for communication status bits
+#define COMM_STATUS_OFFSET           (4)
+
 /// \def COMM_STATUS_BUSY
 /// \brief This communication status indicates that communication with firmware is blocked by currently executed command.
 /// Do not attempt to send any commands to the device if this bit set.
 /// This flag is set by communication protocol implementation immediately after reception of command byte.
-#define COMM_STATUS_BUSY              (uint8_t)(1 << 7)
+#define COMM_STATUS_BUSY              (uint8_t)(1 << (COMM_STATUS_OFFSET + 3))
 
 /// \def COMM_STATUS_FAIL
 /// \brief This communication status indicates that last command was not executed or recognized by device.
 /// In this case command should be either repeated or software should make corresponding actions that depend on the nature of the command.
-#define COMM_STATUS_FAIL              (uint8_t)(1 << 6)
+#define COMM_STATUS_FAIL              (uint8_t)(1 << (COMM_STATUS_OFFSET + 2))
 
 /// \def COMM_STATUS_CRC
 /// \brief This communication status indicates that last command was not delivered successfully to device because of data corruptions detected by control sum check.
 /// Master should repeat this command. Control sum check is implemented by device separately.
-#define COMM_STATUS_CRC               (uint8_t)(1 << 5)
+#define COMM_STATUS_CRC               (uint8_t)(1 << (COMM_STATUS_OFFSET + 1))
 
 /// \def COMM_STATUS_OVF
 /// \brief This communication status indicates that circular buffer of the device is overflow and some data is lost
-#define COMM_STATUS_OVF               (uint8_t)(1 << 4)
+#define COMM_STATUS_OVF               (uint8_t)(1 << (COMM_STATUS_OFFSET + 0))
 
 /// \def COMM_STATUS_OK
 /// \brief This communication status indicates successful operation

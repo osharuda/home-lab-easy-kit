@@ -27,15 +27,14 @@
 /// \addtogroup group_spiproxy
 /// @{{
 
-/// \struct tag_SPIProxyStatus
+/// \struct SPIProxyStatus
 /// \brief Structure that describes private SPIProxy status
 #pragma pack(push, 1)
-typedef struct tag_SPIProxyStatus {{
+struct SPIProxyStatus {{
     uint8_t running : 1;            ///< Nonzero if sending data.
     uint8_t tx_ovf : 1;             ///< Nonzero if transmit buffer is overflow.
     uint8_t rx_ovf : 1;             ///< Nonzero if receive buffer is overflow.
     uint8_t : 0;
-}} SPIProxyStatus;
-typedef volatile SPIProxyStatus* PSPIProxyStatus;
+}};
 #pragma pack(pop)
 /// @}}

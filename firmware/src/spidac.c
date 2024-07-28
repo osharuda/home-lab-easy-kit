@@ -27,6 +27,7 @@
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spidac.h"
+#include "spidac_conf.h"
 #include <stm32f10x.h>
 
 /// \addtogroup group_spidac
@@ -42,24 +43,27 @@
 /// \param sampling - pointer to the SPIDACSampling structure with sampling information
 /// \param continuous - non-zero specifies to generate signal indefinitely, until explicitly stopped by software;
 ///                     zero specifies to generate single period of the signal.
-static inline void spidac_set_sampling_buffer(PSPIDACPrivData priv_data, PSPIDACSampling sampling, uint8_t continuous);
+static inline void spidac_set_sampling_buffer(  struct SPIDACPrivData* priv_data, 
+                                                struct SPIDACSampling* sampling, 
+                                                uint8_t continuous);
 
 /// \brief Prepares SPIDAC device to using default sample.
 /// \param priv_data - private data for the device
 /// \param data - pointer to the first sample to be used. If NULL default sample from internal device buffer is used;
 ///               If non-null sample is copied to the internal device buffer and used.
-static inline void spidac_set_default_sample(PSPIDACPrivData priv_data, uint8_t* data);
+static inline void spidac_set_default_sample(   struct SPIDACPrivData* priv_data, 
+                                                uint8_t* data);
 
 /// \brief Initializes generation and sends the very first sample.
 /// \param dev - Device instance to start.
 /// \note All other samples and status changes are made inside timer and DMA (TC) IRQs.
-static inline void spidac_send_first_sample(PSPIDACInstance dev);
+static inline void spidac_send_first_sample(struct SPIDACInstance* dev);
 
 SPIDAC_FW_DEFAULT_VALUES
 SPIDAC_FW_BUFFERS
 
 /// \brief Global array that stores all virtual SPIDAC devices configurations.
-volatile SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
+struct SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 
 /// \brief Common TX DMA IRQ handler
 /// \param index - index of the virtual device
@@ -69,7 +73,7 @@ volatile SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIDAC_DEVICE_COUNT);
 
-    PSPIDACInstance dev = (PSPIDACInstance)g_spidac_devs+index;
+    struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs+index;
 
     // Enable timer update interrupt generation.
     // BO: CLEAR_FLAGS(dev->timer->CR1, TIM_CR1_UDIS);
@@ -78,7 +82,7 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     // Clear TX DMA interrupt pending bit (otherwise it will be called again once handler is returned)
     dev->dma->IFCR = dev->dma_tx_it;
 
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
     SPI_TypeDef* spi = dev->spi;
 
     // Increment sample pointer
@@ -112,8 +116,8 @@ SPIDAC_FW_TX_DMA_IRQ_HANDLERS
 /// \param index - index of the virtual device
 void SPIDAC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIDAC_DEVICE_COUNT);
-    PSPIDACInstance dev       = (PSPIDACInstance)g_spidac_devs+index;
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+    struct SPIDACInstance* dev       = (struct SPIDACInstance*)g_spidac_devs+index;
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
 
     // Restart timer, but do not enable interrupt yet (will be enabled in DMA complete IRQ handler)
     dev->timer->SR  = (uint16_t)~TIM_IT_Update;
@@ -178,25 +182,25 @@ SPIDAC_FW_TIMER_IRQ_HANDLERS
 
 /// @}
 
-void spidac_init_vdev(volatile SPIDACInstance* dev, uint16_t index) {
+void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     assert_param( dev->buffer_size > 0 );
 
-    volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+    struct DeviceContext* devctx = (struct DeviceContext*)&(dev->dev_ctx);
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
 
 
     // There should be at least one sample
-    assert_param(dev->buffer_size >= sizeof(SPIDACStatus) + dev->frames_per_sample * SPIDAC_FRAME_SIZE(dev));
+    assert_param(dev->buffer_size >= sizeof(struct SPIDACStatus) + dev->frames_per_sample * SPIDAC_FRAME_SIZE(dev));
     priv_data->sample_size = (dev->frame_size+1) * dev->frames_per_sample;
-    priv_data->max_sample_buffer_size = dev->buffer_size - sizeof(SPIDACStatus) - priv_data->sample_size;
+    priv_data->max_sample_buffer_size = dev->buffer_size - sizeof(struct SPIDACStatus) - priv_data->sample_size;
     priv_data->sample_buffer_size = 0;
-    priv_data->status             = (PSPIDACStatus)dev->buffer;
+    priv_data->status             = (struct SPIDACStatus*)dev->buffer;
     priv_data->status->status     = SHUTDOWN;
     priv_data->status->repeat_count = 0;
 
-    priv_data->default_sample_base = dev->buffer + sizeof(SPIDACStatus);
+    priv_data->default_sample_base = dev->buffer + sizeof(struct SPIDACStatus);
     memcpy((void*)priv_data->default_sample_base, (void*)dev->default_values, priv_data->sample_size);
-    priv_data->sample_buffer_base = dev->buffer + sizeof(SPIDACStatus) + priv_data->sample_size;
+    priv_data->sample_buffer_base = dev->buffer + sizeof(struct SPIDACStatus) + priv_data->sample_size;
     priv_data->sample_ptr = NULL; // Must be set immediately before operation
     priv_data->sample_ptr_end = NULL; // Must be set immediately before operation
 
@@ -214,11 +218,11 @@ void spidac_init_vdev(volatile SPIDACInstance* dev, uint16_t index) {
         priv_data->ld_port_BRR = &(priv_data->dummy_register);
     }
 
-    memset((void*)devctx, 0, sizeof(DeviceContext));
+    memset((void*)devctx, 0, sizeof(struct DeviceContext));
     devctx->device_id    = dev->dev_id;
     devctx->dev_index    = index;
     devctx->buffer       = (uint8_t*)priv_data->status;
-    devctx->bytes_available = sizeof(SPIDACStatus);
+    devctx->bytes_available = sizeof(struct SPIDACStatus);
     devctx->on_command   = spidac_execute;
     devctx->on_read_done = spidac_read_done;
 
@@ -307,8 +311,8 @@ void spidac_init_vdev(volatile SPIDACInstance* dev, uint16_t index) {
 
 void spidac_init() {
     for (uint16_t i=0; i<SPIDAC_DEVICE_COUNT; i++) {
-        volatile SPIDACInstance* dev = (volatile SPIDACInstance*)g_spidac_devs+i;
-        PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+        struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs+i;
+        struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
         spidac_init_vdev(dev, i);
 
         // set default value
@@ -317,18 +321,18 @@ void spidac_init() {
     }
 }
 
-void spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
-    volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
-    volatile SPIDACInstance* dev = (volatile SPIDACInstance*)g_spidac_devs + devctx->dev_index;
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+uint8_t spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+    struct DeviceContext* devctx = comm_dev_context(cmd_byte);
+    struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs + devctx->dev_index;
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
     uint8_t res = COMM_STATUS_OK;
     SPIDAC_COMMAND command = cmd_byte & COMM_CMDBYTE_DEV_SPECIFIC_MASK;
 
-    if (command==START && length == sizeof(SPIDACSampling)) {
-        spidac_set_sampling_buffer(priv_data, (PSPIDACSampling)data, 1);
+    if (command==START && length == sizeof(struct SPIDACSampling)) {
+        spidac_set_sampling_buffer(priv_data, (struct SPIDACSampling*)data, 1);
         res = spidac_start(dev);
-    } else if (command==START_PERIOD && length == sizeof(SPIDACSampling)) {
-        spidac_set_sampling_buffer(priv_data, (PSPIDACSampling)data, 0);
+    } else if (command==START_PERIOD && length == sizeof(struct SPIDACSampling)) {
+        spidac_set_sampling_buffer(priv_data, (struct SPIDACSampling*)data, 0);
         res = spidac_start(dev);
     } else if (command==SETDEFAULT && length == priv_data->sample_size) {
         spidac_set_default_sample(priv_data, data);
@@ -341,20 +345,20 @@ void spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         res = COMM_STATUS_FAIL;
     }
 
-    comm_done(res);
+    return res;
 }
 
-void spidac_read_done(uint8_t device_id, uint16_t length) {
-    volatile PDeviceContext devctx = comm_dev_context(device_id);
-    volatile SPIDACInstance* dev = g_spidac_devs + devctx->dev_index;
+uint8_t spidac_read_done(uint8_t device_id, uint16_t length) {
+    struct DeviceContext* devctx = comm_dev_context(device_id);
+    struct SPIDACInstance* dev = g_spidac_devs + devctx->dev_index;
 
     UNUSED(dev);
     UNUSED(length);
 
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
-uint8_t spidac_stop(PSPIDACInstance dev) {
+uint8_t spidac_stop(struct SPIDACInstance* dev) {
     uint8_t res = COMM_STATUS_FAIL;
 
     DISABLE_IRQ
@@ -369,8 +373,8 @@ uint8_t spidac_stop(PSPIDACInstance dev) {
     return res;
 }
 
-uint8_t spidac_data(PSPIDACInstance dev, uint8_t* data, uint16_t length) {
-    volatile SPIDACPrivData* priv_data = &(dev->priv_data);
+uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length) {
+    struct SPIDACPrivData* priv_data = &(dev->priv_data);
 
     if (priv_data->status->status != SHUTDOWN) {
         return COMM_STATUS_FAIL;
@@ -387,10 +391,10 @@ uint8_t spidac_data(PSPIDACInstance dev, uint8_t* data, uint16_t length) {
     return COMM_STATUS_OK;
 }
 
-uint8_t spidac_start(PSPIDACInstance dev) {
+uint8_t spidac_start(struct SPIDACInstance* dev) {
     uint8_t res = COMM_STATUS_FAIL;
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
-    PSPIDACStatus status = (PSPIDACStatus)&(priv_data->status->status);
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
+    struct SPIDACStatus* status = (struct SPIDACStatus*)&(priv_data->status->status);
 
     if (priv_data->sample_ptr==priv_data->sample_ptr_end) {
         goto done;  // no data
@@ -415,8 +419,8 @@ done:
     return res;
 }
 
-void spidac_shutdown(PSPIDACInstance dev) {
-    volatile SPIDACPrivData* priv_data = &(dev->priv_data);
+void spidac_shutdown(struct SPIDACInstance* dev) {
+    struct SPIDACPrivData* priv_data = &(dev->priv_data);
 
     DISABLE_IRQ
     // Disable DMA
@@ -434,7 +438,9 @@ void spidac_shutdown(PSPIDACInstance dev) {
     ENABLE_IRQ
 }
 
-static inline void spidac_set_sampling_buffer(PSPIDACPrivData priv_data, PSPIDACSampling sampling, uint8_t continuous) {
+static inline void spidac_set_sampling_buffer(  struct SPIDACPrivData* priv_data,
+                                                struct SPIDACSampling* sampling,
+                                                uint8_t continuous) {
     priv_data->sample_ptr_start = priv_data->sample_buffer_base;
     priv_data->sample_ptr = priv_data->sample_ptr_start;
     priv_data->sample_ptr_end = priv_data->sample_ptr_start + priv_data->sample_buffer_size;
@@ -444,7 +450,8 @@ static inline void spidac_set_sampling_buffer(PSPIDACPrivData priv_data, PSPIDAC
     priv_data->status->sampling.phase_increment = sampling->phase_increment;
 }
 
-static inline void spidac_set_default_sample(PSPIDACPrivData priv_data, uint8_t* data) {
+static inline void spidac_set_default_sample(   struct SPIDACPrivData* priv_data,
+                                                uint8_t* data) {
     priv_data->sample_ptr_start = priv_data->default_sample_base;
     priv_data->sample_ptr = priv_data->sample_ptr_start;
     priv_data->sample_ptr_end = priv_data->sample_ptr_start + priv_data->sample_size;
@@ -457,8 +464,8 @@ static inline void spidac_set_default_sample(PSPIDACPrivData priv_data, uint8_t*
     }
 }
 
-static inline void spidac_send_first_sample(PSPIDACInstance dev) {
-    PSPIDACPrivData priv_data = (PSPIDACPrivData)&(dev->priv_data);
+static inline void spidac_send_first_sample(struct SPIDACInstance* dev) {
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
 
     assert_param(priv_data->sample_ptr_start != NULL);
     assert_param(priv_data->sample_ptr != NULL);

@@ -42,6 +42,6 @@ namespace {__NAMESPACE_NAME__}
     {__SPWM_CHANNEL_INDEXES__}
     /// @}}
 
-    extern const SPWMConfig* spwm_config_ptr;
+    extern const struct SPWMConfig* spwm_config_ptr;
 }}
 /// @}}

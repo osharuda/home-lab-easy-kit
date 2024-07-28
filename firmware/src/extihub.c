@@ -43,7 +43,9 @@ ExtiHandlerDescr g_extihub_handlers[EXTIHUB_LINE_COUNT];
 ///          EXTI callbacks registered in EXTI HUB by #exti_register_callback().
 void EXTIHUB_COMMON_IRQ_HANDLER(void) {
     uint64_t timestamp;
+    set_debug_pin_1();
     systick_get(&timestamp);
+    clear_debug_pin_1();
 	uint32_t events = EXTI->PR;
 	EXTI->PR |= events;
 

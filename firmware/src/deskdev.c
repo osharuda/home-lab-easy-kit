@@ -33,17 +33,17 @@
 
 
 
-DeskDevButtonState g_ddev_buttons[BUTTON_COUNT];
-DeskDevEncoderState g_ddev_encoder;
-DeskDevData g_ddev_data;
-DeviceContext g_ddev_context __attribute__ ((aligned));
+struct DeskDevButtonState g_ddev_buttons[BUTTON_COUNT];
+struct DeskDevEncoderState g_ddev_encoder;
+struct DeskDevData g_ddev_data;
+struct DeviceContext g_ddev_context __attribute__ ((aligned));
 
 void CONTROLS_EXTI_HANDLER(uint64_t timestamp, volatile void* ctx);
 
-void on_deskdev_read(uint8_t device_id, uint16_t length) {
+uint8_t on_deskdev_read(uint8_t device_id, uint16_t length) {
 	UNUSED(device_id);
 	memset((void*)&g_ddev_data, 0, length < sizeof(g_ddev_data) ? length : sizeof(g_ddev_data) );
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 void deskdev_init(void)
@@ -75,7 +75,7 @@ void deskdev_init(void)
 
 void button_event(uint8_t button, uint8_t push)
 {
-	volatile DeskDevButtonState* btn = g_ddev_buttons + button;
+	struct DeskDevButtonState* btn = g_ddev_buttons + button;
 
 	if (push==0 && btn->state != 0)
 	{

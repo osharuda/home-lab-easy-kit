@@ -78,7 +78,7 @@ class INFODev final : public EKitVirtualDevice {
     /// \brief Return virtual device information by device id value
     /// \param dev_id - device id
     /// \return pointer to the #tag_InfoDeviceDescriptor structure that describes virtual device
-    const PInfoDeviceDescriptor get_device_info(size_t dev_id);
+    const struct InfoDeviceDescriptor* get_device_info(size_t dev_id);
 };
 
 /// @}

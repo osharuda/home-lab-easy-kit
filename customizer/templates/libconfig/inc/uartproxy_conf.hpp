@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__UART_PROXY_CONFIGURATION_ARRAY_NAME__}_number = {__UART_PROXY_DEVICE_NUMBER__};
-    extern const UARTProxyConfig {__UART_PROXY_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct UARTProxyConfig {__UART_PROXY_CONFIGURATION_ARRAY_NAME__}[];
 
     {__UART_PROXY_CONFIGURATION_DECLARATIONS__}
 }}

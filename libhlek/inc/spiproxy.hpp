@@ -66,7 +66,7 @@ class SPIProxyDev final : public EKitVirtualDevice,
 	public:
 
     /// \brief Pointer to the #tag_SPIProxyConfig structure that describes SPIProxy virtual device represented by this class.
-    const SPIProxyConfig* config;
+    const struct SPIProxyConfig* config;
 
     /// \brief No default constructor
     SPIProxyDev() = delete;
@@ -80,7 +80,7 @@ class SPIProxyDev final : public EKitVirtualDevice,
     /// \brief Constructor to be used
     /// \param ebus - reference to shared pointer with EKitBus. This bus must support FIRMWARE_OPT_FLAGS
     /// \param config - actual configuration of the device taken from generated configuration library.
-	SPIProxyDev(std::shared_ptr<EKitBus>& ebus, const SPIProxyConfig* config);
+	SPIProxyDev(std::shared_ptr<EKitBus>& ebus, const struct SPIProxyConfig* config);
 
     /// \brief Destructor (virtual)
 	~SPIProxyDev() override;

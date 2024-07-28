@@ -34,7 +34,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__STEP_MOTOR_CONFIGURATION_ARRAY_NAME__}_number = {__STEP_MOTOR_DEVICE_COUNT__};
-    extern const StepMotorConfig {__STEP_MOTOR_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct StepMotorConfig {__STEP_MOTOR_CONFIGURATION_ARRAY_NAME__}[];
 
     {__STEP_MOTOR_CONFIGURATION_DECLARATIONS__}
 }}

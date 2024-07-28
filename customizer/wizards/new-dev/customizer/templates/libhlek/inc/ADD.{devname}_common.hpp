@@ -37,10 +37,10 @@
 
 /// \struct {DevName}Config
 /// \brief {DevName} configuration structure.
-typedef struct tag_{DevName}Config{{
+struct {DevName}Config{{
     uint8_t         dev_id;             ///< Device ID for {DevName} virtual device
     const char*     dev_name;           ///< Name of the {DevName} virtual device as given in JSON configuration file
     size_t          dev_buffer_len;     ///< Length of the {DevName} internal buffer, 0 if no buffer is used.
-}} {DevName}Config;
+}};
 
 /// @}}

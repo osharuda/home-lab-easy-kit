@@ -17,13 +17,6 @@
 
  /* --------------------> END OF THE TEMPLATE HEADER <-------------------- */
 
-/*
-#define DEV_NO_BUFFER           0
-#define DEV_LINIAR_BUFFER       1
-#define DEV_CIRCULAR_BUFFER     2
-#define CAN_DEVICE_BUFFER_TYPE DEV_CIRCULAR_BUFFER
-*/
-
 /// \addtogroup group_can
 /// @{{
 
@@ -64,9 +57,9 @@
 #define CAN_MSG_MAX_DATA_LEN_MASK   (0x0F)
 
 #pragma pack(push, 1)
-/// \struct tag_CanSendCommand
+/// \struct CanSendCommand
 /// \brief This structure describes Send command. This structure is passed with CAN_SEND.
-typedef struct tag_CanSendCommand {{
+struct CanSendCommand {{
     uint32_t id;        ///< Standard identifier. Values: [0 ... 0x7FF].
 
     uint32_t ext_id;     ///< Extended identifier. Values: [0 ... 0x1FFFFFFF].
@@ -74,10 +67,8 @@ typedef struct tag_CanSendCommand {{
     uint8_t extra;      ///< Extra information for the message. For details take a look on set of CAN_MSG_XXX macro.
 
     uint8_t data[];     ///< Data to be transmitted. Variable size array - must not exceed CAN_MSG_MAX_DATA_LEN.
-}} CanSendCommand;
+}};
 #pragma pack(pop)
-
-typedef volatile CanSendCommand* PCanSendCommand;
 
 
 /// \def CAN_STATE_STARTED
@@ -189,24 +180,22 @@ typedef volatile CanSendCommand* PCanSendCommand;
 #define CAN_ESR_FLAG_BUSOFF       (4)
 
 #pragma pack(push, 1)
-/// \struct tag_CanStatus
+/// \struct CanStatus
 /// \brief This structure describes can device status.
-typedef struct tag_CanStatus {{
+struct CanStatus {{
     uint16_t data_len;   ///< Number of bytes available in buffer.
     uint16_t state;      ///< State bitmask. Consist of CAN_STATE_XXX and CAN_ERROR_XXX bits.
     uint8_t  last_error; ///< Last error code.
     uint8_t  recv_error_count; ///< Receive error counter.
     uint8_t  lsb_trans_count; ///< LSB of the 9-bit CAN Transmit Error Counter.
-}} CanStatus;
+}};
 #pragma pack(pop)
 
-typedef volatile CanStatus* PCanStatus;
-
 #pragma pack(push, 1)
-/// \struct tag_CanRecvMessage
+/// \struct CanRecvMessage
 /// \brief This structure describes received message. This structure is wrote into output circular buffer to be read by
 ///        software.
-typedef struct tag_CanRecvMessage {{
+struct CanRecvMessage {{
     uint32_t id;        ///< Standard 11-bit identifier (values: [0 ... 0x7FF]) or extended 29-bit identifier (values [0 ... 0x1FFFFFFF])
                         ///  Test #extra for #CAN_MSG_EXTENDED_ID bit to distinguish standard and extended messages.
 
@@ -215,10 +204,8 @@ typedef struct tag_CanRecvMessage {{
     uint8_t fmi;        ///< Index of the message filter.
 
     uint8_t data[CAN_MSG_MAX_DATA_LEN];     ///< Data to be transmitted.
-}} CanRecvMessage;
+}};
 #pragma pack(pop)
-
-typedef volatile CanRecvMessage* PCanRecvMessage;
 
 /// \def CAN_FLT_MAX_INDEX
 /// \brief Specifies maximum index of the filter
@@ -246,9 +233,9 @@ typedef volatile CanRecvMessage* PCanRecvMessage;
 
 
 #pragma pack(push, 1)
-/// \struct tag_FilterCommand
+/// \struct FilterCommand
 /// \brief This structure describes Filter command. This structure is passed with CAN_FILTER.
-typedef struct tag_CanFilterCommand {{
+struct CanFilterCommand {{
     uint16_t id_msb;         ///< Filter identification number: MSBs for a 32-bit configuration,
                              ///  first one for a 16-bit configuration.
 
@@ -262,9 +249,8 @@ typedef struct tag_CanFilterCommand {{
                              ///  LSBs for a 32-bit configuration, second one for a 16-bit configuration.
 
     uint8_t flags;           ///< Flags that specify filter behaviour.
-}} CanFilterCommand;
+}};
 #pragma pack(pop)
 
-typedef volatile CanFilterCommand* PCanFilterCommand;
 /// @}}
 

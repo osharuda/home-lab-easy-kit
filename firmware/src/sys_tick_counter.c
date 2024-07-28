@@ -32,7 +32,9 @@ volatile uint64_t g_systick_irq_cnt __attribute__ ((aligned)) = 0;
 
 MAKE_ISR(SYS_TICK_ISR) {
     if (SYS_TICK_PERIPH->SR & TIM_IT_Update) {
+        set_debug_pin_0();
         g_systick_irq_cnt++;
+        clear_debug_pin_0();
         TIM_ClearITPendingBit(SYS_TICK_PERIPH, TIM_IT_Update);
     }
 }

@@ -38,6 +38,6 @@
 
 namespace {__NAMESPACE_NAME__} {{
     /// \brief RTC configuration
-    extern const RTCConfig* rtc_config_ptr;
+    extern const struct RTCConfig* rtc_config_ptr;
 }}
 /// @}}

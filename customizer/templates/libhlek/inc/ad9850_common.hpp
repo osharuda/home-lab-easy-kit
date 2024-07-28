@@ -33,10 +33,10 @@
 
 /// \struct AD9850Config
 /// \brief AD9850 configuration structure.
-typedef struct tag_AD9850Config{{
+struct AD9850Config{{
     uint8_t         dev_id;             ///< Device ID for AD9850Dev virtual device
     const char*     dev_name;           ///< Name of the AD9850Dev virtual device as given in JSON configuration file
     uint32_t        clock_frequency;    ///< Default clock frequency (HZ)
-}} AD9850Config;
+}};
 
 /// @}}

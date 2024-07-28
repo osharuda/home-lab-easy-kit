@@ -38,12 +38,10 @@
 #define BUTTON_RIGHT			3
 
 #pragma pack(push, 1)
-/// \struct tag_DeskDevData
+/// \struct DeskDevData
 /// \brief Desk data structure
-typedef struct tag_DeskDevData{{
+struct DeskDevData{{
 	uint8_t buttons[BUTTON_COUNT];  ///< Array with button press counters for each button.
 	int8_t  encoder;                ///< Encoder rotation value.
-}} DeskDevData;
+}};
 #pragma pack(pop)
-
-typedef volatile DeskDevData* PDeskDevData;

@@ -31,12 +31,12 @@
 /// \addtogroup group_spiproxy
 /// @{{
 
-/// \struct tag_SPIProxyConfig
+/// \struct SPIProxyConfig
 /// \brief SPIProxy configuration structure.
-typedef struct tag_SPIProxyConfig{{
+struct SPIProxyConfig{{
     uint8_t         dev_id;             ///< Device ID for SPIProxy virtual device
     const char*     dev_name;           ///< Name of the SPIProxy virtual device as given in JSON configuration file
     uint16_t        dev_buffer_len;     ///< Length of the SPIProxy internal buffer}} SPIProxyConfig;
-}} SPIProxyConfig;
+}};
 
 /// @}}

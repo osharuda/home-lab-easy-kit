@@ -75,17 +75,17 @@ STEP_MOTOR_DEVICE_DESCRIPTORS
 const StepMotorMicrostepTables g_step_motor_microstep_tables= STEP_MOTOR_MICROSTEP_TABLE;
 
 /// \brief This global variable defines available stepper motor devices
-volatile PStepMotorDevice g_step_motor_devs[] = STEP_MOTOR_DEVICES;
+struct StepMotorDevice* g_step_motor_devs[] = STEP_MOTOR_DEVICES;
 /// @}
 
 extern PFN_STEP_MOTOR_CMD_FUNC g_step_motor_cmd_map[STEP_MOTOR_CMD_COUNT];
 
 
-static inline uint16_t step_motor_fetch_cmd(volatile struct CircBuffer* circ, volatile PStepMotorCmd cmd);
-static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift);
+static inline uint16_t step_motor_fetch_cmd(struct CircBuffer* circ, struct StepMotorCmd* cmd);
+static inline uint8_t step_motor_get_ustep_bitshift(struct StepMotorDescriptor* mdescr, struct StepMotorStatus* mstatus, uint8_t* bitshift);
 
 void STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER(uint16_t dev_index) {
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
     if (TIM_GetITStatus(dev->timer, TIM_IT_Update) == RESET) {
         return;
     }
@@ -97,9 +97,9 @@ void STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER(uint16_t dev_index) {
 
 STEP_MOTOR_FW_TIMER_IRQ_HANDLERS
 
-void step_motors_suspend_all(volatile PStepMotorDevice dev) {
-    volatile PStepMotorStatus mst = MOTOR_STATUS(dev,0);
-    volatile PStepMotorStatus mst_end = MOTOR_STATUS(dev, dev->motor_count);
+void step_motors_suspend_all(struct StepMotorDevice* dev) {
+    struct StepMotorStatus* mst = MOTOR_STATUS(dev,0);
+    struct StepMotorStatus* mst_end = MOTOR_STATUS(dev, dev->motor_count);
 
     DISABLE_IRQ
     for (; mst!=mst_end; mst++) {
@@ -108,8 +108,8 @@ void step_motors_suspend_all(volatile PStepMotorDevice dev) {
     ENABLE_IRQ
 }
 
-uint8_t step_motor_handle_alarm(volatile PStepMotorDevice dev,
-                             volatile PStepMotorStatus mstatus,
+uint8_t step_motor_handle_alarm(struct StepMotorDevice* dev,
+                                struct StepMotorStatus* mstatus,
                              uint32_t ignore_flag,
                              uint32_t all_flag) {
     uint8_t res = 0;
@@ -133,10 +133,10 @@ void step_motor_fault_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = STEP_MOTOR_EXTI_DEV_INDEX(ctx);
     uint8_t mindex = STEP_MOTOR_EXTI_MINDEX(ctx);
 
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_FAULT;
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_FAULT;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_FAULT_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_FAULT_ACTIVE_HIGH);
 
@@ -154,11 +154,11 @@ void step_motor_cw_end_stop_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = STEP_MOTOR_EXTI_DEV_INDEX(ctx);
     uint8_t mindex = STEP_MOTOR_EXTI_MINDEX(ctx);
 
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
 
-    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CWENDSTOP;
+    struct StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CWENDSTOP;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);
@@ -186,10 +186,10 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = STEP_MOTOR_EXTI_DEV_INDEX(ctx);
     uint8_t mindex = STEP_MOTOR_EXTI_MINDEX(ctx);
 
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CCWENDSTOP;
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorLine* int_line = mdescr->lines + STEP_MOTOR_LINE_CCWENDSTOP;
     uint8_t val = GPIO_ReadInputDataBit(int_line->port, 1<<int_line->pin);
     uint32_t inactive = (val << STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH);
     uint8_t direction = STEP_MOTOR_DIRECTION(mstatus->motor_state);
@@ -212,9 +212,9 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
     }
 }
 
-void step_motor_init_motor_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum) {
+void step_motor_init_motor_line(struct StepMotorDescriptor* mdescr, uint8_t linenum) {
     START_PIN_DECLARATION
-    assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
+    assert_param(linenum < sizeof(mdescr->lines) / sizeof(struct StepMotorLine));
     assert_param((linenum != STEP_MOTOR_LINE_FAULT) &&
                       (linenum != STEP_MOTOR_LINE_CWENDSTOP) &&
                       (linenum != STEP_MOTOR_LINE_CCWENDSTOP)); // these lines can't be set
@@ -224,19 +224,19 @@ void step_motor_init_motor_line(volatile StepMotorDescriptor* mdescr, uint8_t li
     DECLARE_PIN(mdescr->lines[linenum].port, pin_mask, GPIO_Mode_Out_PP)
 }
 
-void step_motor_set_line(volatile StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value) {
-    assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
+void step_motor_set_line(struct StepMotorDescriptor* mdescr, uint8_t linenum, BitAction value) {
+    assert_param(linenum < sizeof(mdescr->lines) / sizeof(struct StepMotorLine));
     assert_param((linenum != STEP_MOTOR_LINE_FAULT) &&
                  (linenum != STEP_MOTOR_LINE_CWENDSTOP) &&
                  (linenum != STEP_MOTOR_LINE_CCWENDSTOP)); // these lines can't be set
     assert_param(mdescr->lines[linenum].port!=0);
-    volatile PStepMotorLine line = (volatile PStepMotorLine) mdescr->lines + linenum;
+    struct StepMotorLine* line = (struct StepMotorLine*) mdescr->lines + linenum;
     GPIO_WriteBit(line->port, 1 << line->pin, value);
 }
 
-uint8_t step_motor_init_exti(volatile StepMotorDescriptor* mdescr, uint8_t linenum, uint16_t exti_cr, uint16_t active_high,
+uint8_t step_motor_init_exti(struct StepMotorDescriptor* mdescr, uint8_t linenum, uint16_t exti_cr, uint16_t active_high,
                           PFN_EXTIHUB_CALLBACK callback, uint8_t dev_index, uint8_t mindex) {
-    assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
+    assert_param(linenum < sizeof(mdescr->lines) / sizeof(struct StepMotorLine));
     assert_param((linenum == STEP_MOTOR_LINE_FAULT) ||
                       (linenum == STEP_MOTOR_LINE_CWENDSTOP) ||
                       (linenum == STEP_MOTOR_LINE_CCWENDSTOP));
@@ -255,15 +255,15 @@ uint8_t step_motor_init_exti(volatile StepMotorDescriptor* mdescr, uint8_t linen
                                   1);
 }
 
-uint8_t step_motor_mask_exti(volatile StepMotorDescriptor* mdescr, uint8_t linenum) {
-    assert_param(linenum < sizeof(mdescr->lines) / sizeof(StepMotorLine));
+uint8_t step_motor_mask_exti(struct StepMotorDescriptor* mdescr, uint8_t linenum) {
+    assert_param(linenum < sizeof(mdescr->lines) / sizeof(struct StepMotorLine));
     assert_param((linenum == STEP_MOTOR_LINE_FAULT) || (linenum == STEP_MOTOR_LINE_CWENDSTOP) || (linenum == STEP_MOTOR_LINE_CCWENDSTOP));
     assert_param(mdescr->lines[linenum].port!=0);
 
     return exti_mask_callback(mdescr->lines[linenum].port, mdescr->lines[linenum].pin);
 }
 
-static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, uint8_t* bitshift) {
+static inline uint8_t step_motor_get_ustep_bitshift(struct StepMotorDescriptor* mdescr, struct StepMotorStatus* mstatus, uint8_t* bitshift) {
     uint8_t mval = STEP_MOTOR_MICROSTEP_STATUS_TO_VALUE(mstatus->motor_state);
     *bitshift = g_step_motor_microstep_tables[mdescr->motor_driver][mval];
     uint8_t res = 0;
@@ -277,11 +277,11 @@ static inline uint8_t step_motor_get_ustep_bitshift(volatile StepMotorDescriptor
     return res;
 }
 
-uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, StepMotorCmd* cmd) {
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
-    volatile PStepMotorContext  mcontext = MOTOR_CONTEXT(dev, mindex);
+uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, struct StepMotorCmd* cmd) {
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
+    struct StepMotorContext*  mcontext = MOTOR_CONTEXT(dev, mindex);
 
     uint8_t limited_move = STEP_MOTOR_LIMITED_MOVE(cmd->cmd);
     uint8_t stop_command_exec = 0; // do not stop command
@@ -372,9 +372,9 @@ uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, StepMotor
     return stop_command_exec;
 }
 
-void step_motor_suspend_motor(volatile PStepMotorDevice dev,
-                              volatile StepMotorDescriptor* mdescr,
-                              volatile PStepMotorStatus mstatus,
+void step_motor_suspend_motor(struct StepMotorDevice* dev,
+                              struct StepMotorDescriptor* mdescr,
+                              struct StepMotorStatus* mstatus,
                               uint8_t error) {
     uint32_t mcfg = mdescr->config_flags;
 
@@ -405,7 +405,7 @@ void step_motor_suspend_motor(volatile PStepMotorDevice dev,
     }
 }
 
-void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus) {
+void step_motor_resume_motor(struct StepMotorDescriptor* mdescr, struct StepMotorStatus* mstatus) {
     uint32_t mcfg = mdescr->config_flags;
     // initialize GPIO : ENABLE (optional) with preserved power state
     if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
@@ -418,10 +418,10 @@ void step_motor_resume_motor(volatile StepMotorDescriptor* mdescr, volatile PSte
     }
 }
 
-void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev) {
+void step_motor_init_gpio_and_exti(struct StepMotorDevice* dev) {
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
-        volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-        volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+        struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+        struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
         // Reset motor state to default
         mstatus->motor_state = mdescr->config_flags;
@@ -512,9 +512,9 @@ void step_motor_init_gpio_and_exti(volatile PStepMotorDevice dev) {
 }
 
 
-void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex) {
-    volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-    volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex) {
+    struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+    struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t mcfg = mstatus->motor_state;
     uint8_t pin_val;
 
@@ -583,9 +583,9 @@ void step_motor_set_default(volatile PStepMotorDevice dev, uint8_t mindex) {
 
 //---------------------------- DEVICE FUNCTIONS ----------------------------
 
-void step_motor_set_dev_status(volatile PStepMotorDevice dev, uint8_t mask, uint8_t flags) {
+void step_motor_set_dev_status(struct StepMotorDevice* dev, uint8_t mask, uint8_t flags) {
     assert_param((flags & mask)==flags);
-    volatile PStepMotorDevStatus dev_status = MOTOR_DEV_STATUS(dev);
+    struct StepMotorDevStatus* dev_status = MOTOR_DEV_STATUS(dev);
     DISABLE_IRQ
     dev_status->status = (dev_status->status & (~mask)) | flags;
     ENABLE_IRQ
@@ -594,8 +594,8 @@ void step_motor_set_dev_status(volatile PStepMotorDevice dev, uint8_t mask, uint
 void step_motor_init(void) {
     step_motor_init_cmd_map();
     for (uint8_t dev_index=0; dev_index<STEP_MOTOR_DEVICE_COUNT; dev_index++) {
-        volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-        volatile PDeviceContext dev_ctx = (volatile PDeviceContext)&(dev->dev_ctx);
+        struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+        struct DeviceContext* dev_ctx = (struct DeviceContext*)&(dev->dev_ctx);
 
         // initialize GPIO and EXTI
         step_motor_init_gpio_and_exti(dev);
@@ -605,14 +605,14 @@ void step_motor_init(void) {
         // initialize device
         dev_ctx->device_id = dev->dev_id;
         dev_ctx->on_command = step_motor_dev_execute;
-        dev_ctx->buffer = (volatile uint8_t*)(dev->status);
+        dev_ctx->buffer = (uint8_t*)(dev->status);
         dev_ctx->bytes_available = dev->status_size;
         dev_ctx->dev_index = dev_index;
         comm_register_device(dev_ctx);
     }
 }
 
-static inline uint16_t step_motor_fetch_cmd(volatile struct CircBuffer* circ, volatile PStepMotorCmd cmd) {
+static inline uint16_t step_motor_fetch_cmd(struct CircBuffer* circ, struct StepMotorCmd* cmd) {
     uint8_t c;
     uint16_t bytes_remain = 0;
     circbuf_start_read(circ);
@@ -657,15 +657,15 @@ static inline uint16_t step_motor_fetch_cmd(volatile struct CircBuffer* circ, vo
 }
 
 // <CHECKIT> Inline this function
-void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t is_irq_handler) {
+void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t is_irq_handler) {
     uint32_t w = MCU_MAXIMUM_TIMER_US;
-    volatile PStepMotorDevPrivData priv_data = MOTOR_DEV_PRIV_DATA(dev);
+    struct StepMotorDevPrivData* priv_data = MOTOR_DEV_PRIV_DATA(dev);
     uint64_t last_wait = now - priv_data->last_event_timestamp;
     uint8_t all_done = 1;
     uint8_t any_error = 0;
 
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
-        volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+        struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
         if (mstatus->motor_state & (STEP_MOTOR_DONE | STEP_MOTOR_ERROR)) {
             if (mstatus->motor_state & STEP_MOTOR_SUSPENDING) {
@@ -676,10 +676,10 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
             goto next_motor;   // error, don't do anything to this motor
         }
 
-        volatile PStepMotorCmd cmd = MOTOR_CMD(dev, mindex);
+        struct StepMotorCmd* cmd = MOTOR_CMD(dev, mindex);
 
         if (last_wait >= cmd->wait) {
-            volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
+            struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
             mcontext->late_us += last_wait - cmd->wait;
 
             uint8_t res = STE_MOTOR_CMD_RESULT_OK;
@@ -687,7 +687,7 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
             do {
                 // Check if new command should be read
                 if (cmd->state==STEP_MOTOR_CMDSTATUS_DONE) {
-                    uint16_t bytes_remain = step_motor_fetch_cmd((volatile struct CircBuffer*)&(mcontext->circ_buffer), cmd);
+                    uint16_t bytes_remain = step_motor_fetch_cmd((struct CircBuffer*)&(mcontext->circ_buffer), cmd);
                     DISABLE_IRQ
                     mstatus->bytes_remain = bytes_remain;
                     ENABLE_IRQ
@@ -740,8 +740,8 @@ void step_motor_timer_event(volatile PStepMotorDevice dev, uint64_t now, uint8_t
     }
 }
 
-void step_motor_dev_start(volatile PStepMotorDevice dev) {
-    volatile PStepMotorDevPrivData priv_data = MOTOR_DEV_PRIV_DATA(dev);
+void step_motor_dev_start(struct StepMotorDevice* dev) {
+    struct StepMotorDevPrivData* priv_data = MOTOR_DEV_PRIV_DATA(dev);
     step_motor_dev_reset(dev, 0);
     step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, STEP_MOTOR_DEV_STATUS_RUN);
 
@@ -749,11 +749,11 @@ void step_motor_dev_start(volatile PStepMotorDevice dev) {
     step_motor_timer_event(dev, priv_data->last_event_timestamp, 0);
 }
 
-void step_motor_dev_stop(volatile PStepMotorDevice dev) {
+void step_motor_dev_stop(struct StepMotorDevice* dev) {
     step_motor_dev_reset(dev, 1); // stop everything, drop existing commands
 }
 
-uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdescr, volatile PStepMotorStatus mstatus, volatile PStepMotorContext mcontext) {
+uint8_t step_motor_update_pos_change_by_step(struct StepMotorDescriptor* mdescr, struct StepMotorStatus* mstatus, struct StepMotorContext* mcontext) {
     // Calculate default delta
     uint8_t bitshift;
     uint8_t res = step_motor_get_ustep_bitshift(mdescr, mstatus, &bitshift);
@@ -767,8 +767,8 @@ uint8_t step_motor_update_pos_change_by_step(volatile StepMotorDescriptor* mdesc
     return res;
 }
 
-void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
-    volatile PStepMotorDevStatus dev_status = MOTOR_DEV_STATUS(dev);
+void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
+    struct StepMotorDevStatus* dev_status = MOTOR_DEV_STATUS(dev);
 
     timer_disable(dev->timer, dev->timer_irqn);
 
@@ -780,13 +780,13 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
     step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, STEP_MOTOR_DEV_STATUS_IDLE);
 
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
-        volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
-        volatile StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
-        volatile PStepMotorStatus mstatus = MOTOR_STATUS(dev, mindex);
+        struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
+        struct StepMotorDescriptor* mdescr = MOTOR_DESCR(dev, mindex);
+        struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
 
         // Handle motor context
         if (full_reset) {
-            circbuf_init((volatile struct CircBuffer*) &mcontext->circ_buffer, mdescr->buffer, mdescr->buffer_size, (void*)dev->timer_irqn);
+            circbuf_init((struct CircBuffer*) &mcontext->circ_buffer, mdescr->buffer, mdescr->buffer_size);
 
             mcontext->step_wait = mdescr->default_speed;
 
@@ -817,17 +817,17 @@ void step_motor_dev_reset(volatile PStepMotorDevice dev, uint8_t full_reset) {
 }
 
 
-void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     uint8_t mindex = 0;
     uint16_t len;
     uint16_t dev_index = comm_dev_context(cmd_byte)->dev_index;
     uint8_t protocol_status = 0;
-    volatile PStepMotorDevice dev = MOTOR_DEVICE(dev_index);
-    volatile PStepMotorContext mcontext = MOTOR_CONTEXT(dev, mindex);
-    volatile PStepMotorStatus mstatus;
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+    struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
+    struct StepMotorStatus* mstatus;
 
     // read the buffer and copy commands to motor circular buffers
-    volatile struct CircBuffer* circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
+    struct CircBuffer* circ = (struct CircBuffer*)&mcontext->circ_buffer;
 
     for (uint16_t i=0; i<length; i+=len) {
         // Read command byte
@@ -838,7 +838,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         if (cmd & STEP_MOTOR_SELECT) {
             mindex = cmd & (~STEP_MOTOR_SELECT);
             mcontext = MOTOR_CONTEXT(dev, mindex);
-            circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
+            circ = (struct CircBuffer*)&mcontext->circ_buffer;
             len = 1;
             continue;
         }
@@ -864,7 +864,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     mcontext = MOTOR_CONTEXT(dev, 0);
     mstatus = MOTOR_STATUS(dev, 0);
     for (uint8_t i=0; i<dev->motor_count; i++, mstatus++, mcontext++) {
-        circ = (volatile struct CircBuffer*)&mcontext->circ_buffer;
+        circ = (struct CircBuffer*)&mcontext->circ_buffer;
         uint16_t bytes_remain = circbuf_len(circ);
 
         DISABLE_IRQ
@@ -884,7 +884,7 @@ void step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         break;
     }
 done:
-    comm_done(protocol_status);
+    return protocol_status;
 }
 
 #endif

@@ -92,7 +92,8 @@ void lcd_half_byte(uint8_t byte, uint32_t mode);
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t lcd_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_POLLING callback for LCDDev
 /// \param device_id - Device ID of the virtual device which data was read

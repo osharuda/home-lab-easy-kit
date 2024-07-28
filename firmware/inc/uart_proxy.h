@@ -36,8 +36,8 @@
 /// \image latex under_construction.eps
 ///
 
-typedef struct __attribute__ ((aligned)) tag_UartProxyDevInstance {
-    volatile DeviceContext dev_ctx __attribute__ ((aligned));
+struct __attribute__ ((aligned)) UartProxyDevInstance {
+    struct DeviceContext dev_ctx __attribute__ ((aligned));
     struct CircBuffer circ_buffer;
     USART_TypeDef*  uart_port;
     GPIO_TypeDef *  rx_port;
@@ -49,7 +49,7 @@ typedef struct __attribute__ ((aligned)) tag_UartProxyDevInstance {
 	uint16_t        tx_pin_mask;
 	IRQn_Type		irq_vector;
 	uint8_t         dev_id;
-} UartProxyDevInstance;
+};
 
 void uart_proxy_init(void);
 

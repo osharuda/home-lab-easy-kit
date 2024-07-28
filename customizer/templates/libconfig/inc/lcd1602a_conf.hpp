@@ -34,5 +34,5 @@
 
 namespace {__NAMESPACE_NAME__} {{
     /// \brief LCD1602a configuration structure
-    extern const LCD1602aConfig* lcd1602a_config_ptr;
+    extern const struct LCD1602aConfig* lcd1602a_config_ptr;
 }}

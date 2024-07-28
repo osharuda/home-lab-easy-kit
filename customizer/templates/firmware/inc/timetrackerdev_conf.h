@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "i2c_proto.h"
+
 #define TIMETRACKERDEV_DEVICE_ENABLED 1
 /// \addtogroup group_timetrackerdev
 /// @{{

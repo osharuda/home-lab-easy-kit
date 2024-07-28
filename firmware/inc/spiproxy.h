@@ -35,13 +35,13 @@
 /// \image latex under_construction.eps
 ///
 
-/// \struct tag_SPIProxyStatus
+/// \struct SPIProxyStatus
 /// \brief Structure that holds private SPIProxy state.
-typedef struct __attribute__ ((aligned)) tag_SPIProxyPrivData {
-    PSPIProxyStatus   status;             ///< Pointer to the status header which is allocated before input_buffer. This
+struct __attribute__ ((aligned)) SPIProxyPrivData {
+    struct SPIProxyStatus*   status;      ///< Pointer to the status header which is allocated before input_buffer. This
                                           ///< status is read first when data is read from SPIProxy.
 
-    volatile uint8_t* in_data_buffer;     ///< Pointer to the input buffer to store data.
+    uint8_t* in_data_buffer;              ///< Pointer to the input buffer to store data.
 
     DMA_InitTypeDef*  dma_rx_preinit;     ///< Preinitialized DMA_InitTypeDef structure for RX DMA channel. Not used in interrupt mode.
 
@@ -56,19 +56,18 @@ typedef struct __attribute__ ((aligned)) tag_SPIProxyPrivData {
     uint16_t          frame_number;       ///< Number of frames for a given transaction.
 
     uint16_t          transmit_len;       ///< Size of the last transmit in bytes
-} SPIProxyPrivData;
-typedef volatile SPIProxyPrivData* PSPIProxyPrivData;
+};
 
-/// \struct tag_SPIProxyInstance
+/// \struct SPIProxyInstance
 /// \brief Structure that describes SPIProxy virtual device
-typedef struct __attribute__ ((aligned)) tag_SPIProxyInstance {
-        volatile DeviceContext     dev_ctx __attribute__ ((aligned)); ///< Virtual device context
+struct __attribute__ ((aligned)) SPIProxyInstance {
+        struct DeviceContext       dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        volatile SPIProxyPrivData  privdata;                  ///< Private data used by this SPIProxy device
+        struct SPIProxyPrivData    privdata;                  ///< Private data used by this SPIProxy device
 
-        volatile uint8_t*          out_buffer;                ///< Output buffer for receive from slave
+        uint8_t*                   out_buffer;                ///< Output buffer for receive from slave
 
-        volatile uint8_t*          in_status_and_data_buffer; ///< Input buffer allocated to store status and input data.
+        uint8_t*                   in_status_and_data_buffer; ///< Input buffer allocated to store status and input data.
                                                               ///< Use SPIProxyPrivData::status and SPIProxyPrivData::in_data_buffer
                                                               ///< to access status and input data correspondingly.
 
@@ -123,9 +122,7 @@ typedef struct __attribute__ ((aligned)) tag_SPIProxyInstance {
         uint8_t                    use_dma;                 ///< true if DMA should be used, otherwise false.
 
         uint8_t                    dev_id;                  ///< Device ID for SPIProxy virtual device
-
-} SPIProxyInstance;
-typedef volatile SPIProxyInstance* PSPIProxyInstance;
+};
 
 /// \brief Initializes all SPIProxy virtual devices
 void spiproxy_init();
@@ -134,12 +131,14 @@ void spiproxy_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all SPIProxy devices
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
-void spiproxy_read_done(uint8_t device_id, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t spiproxy_read_done(uint8_t device_id, uint16_t length);
 
 /// @}
 #endif

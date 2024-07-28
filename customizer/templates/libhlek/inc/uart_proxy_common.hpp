@@ -31,13 +31,13 @@
 
 {__UART_PROTO_SHARED_HEADER__}
 
-/// \struct tag_UARTProxyConfig
+/// \struct UARTProxyConfig
 /// \brief UARTProxy configuration structure.
-typedef struct tag_UARTProxyConfig{{
+struct UARTProxyConfig{{
     uint8_t         dev_id;         ///< Virtual device id.
     uint16_t        dev_buffer_len; ///< Receive buffer length.
     const char*     dev_name;       ///< Device name.
     uint32_t		baud_rate;      ///< Communication speed (baud rate).
-}} UARTProxyConfig;
+}};
 
 /// @}}

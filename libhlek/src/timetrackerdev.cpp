@@ -29,14 +29,14 @@ TimeTrackerDev::TimeTrackerDev(std::shared_ptr<EKitBus>& ebus, const TimeTracker
     super(ebus, cfg->dev_id, cfg->dev_name),
     config(cfg),
     raw_buffer(cfg->dev_buffer_len + sizeof(TimeTrackerStatus)){
-    dev_status = (PTimeTrackerStatus)raw_buffer.data();
+    dev_status = (struct TimeTrackerStatus*)raw_buffer.data();
     data_buffer = (uint64_t*)(raw_buffer.data() + sizeof(TimeTrackerStatus));
 }
 
 TimeTrackerDev::~TimeTrackerDev() {
 }
 
-void TimeTrackerDev::send_command(int flags) {
+void TimeTrackerDev::send_command(int command) {
     static const char* const func_name = "TimeTrackerDev::send_command";
     EKIT_ERROR  err;
     EKitTimeout to(get_timeout());
@@ -50,7 +50,7 @@ void TimeTrackerDev::send_command(int flags) {
     assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
 
 
-     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flags, to);
+     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
     if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
@@ -60,15 +60,29 @@ void TimeTrackerDev::send_command(int flags) {
     if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "write() failed");
     }
+
+    if (command == TIMETRACKERDEV_RESET) {
+        // Wait until buffer length becomes zero, do not read more than CommResponseHeader
+        do {
+            err = fw->get_status(hdr, false, to);
+        } while ( (err!=EKIT_OK) || (hdr.comm_status & COMM_STATUS_BUSY) || (hdr.length == 0));
+
+        if (hdr.comm_status & COMM_STATUS_FAIL) {
+            throw EKitException(func_name, EKIT_NOT_STOPPED, "Failed to reset device.");
+        }
+    }
 }
 
-void TimeTrackerDev::start(bool reset) {
-    int flags = TIMETRACKERDEV_START | (reset ? TIMETRACKERDEV_RESET : 0);
-    send_command(flags);
+void TimeTrackerDev::start() {
+    send_command(TIMETRACKERDEV_START);
 }
 
 void TimeTrackerDev::stop() {
-    send_command(0);
+    send_command(TIMETRACKERDEV_STOP);
+}
+
+void TimeTrackerDev::reset() {
+    send_command(TIMETRACKERDEV_RESET);
 }
 
 void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to, bool& ovf) {

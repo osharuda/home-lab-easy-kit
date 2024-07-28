@@ -79,7 +79,7 @@ void SPWMDev::set(SPWM_STATE& state) {
             uint16_t value = state[i];
 
             auto ins = pwmmap.emplace(value, PWM_ENTRY_HELPER(config->port_number));
-            PPWM_ENTRY entry = ins.first->second.data();
+            struct PWM_ENTRY* entry = ins.first->second.data();
             if (ins.second) {
                 entry->n_periods = value;
             }
@@ -87,13 +87,14 @@ void SPWMDev::set(SPWM_STATE& state) {
         }
 
         size_t pwmindx = 1;
-        PPWM_ENTRY prev_entry, dst_entry;
+        struct PWM_ENTRY* prev_entry;
+        struct PWM_ENTRY*  dst_entry;
 
         PWM_ENTRY_HELPER accumulator(config->port_number);
-        PPWM_ENTRY acc_entry = accumulator.data();
+        struct PWM_ENTRY* acc_entry = accumulator.data();
 
         for (auto i=pwmmap.begin(); i!=pwmmap.end(); ++i) {
-            PPWM_ENTRY pwmmap_entry = i->second.data();
+            struct PWM_ENTRY* pwmmap_entry = i->second.data();
             prev_entry = pwmdata[pwmindx-1].data();
 
             uint32_t value = (static_cast<uint32_t>(i->first) * static_cast<uint32_t>(max_period)) / 0xFFFF;

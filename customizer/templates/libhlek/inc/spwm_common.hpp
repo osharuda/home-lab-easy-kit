@@ -33,18 +33,18 @@
 {__SPWM_SHARED_HEADER__}
 
 
-/// \struct tag_SPWMChannel
+/// \struct SPWMChannel
 /// \brief SPWM channel configuration structure.
-typedef struct tag_SPWMChannel{{
+struct SPWMChannel{{
     size_t  port_index;        ///< Index of the port used
     size_t  pin_number;        ///< Pin number being used
     bool    def_val;           ///< Default value (may not be intermediate state, either on or off)
     const char* channel_name;  ///< Name of the channel
-}} SPWMChannel;
+}};
 
-/// \struct tag_SPWMConfig
+/// \struct SPWMConfig
 /// \brief SPWM configuration structure.
-typedef struct tag_SPWMConfig{{
+struct SPWMConfig{{
 	uint8_t dev_id;            ///< Configured device ID.
 	const char* dev_name;      ///< Configured device name.
 	double default_freq;       ///< Default frequency.
@@ -52,6 +52,6 @@ typedef struct tag_SPWMConfig{{
     size_t  port_number;       ///< Number of the ports.
     size_t  channel_count;     ///< Index of the port used.
     const SPWMChannel* channels;
-}} SPWMConfig;
+}};
 
 /// @}}

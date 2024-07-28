@@ -152,9 +152,9 @@ class AD9850DevCustomizer(DeviceCustomizer):
     }}""")
 
             sw_config_name = "ad9850_{0}_config_ptr".format(dev_name)
-            sw_config_declarations.append(f"extern const AD9850Config* {sw_config_name};")
+            sw_config_declarations.append(f"extern const struct AD9850Config* {sw_config_name};")
             sw_configs.append(
-                f"const AD9850Config* {sw_config_name} = {sw_config_array_name} + {index};")
+                f"const struct AD9850Config* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 

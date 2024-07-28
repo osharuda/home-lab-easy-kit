@@ -36,7 +36,7 @@
 ///
 
 
-/// \struct tag_SPIDACPrivData
+/// \struct SPIDACPrivData
 /// \brief Structure that describes private SPIDAC data
 /// \note The whole device buffer consist of the three parts:
 ///       [SPIDACStatus status (8 bytes)][Default sample][Sample buffer]
@@ -47,41 +47,38 @@
 ///
 /// \note When default sample and sample buffer are accessed (for signal generation) SPIDACPrivData::sample_ptr,
 ///       SPIDACPrivData::sample_ptr_start and SPIDACPrivData::sample_ptr_end members must be used.
-typedef struct tag_SPIDACPrivData {
+struct SPIDACPrivData {
     DMA_InitTypeDef   dma_tx_preinit;
-    PSPIDACStatus     status;
-    volatile uint32_t* ld_port_BSRR;          ///< Optimization for ld pin access from IRQ handler
-    volatile uint32_t* ld_port_BRR;           ///< Optimization for ld pin access from IRQ handler
-    volatile uint8_t* default_sample_base;    ///< Default sample (value) buffer base
-    volatile uint8_t* sample_buffer_base;     ///< Sample buffer base
-    volatile uint8_t* sample_ptr;             ///< Current sample pointer
-    volatile uint8_t* sample_ptr_start;       ///< Sample buffer or default sample buffer end
-    volatile uint8_t* sample_ptr_end;         ///< Sample buffer or default sample buffer end
-    volatile uint32_t dummy_register;         ///< Optimization for ld pin access from IRQ handler
-    volatile uint32_t dma_ccr_enabled;        ///< Cached value of the DMAChannel->CCR register when enabled (for optimization)
-    volatile uint32_t dma_ccr_disabled;       ///< Cached value of the DMAChannel->CCR register when disabled (for optimization)
-    uint16_t          max_sample_buffer_size; ///< Maximum sample buffer size
-    uint16_t          sample_buffer_size;     ///< Current sample buffer size (actual samples)
-    uint16_t          spi_cr1_enabled;        ///< Cached value of the SPI->CR1 register when enabled (for optimization)
-    uint16_t          spi_cr1_disabled;       ///< Cached value of the SPI->CR1 register when disabled (for optimization)
-    uint16_t          sample_size;            ///< Sample size in bytes
-    uint8_t           phase_overflow_status;  ///< The status that will be applied once phase is overflown
+    struct SPIDACStatus*     status;
+    volatile uint32_t*       ld_port_BSRR;          ///< Optimization for ld pin access from IRQ handler
+    volatile uint32_t*       ld_port_BRR;           ///< Optimization for ld pin access from IRQ handler
+    uint8_t*                 default_sample_base;    ///< Default sample (value) buffer base
+    uint8_t*                 sample_buffer_base;     ///< Sample buffer base
+    uint8_t*                 sample_ptr;             ///< Current sample pointer
+    uint8_t*                 sample_ptr_start;       ///< Sample buffer or default sample buffer end
+    uint8_t*                 sample_ptr_end;         ///< Sample buffer or default sample buffer end
+    uint32_t                 dummy_register;         ///< Optimization for ld pin access from IRQ handler
+    uint32_t                 dma_ccr_enabled;        ///< Cached value of the DMAChannel->CCR register when enabled (for optimization)
+    uint32_t                 dma_ccr_disabled;       ///< Cached value of the DMAChannel->CCR register when disabled (for optimization)
+    uint16_t                 max_sample_buffer_size; ///< Maximum sample buffer size
+    uint16_t                 sample_buffer_size;     ///< Current sample buffer size (actual samples)
+    uint16_t                 spi_cr1_enabled;        ///< Cached value of the SPI->CR1 register when enabled (for optimization)
+    uint16_t                 spi_cr1_disabled;       ///< Cached value of the SPI->CR1 register when disabled (for optimization)
+    uint16_t                 sample_size;            ///< Sample size in bytes
+    uint8_t                  phase_overflow_status;  ///< The status that will be applied once phase is overflown
+};
 
 
-} SPIDACPrivData;
-typedef volatile SPIDACPrivData* PSPIDACPrivData;
-
-
-/// \struct tag_SPIDACInstance
+/// \struct SPIDACInstance
 /// \brief Structure that describes SPIDAC virtual device
-typedef struct __attribute__ ((aligned)) tag_SPIDACInstance {
-    volatile DeviceContext     dev_ctx __attribute__ ((aligned)); ///< Virtual device context
+struct __attribute__ ((aligned)) SPIDACInstance {
+    struct DeviceContext       dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-    volatile SPIDACPrivData    priv_data;                  ///< Private data used by this SPIProxy device
+    struct SPIDACPrivData      priv_data;                  ///< Private data used by this SPIProxy device
 
-    volatile uint8_t*          buffer;                    ///< Buffer
+    uint8_t*                   buffer;                    ///< Buffer
 
-    volatile uint8_t*          default_values;            ///< Default values to be put after reset
+    uint8_t*                   default_values;            ///< Default values to be put after reset
 
     SPI_TypeDef*               spi;                       ///< SPI peripheral device.
 
@@ -130,8 +127,8 @@ typedef struct __attribute__ ((aligned)) tag_SPIDACInstance {
     uint8_t                    frames_per_sample;       ///< Amount of frames per sample
 
     uint8_t                    dev_id;                  ///< Device ID for SPIProxy virtual device
-} SPIDACInstance;
-typedef volatile SPIDACInstance* PSPIDACInstance;
+};
+
 
 /// \brief Initializes all SPIDAC virtual devices
 void spidac_init();
@@ -140,33 +137,35 @@ void spidac_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all SPIDAC devices
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
-void spidac_read_done(uint8_t device_id, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t spidac_read_done(uint8_t device_id, uint16_t length);
 
 /// \brief Switches device to \ref STARTING mode and initializes timer, which actually starts sampling.
 /// \param dev - device instance.
-/// \return communication status to be passed to \ref comm_done().
-uint8_t spidac_start(PSPIDACInstance dev);
+/// \return communication status.
+uint8_t spidac_start(struct SPIDACInstance* dev);
 
 /// \brief Switches device to \ref STOPPING state informing it to stop processing.
 /// \param dev - device instance.
-/// \return communication status to be passed to \ref comm_done().
-uint8_t spidac_stop(PSPIDACInstance dev);
+/// \return communication status.
+uint8_t spidac_stop(struct SPIDACInstance* dev);
 
 /// \brief Writes data to device sampling buffer
 /// \param dev - device instance.
 /// \param data - pointer to the data.
 /// \param length - length of the data in bytes.
-/// \return communication status to be passed to \ref comm_done().
-uint8_t spidac_data(PSPIDACInstance dev, uint8_t* data, uint16_t length);
+/// \return communication status.
+uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length);
 
 /// \brief Shutdowns sampling process by disabling peripherals and sets device to \ref SHUTDOWN state.
 /// \param dev - device instance.
-void spidac_shutdown(PSPIDACInstance dev);
+void spidac_shutdown(struct SPIDACInstance* dev);
 
 /// @}
 #endif

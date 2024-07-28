@@ -34,5 +34,5 @@
 
 namespace {__NAMESPACE_NAME__} {{
     /// \brief IRRC configuration structure
-    extern const IRRCConfig* irrc_config_ptr;
+    extern const struct IRRCConfig* irrc_config_ptr;
 }}

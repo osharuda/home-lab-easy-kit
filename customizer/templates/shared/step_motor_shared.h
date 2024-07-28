@@ -709,24 +709,24 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 /// \brief Defines error stepper motor device state. This state indicates state is equivalent to #STEP_MOTOR_DEV_STATUS_IDLE, but one or more motors had errors. Motor(s) ENABLE and SLEEP lines are in their default state.
 #define STEP_MOTOR_DEV_STATUS_ERROR         (uint8_t)(0b00000010)
 
-/// \struct tag_StepMotorStatus
+/// \struct StepMotorStatus
 /// \brief Describes current motor status
 /// \warning Firmware code should make changes to this structure with interrupts disabled.
-typedef struct __attribute__ ((aligned)) tag_StepMotorStatus {{
+struct __attribute__ ((aligned)) StepMotorStatus {{
     int64_t  pos;               ///< Stepper motor position. CW moves increase (and CCW moves decrease) position (by 32 / microstep divider) value. See @ref group_step_motor_dev_microstep_tables
     int64_t  cw_sft_limit;      ///< Current software limit for stepper motor position during CW moves. Ignored if hardware end-stop is used
     int64_t  ccw_sft_limit;     ///< Current software limit for stepper motor position during CCW moves. Ignored if hardware end-stop is used
     uint32_t motor_state;       ///< flags used to describe current motor status. Corresponds to tag_StepMotorDescriptor#config_flags. See @ref group_step_motor_dev_configuration
     uint16_t bytes_remain;      ///< Number of unread bytes in motor command buffer.
-}} StepMotorStatus, *PStepMotorStatus;
+}};
 
-/// \struct tag_StepMotorDevStatus
+/// \struct StepMotorDevStatus
 /// \brief This structure describes current stepper motor device state. It also includes statuses of all stepper motors belonging to the device.
 /// \warning Firmware code should make changes to this structure with interrupts disabled.
-typedef struct __attribute__ ((aligned)) tag_StepMotorDevStatus {{
+struct __attribute__ ((aligned)) StepMotorDevStatus {{
     uint8_t status; ///< Stepper motor device status. One of the following values: #STEP_MOTOR_DEV_STATUS_IDLE, #STEP_MOTOR_DEV_STATUS_RUN, #STEP_MOTOR_DEV_STATUS_ERROR
-    StepMotorStatus mstatus[] __attribute__ ((aligned)); ///< Array of #tag_StepMotorStatus structures containing each motor status. Indexed as motor index.
-}} StepMotorDevStatus, *PStepMotorDevStatus;
+    struct StepMotorStatus mstatus[] __attribute__ ((aligned)); ///< Array of #tag_StepMotorStatus structures containing each motor status. Indexed as motor index.
+}};
 
 /// @}}
 

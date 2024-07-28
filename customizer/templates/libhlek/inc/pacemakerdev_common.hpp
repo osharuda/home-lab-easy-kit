@@ -36,17 +36,17 @@
 /// @{{
 
 
-/// \struct tag_PaceMakerSignal
+/// \struct PaceMakerSignal
 /// \brief PaceMakerDev signal descriptor.
-typedef struct tag_PaceMakerSignal {{
+struct PaceMakerSignal {{
     size_t      signal_mask;   ///< Bitmask which defines state of the signals state
     int         default_value; ///< Default value (may not be intermediate state, either 0 or 1)
     const char* name;          ///< Name of the signal
-}} PaceMakerSignal;
+}};
 
 /// \struct PaceMakerDevConfig
 /// \brief PaceMakerDev configuration structure.
-typedef struct tag_PaceMakerDevConfig{{
+struct PaceMakerDevConfig{{
     uint8_t         dev_id;             ///< Device ID for PaceMakerDev virtual device.
     const char*     dev_name;           ///< Name of the PaceMakerDev virtual device as given in JSON configuration file.
     size_t          dev_buffer_len;     ///< Length of the PaceMakerDev internal buffer, 0 if no buffer is used.
@@ -55,6 +55,6 @@ typedef struct tag_PaceMakerDevConfig{{
     size_t          signals_number;     ///< Number of signals being used.
     uint32_t        default_signals;    ///< Number of signals being used.
     uint32_t        max_samples;        ///< Maximum number of the samples allowed by buffer capacity.
-}} PaceMakerDevConfig;
+}};
 
 /// @}}

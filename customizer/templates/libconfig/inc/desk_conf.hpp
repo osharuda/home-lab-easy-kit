@@ -36,6 +36,6 @@
 #define DESKDEV_DEVICE_ENABLED 1
 
 namespace {__NAMESPACE_NAME__} {{
-    extern const DeskConfig* desk_config_ptr;
+    extern const struct DeskConfig* desk_config_ptr;
 }}
 /// @}}

@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__TIMETRACKERDEV_CONFIGURATION_ARRAY_NAME__}_number = {__TIMETRACKERDEV_DEVICE_COUNT__};
-    extern const TimeTrackerDevConfig {__TIMETRACKERDEV_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct TimeTrackerDevConfig {__TIMETRACKERDEV_CONFIGURATION_ARRAY_NAME__}[];
 
 {__TIMETRACKERDEV_CONFIGURATION_DECLARATIONS__}
 

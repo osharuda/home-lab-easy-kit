@@ -31,7 +31,9 @@
 #include <stm32f10x.h>
 #include "utools.h"
 #include "i2c_bus.h"
+#include "can_conf.h"
 #include "can.h"
+
 
 /// \addtogroup group_can
 /// @{
@@ -39,7 +41,7 @@
 CAN_FW_BUFFERS
 
 /// \brief Global array that stores all virtual Can devices configurations.
-volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
+struct CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 /// \brief Starts CAN device (switches CAN to running mode).
@@ -48,14 +50,14 @@ volatile CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 /// \param reset - non-zero to reset accumulated data.
 /// \return non-zero if recovering after bus-off state
 /// \note state state is tracked by #can_execute()
-uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uint8_t recovery);
+uint8_t can_start(struct DeviceContext* devctx, struct CanInstance* dev, uint8_t recovery);
 
 /// \brief Stops CAN device (switches CAN to stop mode).
 /// \param devctx - device context structure represented by #DeviceContext
 /// \param dev - device instance structure represented by #CanInstance
 /// \return non-zero in the case of success, otherwise 0
 /// \note state state is tracked by #can_execute()
-uint8_t can_stop(volatile PDeviceContext devctx, volatile CanInstance* dev);
+uint8_t can_stop(struct DeviceContext* devctx, struct CanInstance* dev);
 
 /// \brief Applies a filter for CAN device.
 /// \param devctx - device context structure represented by #DeviceContext
@@ -63,7 +65,7 @@ uint8_t can_stop(volatile PDeviceContext devctx, volatile CanInstance* dev);
 /// \param filter - filter represented by #CanFilterCommand
 /// \return non-zero in the case of success, otherwise 0
 /// \note state state is tracked by #can_execute(); Returns error (0) if device is in started state.
-uint8_t can_filter(volatile PDeviceContext devctx, volatile CanInstance* dev, volatile CanFilterCommand* filter);
+uint8_t can_filter(struct DeviceContext* devctx, struct CanInstance* dev, struct CanFilterCommand* filter);
 
 
 /// \brief Sends a message to CAN bus.
@@ -73,41 +75,39 @@ uint8_t can_filter(volatile PDeviceContext devctx, volatile CanInstance* dev, vo
 /// \param length - length of the message structure passed by software.
 /// \return non-zero in the case of success, otherwise 0
 /// \note state state is tracked by #can_execute(); Returns error (0) if device is in stopped state.
-uint8_t can_send(volatile PDeviceContext devctx, volatile CanInstance* dev, volatile CanSendCommand* message, uint8_t length);
-
-/// \brief Clears data accumulated in circular buffer.
-/// \param devctx - device context structure represented by #DeviceContext
-/// \param dev - device instance structure represented by #CanInstance
-void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev);
+uint8_t can_send(struct DeviceContext* devctx, struct CanInstance* dev, struct CanSendCommand* message, uint8_t length);
 
 /// \brief Put received CAN message to the internal circular buffer
 /// \param dev - device instance structure represented by #CanInstance
 /// \param circ_buffer - internal circular buffer represented by a pointer to #CircBuffer structure.
 /// \param message - message represented by a pointer to #CanRxMsg structure.
 /// \param status - status represented by a pointer to #CanStatus structure.
-void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBuffer* circ_buffer, CanRxMsg* message, volatile CanStatus* status);
+void can_put_message_on_buffer( struct CanInstance* dev, 
+                                struct CircBuffer* circ_buffer, 
+                                CanRxMsg* message,
+                                struct CanStatus* status);
 
 /// \brief Reset state of the CAN virtual device
 /// \param dev - device instance structure represented by #CanInstance
-void can_reset_status(volatile CanInstance* dev);
+void can_reset_status(struct CanInstance* dev);
 /// @}
 
 //---------------------------- INTERRUPTS ----------------------------
 
 void CAN_COMMON_TX_IRQ_HANDLER(uint16_t index) {
-    volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+index;
+    struct CanInstance* dev = (struct CanInstance*)g_can_devs+index;
     const uint16_t mask = CAN_STATE_MB_0_BUSY | CAN_STATE_MB_1_BUSY | CAN_STATE_MB_2_BUSY;
 
     // Transmit mailbox empty Interrupt
     if (CAN_GetITStatus(dev->can, CAN_IT_TME)==SET) {
         uint16_t mb_empty = ((uint16_t)((dev->can->TSR >> (26 - CAN_STATE_MB_0_BUSY_BIT_OFFSET)))) & mask;
-        SET_BIT_FIELD(dev->privdata.status.state, mask, ~mb_empty);
+        SET_BIT_FIELD(dev->privdata.status.state, mask, (uint16_t)(~mb_empty));
         CAN_ClearITPendingBit(dev->can, CAN_IT_TME);
     }
 }
 
 void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
-    volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+index;
+    struct CanInstance* dev = (struct CanInstance*)g_can_devs+index;
 
     CanRxMsg message;
 
@@ -116,9 +116,9 @@ void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO0, &message);
         can_put_message_on_buffer(dev,
-                                  (volatile struct CircBuffer*)&(dev->circ_buffer),
+                                  (struct CircBuffer*)&(dev->circ_buffer),
                                   &message,
-                                  (volatile PCanStatus) &(dev->privdata.status));
+                                  (struct CanStatus*) &(dev->privdata.status));
     }
 
     // FIFO 0 full Interrupt
@@ -137,7 +137,7 @@ void CAN_COMMON_RX0_IRQ_HANDLER(uint16_t index) {
 }
 
 void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
-    volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+index;
+    struct CanInstance* dev = (struct CanInstance*)g_can_devs+index;
 
     CanRxMsg message;
 
@@ -146,9 +146,9 @@ void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
         memset(&message, 0, sizeof(CanRxMsg));
         CAN_Receive(dev->can, CAN_FIFO1, &message);
         can_put_message_on_buffer(dev,
-                                  (volatile struct CircBuffer*)&(dev->circ_buffer),
+                                  (struct CircBuffer*)&(dev->circ_buffer),
                                   &message,
-                                  (volatile PCanStatus) &(dev->privdata.status));
+                                  (struct CanStatus*) &(dev->privdata.status));
     }
 
     // FIFO 1 full Interrupt
@@ -167,8 +167,8 @@ void CAN_COMMON_RX1_IRQ_HANDLER(uint16_t index) {
 }
 
 void CAN_COMMON_SCE_IRQ_HANDLER(uint16_t index) {
-    volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+index;
-    volatile PCanStatus pstatus = (volatile PCanStatus)&(dev->privdata.status);
+    struct CanInstance* dev = (struct CanInstance*)g_can_devs+index;
+    struct CanStatus* pstatus = (struct CanStatus*)&(dev->privdata.status);
 
     pstatus->recv_error_count = CAN_GetReceiveErrorCounter(dev->can);
     pstatus->lsb_trans_count = CAN_GetLSBTransmitErrorCounter(dev->can);
@@ -226,9 +226,9 @@ void CAN_COMMON_SCE_IRQ_HANDLER(uint16_t index) {
 
 CAN_FW_IRQ_HANDLERS
 
-void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
-    volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    memset((void*)devctx, 0, sizeof(DeviceContext));
+void can_init_vdev(struct CanInstance* dev, uint16_t index) {
+    struct DeviceContext* devctx = (struct DeviceContext*)&(dev->dev_ctx);
+    memset((void*)devctx, 0, sizeof(struct DeviceContext));
     devctx->device_id      = dev->dev_id;
     devctx->dev_index      = index;
     devctx->on_command     = can_execute;
@@ -236,14 +236,12 @@ void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
     devctx->on_polling     = can_polling;
     devctx->polling_period = CAN_POLLING_EVERY_US;
 
-#if CAN_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     // Init circular buffer
-    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
+    struct CircBuffer* circbuf = (struct CircBuffer*) &(dev->circ_buffer);
     circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
-    circbuf_init_block_mode(circbuf, sizeof(CanRecvMessage));
-    circbuf_init_status(circbuf, (volatile uint8_t*)&(dev->privdata.status), sizeof(CanStatus));
-    devctx->circ_buffer  = circbuf;
-#endif
+    circbuf_init_block_mode(circbuf, sizeof(struct CanRecvMessage));
+    circbuf_init_status(circbuf, (uint8_t*)&(dev->privdata.status), sizeof(struct CanStatus));
+    devctx->circ_buffer = circbuf;
 
     // Initialize GPIO and remap if required
     START_PIN_DECLARATION
@@ -278,13 +276,13 @@ void can_init_vdev(volatile CanInstance* dev, uint16_t index) {
 
 void can_init() {
     for (uint16_t i=0; i<CAN_DEVICE_COUNT; i++) {
-        volatile CanInstance* dev = (volatile CanInstance*)g_can_devs+i;
+        struct CanInstance* dev = (struct CanInstance*)g_can_devs+i;
         can_init_vdev(dev, i);
     }
 }
 
-void can_reset_status(volatile CanInstance* dev) {
-    volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*) &(dev->circ_buffer);
+void can_reset_status(struct CanInstance* dev) {
+    struct CircBuffer* circbuf = (struct CircBuffer*) &(dev->circ_buffer);
     dev->privdata.status.data_len = circbuf_total_len(circbuf);
     dev->privdata.status.state = 0;
     dev->privdata.status.lsb_trans_count = 0;
@@ -292,10 +290,10 @@ void can_reset_status(volatile CanInstance* dev) {
     dev->privdata.status.last_error = 0;
 }
 
-void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
-    volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
-    volatile CanInstance* dev = (volatile CanInstance*)g_can_devs + devctx->dev_index;
-    volatile CanPrivData* priv = &(dev->privdata);
+uint8_t can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+    struct DeviceContext* devctx = comm_dev_context(cmd_byte);
+    struct CanInstance* dev = (struct CanInstance*)g_can_devs + devctx->dev_index;
+    struct CanPrivData* priv = &(dev->privdata);
 
     // Check if there is no error
     uint8_t cmd = cmd_byte & COMM_CMDBYTE_DEV_SPECIFIC_MASK;
@@ -311,11 +309,11 @@ void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
             break;
 
         case CAN_FILTER:
-            no_error = (length>=sizeof(CanFilterCommand)) && IS_CLEARED(priv->status.state, CAN_STATE_STARTED);
+            no_error = (length>=sizeof(struct CanFilterCommand)) && IS_CLEARED(priv->status.state, CAN_STATE_STARTED);
             break;
 
         case CAN_SEND:
-            no_error = (length>=sizeof(CanSendCommand)) && IS_SET(priv->status.state, CAN_STATE_STARTED);
+            no_error = (length>=sizeof(struct CanSendCommand)) && IS_SET(priv->status.state, CAN_STATE_STARTED);
             break;
         default:
             no_error = 0;
@@ -333,47 +331,43 @@ void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         break;
 
         case CAN_FILTER:
-            no_error = can_filter(devctx, dev, (volatile CanFilterCommand*)data);
+            no_error = can_filter(devctx, dev, (struct CanFilterCommand*)data);
         break;
 
         case CAN_SEND:
-            no_error = can_send(devctx, dev, (volatile CanSendCommand*)data, length);
+            no_error = can_send(devctx, dev, (struct CanSendCommand*)data, length);
         break;
     }
 
 done:
 
-    comm_done(no_error!=0 ? 0 : COMM_STATUS_FAIL);
+    return no_error!=0 ? 0 : COMM_STATUS_FAIL;
 }
 
 void can_polling(uint8_t device_id) {
-    volatile PDeviceContext devctx = comm_dev_context(device_id);
-    volatile CanInstance* dev = g_can_devs + devctx->dev_index;
+    struct DeviceContext* devctx = comm_dev_context(device_id);
+    struct CanInstance* dev = g_can_devs + devctx->dev_index;
 
     if (IS_SET(dev->privdata.status.state, CAN_STATE_STARTED | CAN_ERROR_BUS_OFF)) {
         can_start(devctx, dev, 1);
     }
 }
 
-void can_read_done(uint8_t device_id, uint16_t length) {
-    volatile PDeviceContext devctx = comm_dev_context(device_id);
-    volatile CanInstance* dev = g_can_devs + devctx->dev_index;
+uint8_t can_read_done(uint8_t device_id, uint16_t length) {
+    struct DeviceContext* devctx = comm_dev_context(device_id);
+    struct CanInstance* dev = g_can_devs + devctx->dev_index;
 
-#if CAN_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
     volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
 
     circbuf_stop_read(circbuf, length);
     circbuf_clear_ovf(circbuf);
 
-    DISABLE_IRQ
-    dev->privdata.status.data_len = circbuf_total_len_no_irq(circbuf);
-    ENABLE_IRQ
-#endif
+    dev->privdata.status.data_len = circbuf_total_len(circbuf);
 
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
-uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uint8_t recovery) {
+uint8_t can_start(struct DeviceContext* devctx, struct CanInstance* dev, uint8_t recovery) {
     assert_param(recovery || IS_CLEARED(dev->privdata.status.state, CAN_STATE_STARTED));
 
     UNUSED(devctx);
@@ -398,7 +392,7 @@ uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uin
 
     // Reset data if required
     if (recovery==0) {
-        can_reset_data(devctx, dev);
+        circbuf_reset(devctx->circ_buffer);
     }
 
     can_reset_status(dev);
@@ -445,7 +439,7 @@ uint8_t can_start(volatile PDeviceContext devctx, volatile CanInstance* dev, uin
     return 1;
 }
 
-uint8_t can_stop(volatile PDeviceContext devctx, volatile CanInstance* dev) {
+uint8_t can_stop(struct DeviceContext* devctx, struct CanInstance* dev) {
     UNUSED(devctx);
     assert_param(IS_SET(dev->privdata.status.state, CAN_STATE_STARTED));
     CAN_DeInit(dev->can);
@@ -453,9 +447,9 @@ uint8_t can_stop(volatile PDeviceContext devctx, volatile CanInstance* dev) {
     return 1;
 }
 
-uint8_t can_filter( volatile PDeviceContext devctx,
-                    volatile CanInstance* dev,
-                    volatile CanFilterCommand* flt) {
+uint8_t can_filter( struct DeviceContext* devctx,
+                    struct CanInstance* dev,
+                    struct CanFilterCommand* flt) {
     UNUSED(devctx);
     assert_param(IS_CLEARED(dev->privdata.status.state, CAN_STATE_STARTED));
 
@@ -484,9 +478,9 @@ done:
     return result;
 }
 
-uint8_t can_send(   volatile PDeviceContext devctx,
-                    volatile CanInstance* dev,
-                    volatile CanSendCommand* msg,
+uint8_t can_send(   struct DeviceContext* devctx,
+                    struct CanInstance* dev,
+                    struct CanSendCommand* msg,
                     uint8_t length) {
     assert_param(IS_SET(dev->privdata.status.state, CAN_STATE_STARTED));
     uint8_t result = 0;
@@ -496,7 +490,7 @@ uint8_t can_send(   volatile PDeviceContext devctx,
 
     // Check message length
     uint8_t len = (msg->extra & CAN_MSG_MAX_DATA_LEN_MASK);
-    if ( (len>CAN_MSG_MAX_DATA_LEN) || (length!=(sizeof(CanSendCommand)+len))) goto done;
+    if ( (len>CAN_MSG_MAX_DATA_LEN) || (length!=(sizeof(struct CanSendCommand)+len))) goto done;
 
     // Fill message structure
     message.StdId = msg->id;
@@ -524,12 +518,15 @@ done:
     return result;
 }
 
-void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBuffer* circ_buffer, CanRxMsg* message, volatile CanStatus* status) {
-    CanRecvMessage* recv_msg = (CanRecvMessage*)circbuf_reserve_block(circ_buffer);
+void can_put_message_on_buffer( struct CanInstance* dev,
+                                struct CircBuffer* circ_buffer,
+                                CanRxMsg* message,
+                                struct CanStatus* status) {
+    struct CanRecvMessage* recv_msg = (struct CanRecvMessage*)circbuf_reserve_block(circ_buffer);
     if (recv_msg==0) {
         // Failed to reserve
         SET_BIT(status->state, CAN_ERROR_OVERFLOW);
-        can_stop((PDeviceContext)&(dev->dev_ctx), dev);
+        can_stop((struct DeviceContext*)&(dev->dev_ctx), dev);
         return;
     }
 
@@ -550,14 +547,7 @@ void can_put_message_on_buffer(volatile CanInstance* dev, volatile struct CircBu
     memcpy(recv_msg->data, message->Data, CAN_MSG_MAX_DATA_LEN);
 
     circbuf_commit_block(circ_buffer);
-    DISABLE_IRQ
-    status->data_len = circbuf_total_len_no_irq(circ_buffer);
-    ENABLE_IRQ
-}
-
-void can_reset_data(volatile PDeviceContext devctx, volatile CanInstance* dev) {
-    volatile struct CircBuffer* circbuf = devctx->circ_buffer;
-    circbuf_reset(devctx->circ_buffer);
+    status->data_len = circbuf_total_len(circ_buffer);
 }
 
 #endif

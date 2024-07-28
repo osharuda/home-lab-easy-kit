@@ -35,17 +35,17 @@
 /// \image latex under_construction.eps
 ///
 
-typedef struct tag_DeskDevButtonState
+struct DeskDevButtonState
 {
 	volatile uint8_t	state;				// Current button state, true - pushed, false - released
-} DeskDevButtonState;
+};
 
-typedef struct __attribute__ ((aligned)) tag_DeskDevEncoderState
+struct __attribute__ ((aligned)) DeskDevEncoderState
 {
     volatile uint64_t  last_ts;
 	volatile uint8_t   last_ev;
 	volatile uint8_t   ev_count;
-} DeskDevEncoderState;
+};
 
 #define ENCODER_A				0
 #define ENCODER_B				1

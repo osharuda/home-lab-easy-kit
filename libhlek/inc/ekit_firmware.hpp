@@ -170,7 +170,7 @@ public:
 
 	/// \brief Reads virtual device status
 	/// \param hdr - reference to command response header to be read
-	/// \param wait_device - wait until virtual device will not clear #COMM_STATUS_BUSY.
+	/// \param wait_device - wait until virtual device will not reset #COMM_STATUS_BUSY.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to);
 

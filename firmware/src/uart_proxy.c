@@ -34,12 +34,12 @@
 
 
 DEFINE_UART_PROXY_BUFFERS;
-UartProxyDevInstance g_uart_proxies[] = UART_PROXY_DESCRIPTOR;
+struct UartProxyDevInstance g_uart_proxies[] = UART_PROXY_DESCRIPTOR;
 
 void UART_PROXY_COMMON_IRQ_HANDLER(uint16_t index) {
     assert_param(index < UART_PROXY_DEVICE_NUMBER);
 
-	UartProxyDevInstance* dev_instance = g_uart_proxies + index;
+	struct UartProxyDevInstance* dev_instance = g_uart_proxies + index;
 
 	volatile uint8_t rx_byte=0;
 	USART_TypeDef* uart_port = dev_instance->uart_port;
@@ -66,7 +66,7 @@ void uart_proxy_send_byte(USART_TypeDef* uart_port, uint8_t b)
 }
 
 
-void uart_proxy_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t uart_proxy_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
 	uint16_t index = comm_dev_context(cmd_byte)->dev_index;
 	USART_TypeDef* uart_port = g_uart_proxies[index].uart_port;
@@ -76,15 +76,15 @@ void uart_proxy_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 		uart_proxy_send_byte(uart_port, data[i]);
 	}
 
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
-void uart_proxy_read_done(uint8_t device_id, uint16_t length) {
+uint8_t uart_proxy_read_done(uint8_t device_id, uint16_t length) {
 	uint16_t index = comm_dev_context(device_id)->dev_index;
     volatile struct CircBuffer* circ_buffer = g_uart_proxies[index].dev_ctx.circ_buffer;
 	circbuf_stop_read(circ_buffer, length);
 	circbuf_clear_ovf(circ_buffer);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 void uart_proxy_init(void)
@@ -112,8 +112,8 @@ void uart_proxy_init(void)
 		USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
 		USART_Init(g_uart_proxies[i].uart_port, &USART_InitStructure);
 
-		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len, 0);
-		PDeviceContext dev_ctx = (PDeviceContext)&(g_uart_proxies[i].dev_ctx);
+		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len);
+		struct DeviceContext* dev_ctx = (struct DeviceContext*)&(g_uart_proxies[i].dev_ctx);
 		dev_ctx->device_id = g_uart_proxies[i].dev_id;
 		dev_ctx->buffer = 0;
 		dev_ctx->circ_buffer = &(g_uart_proxies[i].circ_buffer);

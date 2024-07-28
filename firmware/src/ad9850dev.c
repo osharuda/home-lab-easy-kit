@@ -42,7 +42,7 @@
 AD9850DEV_FW_SET_DATA_FUNCTIONS
 
 /// \brief Global array that stores all virtual AD9850Dev devices configurations.
-volatile AD9850DevInstance g_ad9850dev_devs[] = AD9850DEV_FW_DEV_DESCRIPTOR;
+struct AD9850DevInstance g_ad9850dev_devs[] = AD9850DEV_FW_DEV_DESCRIPTOR;
 
 /// @}
 
@@ -50,24 +50,24 @@ volatile AD9850DevInstance g_ad9850dev_devs[] = AD9850DEV_FW_DEV_DESCRIPTOR;
 
 /// \brief Reset AD9850 leaving it in power down mode.
 /// \param dev - AD9850 instance definition structure.
-void ad9850dev_reset(volatile AD9850DevInstance* dev);
+void ad9850dev_reset(struct AD9850DevInstance* dev);
 
 /// \brief Updates AD9850 frequency, phase and power down mode.
 /// \param dev - AD9850 instance definition structure.
-void ad9850dev_update(volatile AD9850DevInstance* dev);
+void ad9850dev_update(struct AD9850DevInstance* dev);
 
-void ad9850dev_init_vdev(volatile AD9850DevInstance* dev, uint16_t index) {
-    volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    memset((void*)devctx, 0, sizeof(DeviceContext));
-    PAD9850Command cmd = &(dev->privdata.command);
+void ad9850dev_init_vdev(struct AD9850DevInstance* dev, uint16_t index) {
+    struct DeviceContext* devctx = (struct DeviceContext*)&(dev->dev_ctx);
+    memset((void*)devctx, 0, sizeof(struct DeviceContext));
+    struct AD9850Command* cmd = &(dev->privdata.command);
     START_PIN_DECLARATION;
 
     devctx->device_id    = dev->dev_id;
     devctx->dev_index    = index;
     devctx->on_command   = ad9850dev_execute;
     devctx->on_read_done = ad9850dev_read_done;
-    devctx->buffer = (volatile uint8_t*) &(dev->privdata.command);
-    devctx->bytes_available = sizeof(AD9850DevPrivData);
+    devctx->buffer = (uint8_t*) &(dev->privdata.command);
+    devctx->bytes_available = sizeof(struct AD9850DevPrivData);
 
     comm_register_device(devctx);
 
@@ -120,7 +120,7 @@ void ad9850dev_init_vdev(volatile AD9850DevInstance* dev, uint16_t index) {
     ad9850dev_update(dev);
 }
 
-void ad9850dev_reset(volatile AD9850DevInstance* dev) {
+void ad9850dev_reset(struct AD9850DevInstance* dev) {
     // Pulse reset
     GPIO_SetBits(dev->RESET_port, dev->RESET_pin_mask);
     // Documentation says reset duration should be at least 5 clock cycles.
@@ -132,9 +132,9 @@ void ad9850dev_reset(volatile AD9850DevInstance* dev) {
     GPIO_ResetBits(dev->RESET_port, dev->RESET_pin_mask);
 }
 
-void ad9850dev_update(volatile AD9850DevInstance* dev) {
-    PAD9850Command cmd = &(dev->privdata.command);
-    assert_param(sizeof(AD9850Command)==5);
+void ad9850dev_update(struct AD9850DevInstance* dev) {
+    struct AD9850Command* cmd = &(dev->privdata.command);
+    assert_param(sizeof(struct AD9850Command)==5);
 
     // FQ_UD <- LOW
     GPIO_ResetBits(dev->FQ_UD_port, dev->FQ_UD_pin_mask);
@@ -170,22 +170,22 @@ void ad9850dev_update(volatile AD9850DevInstance* dev) {
 
 void ad9850dev_init() {
     for (uint16_t i=0; i<AD9850DEV_DEVICE_COUNT; i++) {
-        volatile AD9850DevInstance* dev = (volatile AD9850DevInstance*)g_ad9850dev_devs+i;
+        struct AD9850DevInstance* dev = (struct AD9850DevInstance*)g_ad9850dev_devs+i;
         ad9850dev_init_vdev(dev, i);
     }
 }
 
-void ad9850dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t ad9850dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     uint8_t status = COMM_STATUS_FAIL;
-    volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
-    volatile AD9850DevInstance* dev = (volatile AD9850DevInstance*)g_ad9850dev_devs + devctx->dev_index;
-    PAD9850Command cmd = &(dev->privdata.command);
+    struct DeviceContext* devctx = comm_dev_context(cmd_byte);
+    struct AD9850DevInstance* dev = (struct AD9850DevInstance*)g_ad9850dev_devs + devctx->dev_index;
+    struct AD9850Command* cmd = &(dev->privdata.command);
 
-    if (length!=sizeof(AD9850Command)) {
+    if (length!=sizeof(struct AD9850Command)) {
         goto done;
     }
 
-    memcpy((void*)cmd, data, sizeof(AD9850Command));
+    memcpy((void*)cmd, data, sizeof(struct AD9850Command));
     cmd->control = 0;   // Make sure this field is not 1 or 2
 
     if (IS_SET(cmd_byte, AD9850DEV_RESET)) {
@@ -196,13 +196,13 @@ void ad9850dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
     status = COMM_STATUS_OK;
 done:
-    comm_done(status);
+    return status;
 }
 
-void ad9850dev_read_done(uint8_t device_id, uint16_t length) {
+uint8_t ad9850dev_read_done(uint8_t device_id, uint16_t length) {
     UNUSED(device_id);
     UNUSED(length);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 #endif

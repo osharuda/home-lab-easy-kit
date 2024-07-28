@@ -90,7 +90,7 @@ struct PWM_ENTRY_HELPER final {
         size_t buffer_len = PWM_ENTRY_SIZE(p_number);
         buffer = new uint8_t[buffer_len];
         memset(buffer, 0, buffer_len);
-        ppwm_entry = reinterpret_cast<PPWM_ENTRY>(buffer);
+        ppwm_entry = reinterpret_cast<struct PWM_ENTRY*>(buffer);
         port_number = p_number;
     }
 
@@ -100,7 +100,7 @@ struct PWM_ENTRY_HELPER final {
         size_t buffer_len = PWM_ENTRY_SIZE(port_num);
         memset(ptr, 0, buffer_len);
 
-        ppwm_entry = reinterpret_cast<PPWM_ENTRY>(ptr);
+        ppwm_entry = reinterpret_cast<struct PWM_ENTRY*>(ptr);
         port_number = port_num;
         if (buffer) {
             delete[] buffer;
@@ -109,7 +109,7 @@ struct PWM_ENTRY_HELPER final {
 
     }
 
-    PPWM_ENTRY data() {
+    struct PWM_ENTRY* data() {
         return ppwm_entry;
     }
 
@@ -150,7 +150,7 @@ private:
     /// \brief Holds pointer to the PWM entry.
     /// \note This pointer may have some valid pointer while buffer is nullptr. This is result of assign() call, in this
     ///       case class is not responsible for de-allocation.
-    PPWM_ENTRY ppwm_entry = nullptr;
+    struct PWM_ENTRY* ppwm_entry = nullptr;
 
     /// \brief Number of GPIO ports used for SPWMDev.
     size_t port_number = 0;

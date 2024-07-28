@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__SPIPROXY_CONFIGURATION_ARRAY_NAME__}_number = {__SPIPROXY_DEVICE_COUNT__};
-    extern const SPIProxyConfig {__SPIPROXY_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct SPIProxyConfig {__SPIPROXY_CONFIGURATION_ARRAY_NAME__}[];
 
     {__SPIPROXY_CONFIGURATION_DECLARATIONS__}
 }}

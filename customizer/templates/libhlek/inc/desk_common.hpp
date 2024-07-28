@@ -31,11 +31,11 @@
 
 {__DESKDEV_SHARED_HEADER__}
 
-/// \struct tag_DeskConfig
+/// \struct DeskConfig
 /// \brief Desk configuration structure.
-typedef struct tag_DeskConfig{{
+struct DeskConfig{{
 	uint8_t device_id;        ///< Configured device ID
 	const char* device_name;  ///< Configured device name.
-}} DeskConfig;
+}};
 
 /// @}}

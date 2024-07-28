@@ -30,7 +30,7 @@
 
 /// \struct tag_LCD1602aConfig
 /// \brief LCD1602a configuration structure.
-typedef struct tag_LCD1602aConfig{{
+struct LCD1602aConfig{{
 	uint8_t device_id;        ///< Configured device ID
 	const char* device_name;  ///< Configured device name.
-}} LCD1602aConfig;
+}};

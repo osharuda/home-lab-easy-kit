@@ -32,12 +32,12 @@
 
 
 volatile uint16_t g_current_pwm_index;
-volatile uint8_t g_pwm_buffer[SPWM_BUFFER_SIZE];
+uint8_t g_pwm_buffer[SPWM_BUFFER_SIZE];
 
 
 volatile uint16_t  g_pwm_entries_count;
-volatile SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
-volatile DeviceContext spwm_ctx __attribute__ ((aligned));
+struct SPWM_GPIO_DESCRIPTOR g_spwm_descriptor[] = SPWM_GPIO_DESCRIPTION;
+struct DeviceContext spwm_ctx __attribute__ ((aligned));
 
 uint8_t spwm_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     UNUSED(cmd_byte);
@@ -97,7 +97,7 @@ void spwm_init(void) {
 
     // setup variables into initial state
     g_current_pwm_index = 0;
-    volatile PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, 0, PWM_ENTRY_SIZE(SPWM_PORT_COUNT));
+    struct PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, 0, PWM_ENTRY_SIZE(SPWM_PORT_COUNT));
     pwm->n_periods = 0xFFFF;
     g_pwm_entries_count = 1;
     for (int i=0; i<SPWM_PORT_COUNT; i++) {
@@ -144,7 +144,7 @@ MAKE_ISR(SPWM_TIM_IRQ_HANDLER)
         g_current_pwm_index=0;
     }
 
-    volatile PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, g_current_pwm_index, PWM_ENTRY_SIZE(SPWM_PORT_COUNT)); // g_pwm_data+g_current_pwm_index;
+    struct PWM_ENTRY* pwm = GET_PWM_ENTRY_BY_INDEX(g_pwm_buffer, g_current_pwm_index, PWM_ENTRY_SIZE(SPWM_PORT_COUNT)); // g_pwm_data+g_current_pwm_index;
 
     for (int i=0; i<SPWM_PORT_COUNT; i++) {
         spwm_set_port(g_spwm_descriptor[i].port, g_spwm_descriptor[i].mask, pwm->data[i]);

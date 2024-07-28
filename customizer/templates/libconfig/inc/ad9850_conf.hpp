@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__AD9850_CONFIGURATION_ARRAY_NAME__}_number = {__AD9850_DEVICE_COUNT__};
-    extern const AD9850Config {__AD9850_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct AD9850Config {__AD9850_CONFIGURATION_ARRAY_NAME__}[];
 
     {__AD9850_CONFIGURATION_DECLARATIONS__}
 }}

@@ -39,22 +39,22 @@
 
 /// \struct tag_CanPrivData
 /// \brief Structure that describes private Can data
-typedef struct tag_CanPrivData {
-    CanStatus status;
+struct CanPrivData {
+    struct CanStatus status;
 
-    volatile CAN_FilterInitTypeDef can_filters[CAN_MAX_FILTER_COUNT];   ///< CAN filters to be applied
-} CanPrivData;
+    CAN_FilterInitTypeDef can_filters[CAN_MAX_FILTER_COUNT];   ///< CAN filters to be applied
+};
 
-/// \struct tag_CanInstance
+/// \struct CanInstance
 /// \brief Structure that describes Can virtual device
-typedef struct __attribute__ ((aligned)) tag_CanInstance {
-        volatile DeviceContext dev_ctx __attribute__ ((aligned)); ///< Virtual device context
+struct __attribute__ ((aligned)) CanInstance {
+        struct DeviceContext dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        volatile CircBuffer         circ_buffer;    ///< Circular buffer control structure
+        struct CircBuffer           circ_buffer;    ///< Circular buffer control structure
 
-        volatile CanPrivData        privdata;       ///< Private data used by this Can device
+        struct CanPrivData          privdata;       ///< Private data used by this Can device
 
-        volatile uint8_t*           buffer;         ///< Internal buffer
+        uint8_t*                    buffer;         ///< Internal buffer
 
         CAN_TypeDef*                can;            ///< Can module to be used
 
@@ -87,7 +87,7 @@ typedef struct __attribute__ ((aligned)) tag_CanInstance {
         uint8_t                     cantx_pin;      ///< CAN TX pin number
 
         uint8_t                     dev_id;         ///< Device ID for Can virtual device
-} CanInstance;
+};
 
 /// \brief Initializes all Can virtual devices
 void can_init();
@@ -96,12 +96,14 @@ void can_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t can_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all Can devices
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
-void can_read_done(uint8_t device_id, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t can_read_done(uint8_t device_id, uint16_t length);
 
 
 /// \brief #ON_POLLING callback for all Can devices

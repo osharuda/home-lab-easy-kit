@@ -248,7 +248,7 @@ void StepMotorDev::feed() {
 }
 
 void StepMotorDev::clear() {
-    static const char* const func_name = "StepMotorDev::clear";
+    static const char* const func_name = "StepMotorDev::reset";
 	size_t mcount = get_motor_count();
 
 	motors_data.clear();

@@ -57,7 +57,7 @@ void INFODev::check() {
 bool INFODev::is_available(uint8_t dev_type) {
     assert(dev_type != INFO_DEV_TYPE_NONE);
     for (size_t dev_id=0; dev_id < INFO_DEVICE_ADDRESSES; dev_id++) {
-        const PInfoDeviceDescriptor dev = INFODev::get_device_info(dev_id);
+        const struct InfoDeviceDescriptor* dev = INFODev::get_device_info(dev_id);
         if (dev_type==dev->type) {
             return true;
         }
@@ -65,11 +65,11 @@ bool INFODev::is_available(uint8_t dev_type) {
     return false;
 }
 
-const PInfoDeviceDescriptor INFODev::get_device_info(size_t dev_id) {
+const struct InfoDeviceDescriptor* INFODev::get_device_info(size_t dev_id) {
     static const char *const func_name = "INFODev::get_device_info";
     if (dev_id >= INFO_DEVICE_ADDRESSES) {
         throw EKitException(func_name, EKIT_BAD_PARAM, "dev_id is out of possible values range");
     }
 
-    return const_cast<const PInfoDeviceDescriptor>(config->devices+dev_id);
+    return const_cast<const struct InfoDeviceDescriptor*>(config->devices+dev_id);
 }

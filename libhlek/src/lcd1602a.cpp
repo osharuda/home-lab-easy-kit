@@ -100,7 +100,7 @@ void LCD1602ADev::writepos(uint8_t line, uint8_t pos, const std::string& s) {
 	std::vector<uint8_t> buffer;
 	size_t buflen = s.length() + sizeof(LcdPositionalText);
 	buffer.resize(buflen);
-	PLcdPositionalText hdr = (PLcdPositionalText)buffer.data();
+	struct LcdPositionalText* hdr = (struct LcdPositionalText*)buffer.data();
 	hdr->line = line;
 	hdr->position = pos;
 	strcpy((char*)hdr->text, s.c_str());

@@ -32,8 +32,8 @@
 
 
 
-volatile DeviceContext g_info_devctx __attribute__ ((aligned));
-volatile uint8_t g_info_uuid[] = INFO_UUID;
+struct DeviceContext g_info_devctx __attribute__ ((aligned));
+uint8_t g_info_uuid[] = INFO_UUID;
 
 uint8_t info_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 uint8_t info_read_done(uint8_t device_id, uint16_t length);

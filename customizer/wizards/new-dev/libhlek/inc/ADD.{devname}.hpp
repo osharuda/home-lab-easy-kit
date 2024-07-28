@@ -52,7 +52,7 @@ class {DevName} final : public EKitVirtualDevice {
 
 	public:
 
-	/// \brief Pointer to the #tag_{DevName}Config structure that describes {DevName} virtual device represented by this class.
+	/// \brief Pointer to the #{DevName}Config structure that describes {DevName} virtual device represented by this class.
 	const {DevName}Config* config;
 
     /// \brief No default constructor

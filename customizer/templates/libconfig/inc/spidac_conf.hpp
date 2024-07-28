@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__SPIDAC_CONFIGURATION_ARRAY_NAME__}_number = {__SPIDAC_DEVICE_COUNT__};
-    extern const SPIDACConfig {__SPIDAC_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct SPIDACConfig {__SPIDAC_CONFIGURATION_ARRAY_NAME__}[];
 
 {__SPIDAC_CONFIGURATION_DECLARATIONS__}
 

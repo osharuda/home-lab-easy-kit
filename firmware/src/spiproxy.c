@@ -27,6 +27,7 @@
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spiproxy.h"
+#include "spiproxy_conf.h"
 #include <stm32f10x.h>
 
 
@@ -39,21 +40,21 @@ SPI_FW_DMA_TX_PREINIT
 SPI_FW_DMA_RX_PREINIT
 
 /// \brief Global array that stores all virtual SPIProxy devices configurations (instances).
-volatile SPIProxyInstance g_spiproxy_devs[] = SPIPROXY_FW_DEV_DESCRIPTOR;
+struct SPIProxyInstance g_spiproxy_devs[] = SPIPROXY_FW_DEV_DESCRIPTOR;
 
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
-void spiproxy_initialize(volatile SPIProxyInstance* dev, uint16_t index);
-void spiproxy_init_vdev(volatile SPIProxyInstance* dev, uint16_t index);
-void spiproxy_init_gpio(volatile SPIProxyInstance* dev);
-void spiproxy_init_spi(volatile SPIProxyInstance* dev);
-void spiproxy_init_interrupt_mode(volatile SPIProxyInstance* dev);
-void spiproxy_init_dma_mode(volatile SPIProxyInstance* dev);
-void spiproxy_send(volatile SPIProxyInstance* dev);
-void spiproxy_receive(volatile SPIProxyInstance* dev);
-void spiproxy_start(volatile SPIProxyInstance* dev);
-void spiproxy_stop(volatile SPIProxyInstance* dev);
+void spiproxy_initialize(struct SPIProxyInstance* dev, uint16_t index);
+void spiproxy_init_vdev(struct SPIProxyInstance* dev, uint16_t index);
+void spiproxy_init_gpio(struct SPIProxyInstance* dev);
+void spiproxy_init_spi(struct SPIProxyInstance* dev);
+void spiproxy_init_interrupt_mode(struct SPIProxyInstance* dev);
+void spiproxy_init_dma_mode(struct SPIProxyInstance* dev);
+void spiproxy_send(struct SPIProxyInstance* dev);
+void spiproxy_receive(struct SPIProxyInstance* dev);
+void spiproxy_start(struct SPIProxyInstance* dev);
+void spiproxy_stop(struct SPIProxyInstance* dev);
 
 /// \def SPI_IS_BIDIR
 /// \brief Returns non-zero if SPIProxy works in bidirectional mode
@@ -79,8 +80,8 @@ void spiproxy_stop(volatile SPIProxyInstance* dev);
 /// \param index - index of the virtual device
 void SPI_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIPROXY_DEVICE_COUNT);
-    volatile SPIProxyInstance* dev = g_spiproxy_devs+index;
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData)&(dev->privdata);
+    struct SPIProxyInstance* dev = g_spiproxy_devs+index;
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
     assert_param(priv_data->send_frame_counter == 0);
 
     DMA_ClearITPendingBit(dev->dma_tx_it);
@@ -100,8 +101,8 @@ SPI_FW_TX_DMA_IRQ_HANDLERS
 /// \param index - index of the virtual device
 void SPI_COMMON_RX_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIPROXY_DEVICE_COUNT);
-    volatile SPIProxyInstance* dev = g_spiproxy_devs+index;
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData)&(dev->privdata);
+    struct SPIProxyInstance* dev = g_spiproxy_devs+index;
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
     assert_param(priv_data->recv_frame_counter == 0);
     assert_param(SPI_IS_BIDIR(dev));
 
@@ -122,9 +123,9 @@ SPI_FW_RX_DMA_IRQ_HANDLERS
 /// \param index - index of the virtual device
 void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIPROXY_DEVICE_COUNT);
-    volatile SPIProxyInstance* dev = g_spiproxy_devs+index;
-    PDeviceContext dev_ctx = &(dev->dev_ctx);
-    PSPIProxyPrivData priv_data = &(dev->privdata);
+    struct SPIProxyInstance* dev = g_spiproxy_devs+index;
+    struct DeviceContext* dev_ctx = &(dev->dev_ctx);
+    struct SPIProxyPrivData* priv_data = &(dev->privdata);
 
     if (SPI_I2S_GetITStatus(dev->spi, SPI_I2S_IT_RXNE)!=RESET &&
         priv_data->recv_frame_counter < priv_data->frame_number) {
@@ -158,7 +159,7 @@ void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
             (priv_data->recv_frame_counter==(priv_data->frame_number & priv_data->recv_frames_mask)) &&
              priv_data->status->running) {
         spiproxy_stop(dev);
-        dev_ctx->bytes_available =  sizeof(SPIProxyStatus) +
+        dev_ctx->bytes_available =  sizeof(struct SPIProxyStatus) +
                                     (priv_data->transmit_len & priv_data->recv_frames_mask);
     }
     ENABLE_IRQ
@@ -168,7 +169,7 @@ SPI_FW_IRQ_HANDLERS
 /// \brief Initializes SPIproxy
 /// \param dev - SPIProxy instance definition structure.
 /// \param index- index of the virtual device.
-void spiproxy_initialize(volatile SPIProxyInstance* dev, uint16_t index) {
+void spiproxy_initialize(struct SPIProxyInstance* dev, uint16_t index) {
         spiproxy_init_vdev(dev, index);
         spiproxy_init_spi(dev);
         spiproxy_init_gpio(dev);
@@ -176,16 +177,16 @@ void spiproxy_initialize(volatile SPIProxyInstance* dev, uint16_t index) {
 
 void spiproxy_init() {
     for (uint16_t i=0; i<SPIPROXY_DEVICE_COUNT; i++) {
-        volatile SPIProxyInstance* dev = (volatile SPIProxyInstance*)g_spiproxy_devs+i;
+        struct SPIProxyInstance* dev = (struct SPIProxyInstance*)g_spiproxy_devs+i;
         spiproxy_initialize(dev, i/*, SPIPROXY_INIT_ALL*/);
     }
 }
 
-void spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
-    volatile PDeviceContext devctx = comm_dev_context(cmd_byte);
-    volatile SPIProxyInstance* dev = (volatile SPIProxyInstance*)g_spiproxy_devs + devctx->dev_index;
-    PSPIProxyPrivData priv_data = &(dev->privdata);
-    uint8_t res = COMM_STATUS_OK;
+uint8_t spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+    struct DeviceContext* devctx = comm_dev_context(cmd_byte);
+    struct SPIProxyInstance* dev = (struct SPIProxyInstance*)g_spiproxy_devs + devctx->dev_index;
+    struct SPIProxyPrivData* priv_data = &(dev->privdata);
+    uint8_t res = COMM_STATUS_FAIL;
 
     // Check if data is aligned by frame_size
     if ((length & dev->frame_size) != 0) {
@@ -206,27 +207,27 @@ void spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     priv_data->recv_frame_counter = 0;
     priv_data->send_frame_counter = 0;
     priv_data->transmit_len = length;
-    devctx->bytes_available = sizeof(SPIProxyStatus);   // Allow read status until data is fully received
+    devctx->bytes_available = sizeof(struct SPIProxyStatus);   // Allow read status until data is fully received
 
     DISABLE_IRQ
     spiproxy_start(dev);
     ENABLE_IRQ
 
-    res = 0;
+    res = COMM_STATUS_OK;
 
 done:
-    comm_done(res);
+    return res;
 }
 
-void spiproxy_read_done(uint8_t device_id, uint16_t length) {
+uint8_t spiproxy_read_done(uint8_t device_id, uint16_t length) {
     UNUSED(device_id);
     UNUSED(length);
-    comm_done(COMM_STATUS_OK);
+    return COMM_STATUS_OK;
 }
 /// \brief Preinitializes SPIProxyPrivData::dma_rx_preinit structure (used in DMA mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spi_preinit_dma_rx(volatile SPIProxyInstance* dev) {
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData)&(dev->privdata);
+void spi_preinit_dma_rx(struct SPIProxyInstance* dev) {
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
     assert_param(priv_data->dma_rx_preinit != NULL);
 
     DMA_DeInit(dev->rx_dma_channel);
@@ -245,8 +246,8 @@ void spi_preinit_dma_rx(volatile SPIProxyInstance* dev) {
 
 /// \brief Preinitializes SPIProxyPrivData::dma_tx_preinit structure (used in DMA mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spi_preinit_dma_tx(volatile SPIProxyInstance* dev) {
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData) &(dev->privdata);
+void spi_preinit_dma_tx(struct SPIProxyInstance* dev) {
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*) &(dev->privdata);
     assert_param(priv_data->dma_tx_preinit != NULL);
 
     DMA_DeInit(dev->tx_dma_channel);
@@ -268,21 +269,21 @@ void spi_preinit_dma_tx(volatile SPIProxyInstance* dev) {
 /// \brief Initializes structures and registers virtual device.
 /// \param dev - SPIProxy instance definition structure.
 /// \param index- index of the virtual device.
-void spiproxy_init_vdev(volatile SPIProxyInstance* dev, uint16_t index) {
+void spiproxy_init_vdev(struct SPIProxyInstance* dev, uint16_t index) {
     assert_param( dev->buffer_size > 0 );
 
-    volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
-    volatile PSPIProxyPrivData priv_data = (volatile PSPIProxyPrivData)&(dev->privdata);
-    memset((void*)devctx, 0, sizeof(DeviceContext));
+    struct DeviceContext* devctx = (struct DeviceContext*)&(dev->dev_ctx);
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
+    memset((void*)devctx, 0, sizeof(struct DeviceContext));
 
     priv_data->recv_frames_mask = SPI_IS_BIDIR(dev) ? 0xFFFF : 0;
-    priv_data->status = (PSPIProxyStatus)dev->in_status_and_data_buffer;
-    priv_data->in_data_buffer = dev->in_status_and_data_buffer + sizeof(SPIProxyStatus);
+    priv_data->status = (struct SPIProxyStatus*)dev->in_status_and_data_buffer;
+    priv_data->in_data_buffer = dev->in_status_and_data_buffer + sizeof(struct SPIProxyStatus);
 
     devctx->device_id    = dev->dev_id;
     devctx->dev_index    = index;
     devctx->buffer       = dev->in_status_and_data_buffer;
-    devctx->bytes_available = sizeof(SPIProxyStatus);
+    devctx->bytes_available = sizeof(struct SPIProxyStatus);
     devctx->on_command   = spiproxy_execute;
     devctx->on_read_done = spiproxy_read_done;
 
@@ -291,7 +292,7 @@ void spiproxy_init_vdev(volatile SPIProxyInstance* dev, uint16_t index) {
 
 /// \brief Initializes virtual device GPIO.
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_init_gpio(volatile SPIProxyInstance* dev){
+void spiproxy_init_gpio(struct SPIProxyInstance* dev){
     START_PIN_DECLARATION;
     // Enable alternative function if required
     if (dev->remap) {
@@ -321,7 +322,7 @@ void spiproxy_init_gpio(volatile SPIProxyInstance* dev){
 
 /// \brief Initializes virtual device SPI peripherals.
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_init_spi(volatile SPIProxyInstance* dev) {
+void spiproxy_init_spi(struct SPIProxyInstance* dev) {
     SPI_InitTypeDef init_struct;
 
     init_struct.SPI_Direction =  SPI_IS_BIDIR(dev) ?
@@ -363,7 +364,7 @@ void spiproxy_init_spi(volatile SPIProxyInstance* dev) {
 
 /// \brief Initializes SPI in DMA mode (DMA mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_init_dma_mode(volatile SPIProxyInstance* dev) {
+void spiproxy_init_dma_mode(struct SPIProxyInstance* dev) {
     spi_preinit_dma_tx(dev);
     if (SPI_IS_BIDIR(dev)) {
         spi_preinit_dma_rx(dev);
@@ -372,7 +373,7 @@ void spiproxy_init_dma_mode(volatile SPIProxyInstance* dev) {
 
 /// \brief Initializes SPI in interrupt mode (interrupt mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_init_interrupt_mode(volatile SPIProxyInstance* dev) {
+void spiproxy_init_interrupt_mode(struct SPIProxyInstance* dev) {
     NVIC_SetPriority(dev->spi_interrupt_irqn, IRQ_PRIORITY_SPI);
     NVIC_EnableIRQ(dev->spi_interrupt_irqn);
     SPI_I2S_ITConfig(dev->spi, SPI_I2S_IT_TXE, ENABLE);
@@ -385,11 +386,11 @@ void spiproxy_init_interrupt_mode(volatile SPIProxyInstance* dev) {
 
 /// \brief Sends a frame to SPI (interrupt mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_send(volatile SPIProxyInstance* dev) {
+void spiproxy_send(struct SPIProxyInstance* dev) {
     uint16_t data = 0;
     uint8_t* pdata = (uint8_t*)&data;
     uint16_t data_offset;
-    PSPIProxyPrivData priv_data = &(dev->privdata);
+    struct SPIProxyPrivData* priv_data = &(dev->privdata);
     DISABLE_IRQ
     data_offset = priv_data->send_frame_counter << dev->frame_size;
     assert_param(data_offset < dev->buffer_size);
@@ -407,11 +408,11 @@ void spiproxy_send(volatile SPIProxyInstance* dev) {
 
 /// \brief Receives a frame from SPI (interrupt mode only)
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_receive(volatile SPIProxyInstance* dev) {
+void spiproxy_receive(struct SPIProxyInstance* dev) {
     uint16_t data = 0;
     uint8_t* pdata = (uint8_t*)&data;
     uint16_t data_offset;
-    PSPIProxyPrivData priv_data = &(dev->privdata);
+    struct SPIProxyPrivData* priv_data = &(dev->privdata);
 
     if (SPI_IS_UNIDIR(dev)) {
         assert_param(0);
@@ -439,9 +440,9 @@ done:
 
 /// \brief Starts SPI transaction.
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_start(volatile SPIProxyInstance* dev) {
+void spiproxy_start(struct SPIProxyInstance* dev) {
     START_PIN_DECLARATION;
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData)&dev->privdata;
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&dev->privdata;
 
     // Enable DMA if needed
     if (SPI_DMA_MODE(dev)) {
@@ -487,8 +488,8 @@ void spiproxy_start(volatile SPIProxyInstance* dev) {
 
 /// \brief Stops SPI transaction.
 /// \param dev - SPIProxy instance definition structure.
-void spiproxy_stop(volatile SPIProxyInstance* dev) {
-    PSPIProxyPrivData priv_data = (PSPIProxyPrivData)&(dev->privdata);
+void spiproxy_stop(struct SPIProxyInstance* dev) {
+    struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
     START_PIN_DECLARATION;
 
     // Disable DMA if needed
@@ -504,7 +505,7 @@ void spiproxy_stop(volatile SPIProxyInstance* dev) {
     GPIO_SetBits(dev->nss_port, 1 << dev->nss_pin);
 
     // Stop
-    dev->dev_ctx.bytes_available =  sizeof(SPIProxyStatus) + (priv_data->transmit_len & priv_data->recv_frames_mask);
+    dev->dev_ctx.bytes_available = sizeof(struct SPIProxyStatus) + (priv_data->transmit_len & priv_data->recv_frames_mask);
     assert_param(SPI_I2S_GetFlagStatus(dev->spi, SPI_I2S_FLAG_BSY)==RESET);
     SPI_Cmd(dev->spi, DISABLE);
     SPI_SSOutputCmd(dev->spi, DISABLE);

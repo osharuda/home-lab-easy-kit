@@ -19,15 +19,14 @@
 
 #pragma pack(push, 1)
 
-/// \struct tag_PWM_ENTRY
+/// \struct PWM_ENTRY
 /// \brief Defines single PWM entry
-typedef struct tag_PWM_ENTRY {{
+struct PWM_ENTRY {{
 	uint16_t n_periods; ///< Amount of timer periods until the next PWM entry. This value is put in ARR timer register.
     uint16_t data[];    ///< PORT values to be set.
-}} PWM_ENTRY;
-typedef volatile PWM_ENTRY* PPWM_ENTRY;
+}};
 #pragma pack(pop)
 
-#define PWM_ENTRY_SIZE(n_ports) (sizeof(PWM_ENTRY) + (n_ports)*sizeof(uint16_t))
-#define GET_PWM_ENTRY_BY_INDEX(entry_array, index, entry_size) ((PPWM_ENTRY)( (uint8_t*)(entry_array) + (entry_size)*(index) ))
+#define PWM_ENTRY_SIZE(n_ports) (sizeof(struct PWM_ENTRY) + (n_ports)*sizeof(uint16_t))
+#define GET_PWM_ENTRY_BY_INDEX(entry_array, index, entry_size) ((struct PWM_ENTRY*)( (uint8_t*)(entry_array) + (entry_size)*(index) ))
 

@@ -44,14 +44,12 @@
 /// \struct tag_LcdPositionalText
 /// \brief Used to make positional text write
 #pragma pack(push, 1)
-typedef struct tag_LcdPositionalText{{
+struct LcdPositionalText{{
 	uint8_t line;       ///< Specify line to write.
 	uint8_t position;   ///< Specify character position to write.
 	uint8_t text[];     ///< Text to write (size of the string is structure length substracted by sizeof(tag_LcdPositionalText).
-}} LcdPositionalText;
+}};
 #pragma pack(pop)
-
-typedef volatile LcdPositionalText* PLcdPositionalText;
 
 /// \def LCD1602a_BLINK_EVERY_US
 /// \brief Half period of blinking, in microseconds.

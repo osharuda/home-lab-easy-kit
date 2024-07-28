@@ -42,23 +42,22 @@ typedef enum {{
 }} SPIDAC_FRAME_FORMAT;
 
 #pragma pack(push, 1)
-/// \struct tag_SPIDACSampling
+/// \struct SPIDACSampling
 /// \brief Structure that describes sampling of the SPIDAC device
-typedef struct tag_SPIDACSampling {{
+struct SPIDACSampling {{
     uint16_t prescaler;
     uint16_t period;
     uint16_t phase_increment;   // Sample increment in bytes (number of frames per sample * frame size)
-}} SPIDACSampling;
-typedef volatile SPIDACSampling* PSPIDACSampling;
+}};
 
-/// \struct tag_SPIDACStatus
+
+/// \struct SPIDACStatus
 /// \brief Structure that describes status of the SPIDAC device
-typedef struct tag_SPIDACStatus {{
+struct SPIDACStatus {{
     uint8_t status;             /// Describes status of the device.
     uint8_t repeat_count;
-    SPIDACSampling sampling;
-}} SPIDACStatus;
-typedef volatile SPIDACStatus* PSPIDACStatus;
+    struct SPIDACSampling sampling;
+}};
 #pragma pack(pop)
 
 /// @}}

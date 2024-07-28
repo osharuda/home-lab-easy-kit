@@ -44,30 +44,29 @@ typedef void(*PFN_PACEMAKER_SET_GPIO)(uint32_t);
 
 /// \struct tag_PaceMakerDevPrivData
 /// \brief Structure that describes private PaceMakerDev data
-typedef struct tag_PaceMakerDevPrivData {
-    volatile PaceMakerStatus*     status;                 ///< Status of the virtual device.
-    volatile PaceMakerTransition* transitions;            ///< Data buffer.
+struct PaceMakerDevPrivData {
+    struct PaceMakerStatus*       status;                 ///< Status of the virtual device.
+    struct PaceMakerTransition*   transitions;            ///< Data buffer.
     volatile uint32_t             main_cycle_number;      ///< Number of main cycles remains to the finish. If zero infinite cycling is used.
     volatile uint16_t             main_cycle_prescaller;  ///< Main time cycle prescaller.
     volatile uint16_t             main_cycle_counter;     ///< Main timer cycle counter.
     volatile uint32_t             max_trans_number;       ///< Maximum number of transitions.
     volatile uint32_t             trans_number;           ///< Current number of transitions.
-} PaceMakerDevPrivData;
-typedef volatile PaceMakerDevPrivData* PPaceMakerDevPrivData;
+};
 
 
-/// \struct tag_PaceMakerDevInstance
+/// \struct PaceMakerDevInstance
 /// \brief Structure that describes PaceMakerDev virtual device
-typedef struct __attribute__ ((aligned)) tag_PaceMakerDevInstance {
-        volatile DeviceContext          dev_ctx  __attribute__ ((aligned)); ///< Virtual device context
+struct __attribute__ ((aligned)) PaceMakerDevInstance {
+        struct DeviceContext          dev_ctx  __attribute__ ((aligned)); ///< Virtual device context
 
-        volatile PaceMakerDevPrivData   privdata;              ///< Private data used by this PaceMakerDev device
+        struct PaceMakerDevPrivData   privdata;              ///< Private data used by this PaceMakerDev device
 
         PFN_PACEMAKER_INIT_GPIO         pfn_init_gpio;         ///< GPIO initializer function pointer
         
 	    PFN_PACEMAKER_SET_GPIO          pfn_set_gpio;          ///< GPIO setter function pointer
 
-        volatile uint8_t*               buffer;                ///< Internal buffer
+        uint8_t*               buffer;                ///< Internal buffer
 
         TIM_TypeDef*                    main_timer;            ///< Main timer to generate pulses
 
@@ -82,9 +81,7 @@ typedef struct __attribute__ ((aligned)) tag_PaceMakerDevInstance {
         uint16_t                        buffer_size;           ///< Buffer size
 
         uint8_t                         dev_id;                ///< Device ID for PaceMakerDev virtual device
-} PaceMakerDevInstance;
-
-typedef volatile PaceMakerDevInstance* PPaceMakerDevInstance;
+};
 
 /// \brief Initializes all PaceMakerDev virtual devices
 void pacemakerdev_init();
@@ -93,18 +90,14 @@ void pacemakerdev_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void pacemakerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Result of the operation as communication status.
+uint8_t pacemakerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all PaceMakerDev devices
 /// \param device_id - Device ID of the virtual device which data was read
 /// \param length - amount of bytes read.
-void pacemakerdev_read_done(uint8_t device_id, uint16_t length);
-
-/// \brief Declaration for initialization gpio functions
-PACEMAKERDEV_FW_INIT_GPIO_HEADERS
-
-/// \brief Declaration for set gpio functions
-PACEMAKERDEV_FW_SET_GPIO_HEADERS
+/// \return Result of the operation as communication status.
+uint8_t pacemakerdev_read_done(uint8_t device_id, uint16_t length);
 
 /// @}
 #endif

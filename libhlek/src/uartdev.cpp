@@ -24,7 +24,7 @@
 #include "ekit_error.hpp"
 #include "ekit_firmware.hpp"
 
-UARTProxyDev::UARTProxyDev(std::shared_ptr<EKitBus>& ebus, const UARTProxyConfig* cfg) :
+UARTProxyDev::UARTProxyDev(std::shared_ptr<EKitBus>& ebus, const struct UARTProxyConfig* cfg) :
     EKitBus(EKitBusType::BUS_UART),
     super(ebus, cfg->dev_id, cfg->dev_name),
     config(cfg) {

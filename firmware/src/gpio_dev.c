@@ -32,14 +32,14 @@
 
 
 
-GPIO_descr gpio_descriptor[] = GPIO_DESCRIPTOR;
+struct GPIO_descr gpio_descriptor[] = GPIO_DESCRIPTOR;
 
-#define GPIO_COUNT          ((uint16_t)(sizeof(gpio_descriptor)/sizeof(GPIO_descr)))
+#define GPIO_COUNT          ((uint16_t)(sizeof(gpio_descriptor)/sizeof(struct GPIO_descr)))
 #define GPIO_BUFFER_SIZE    ((GPIO_COUNT/8) + 1)
 
 uint8_t gpio_out_pins[GPIO_COUNT];
 uint8_t gpio_buffer[GPIO_BUFFER_SIZE];
-volatile DeviceContext gpio_ctx __attribute__ ((aligned));
+struct DeviceContext gpio_ctx __attribute__ ((aligned));
 
 void gpio_update_values(uint8_t* buffer) {
 	for (uint16_t i=0; i<GPIO_COUNT; i++) {
@@ -61,7 +61,7 @@ void gpio_update_values(uint8_t* buffer) {
 	}
 }
 
-void gpio_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
+uint8_t gpio_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	UNUSED(cmd_byte);
 
 	if (length==GPIO_BUFFER_SIZE) {
@@ -69,13 +69,13 @@ void gpio_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 	}
 
 	gpio_update_values(gpio_buffer);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
-void gpio_read_done(uint8_t device_id, uint16_t length) {
+uint8_t gpio_read_done(uint8_t device_id, uint16_t length) {
 	UNUSED(device_id);
 	UNUSED(length);
-    comm_done(0);
+    return COMM_STATUS_OK;
 }
 
 

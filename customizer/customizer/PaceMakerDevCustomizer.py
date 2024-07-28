@@ -39,8 +39,6 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
 
     def customize(self):
         fw_device_descriptors = []      # these descriptors are used to configure each device on firmwire side
-        fw_device_pin_descriptors = []
-        sw_device_pin_descriptors = []
         sw_device_desсriptors = []      # these descriptors are used to configure each device on software side
         fw_device_buffers = []          # these buffers are used to be internal buffers for all configured devices on firmware side
         sw_configs = []
@@ -133,15 +131,15 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
 
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
 
-            buffer_size  = f"( sizeof(PaceMakerStatus) + {max_samples}*sizeof(PaceMakerTransition) )"
+            buffer_size  = f"( sizeof(struct PaceMakerStatus) + {max_samples}*sizeof(struct PaceMakerTransition) )"
             fw_device_descriptors.append(f"{{ {{0}}, {{0}}, {init_gpio_func_name}, {set_gpio_func_name}, {fw_buffer_name}, {main_timer}, {internal_timer}, {default_pin_state}, {main_timer_irqn}, {internal_timer_irqn}, {buffer_size}, {dev_id} }}")
-            fw_device_buffers.append("volatile uint8_t {0}[{1} + sizeof(PaceMakerStatus)];\\".format(fw_buffer_name, buffer_size))
+            fw_device_buffers.append("uint8_t {0}[{1} + sizeof(struct PaceMakerStatus)];\\".format(fw_buffer_name, buffer_size))
 
             sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size}, {self.mcu_hw.get_TIMER_freq(main_timer)}, {self.mcu_hw.get_TIMER_freq(internal_timer)}, {signal_index}, {default_pin_state}, {max_samples} }}')
             sw_config_name = f'pacemaker_{dev_name}_config'
-            sw_config_declarations.append(f"{self.tab}extern const PaceMakerDevConfig* {sw_config_name};")
+            sw_config_declarations.append(f"{self.tab}extern const struct PaceMakerDevConfig* {sw_config_name};")
             sw_configs.append(
-                f"const PaceMakerDevConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+                f"const struct PaceMakerDevConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             sw_dev_namespace_declarations.append(f"{self.tab}}}")
             sw_dev_namespace_values.append(f"{self.tab}}}")
