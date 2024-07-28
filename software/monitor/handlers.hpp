@@ -196,7 +196,7 @@ class CommandHandler {
     DEFINE_HANDLER_CLASS(ADCDevStatusHandler);
     DEFINE_HANDLER_CLASS(ADCDevConfigHandler);
 	DEFINE_HANDLER_CLASS(ADCDevStopHandler);
-    DEFINE_HANDLER_CLASS(ADCDevClearHandler);
+    DEFINE_HANDLER_CLASS(ADCDevResetHandler);
 	DEFINE_HANDLER_CLASS(ADCDevReadHandler);
 
 	DEFINE_HANDLER_CLASS(StepMotorInfoHandler);
@@ -260,6 +260,7 @@ class CommandHandler {
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613
 	DEFINE_HANDLER_CLASS(TimeTrackerDevStartHandler);
     DEFINE_HANDLER_CLASS(TimeTrackerDevStopHandler);
+    DEFINE_HANDLER_CLASS(TimeTrackerDevResetHandler);
     DEFINE_HANDLER_CLASS(TimeTrackerDevReadHandler);
     DEFINE_HANDLER_CLASS(TimeTrackerDevStatusHandler);
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613

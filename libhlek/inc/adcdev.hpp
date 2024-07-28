@@ -102,7 +102,7 @@ class ADCDev final : public EKitVirtualDevice {
 
     /// \brief Clears all the data accumulated inside ADCDev circular buffer.
     /// \note This method may be called when sampling is active.
-    void clear();
+    void reset();
 
     /// \brief Configure and prepare device for the sampling.
     /// \param delay_sec - number of micro seconds between samples. If 0 is
@@ -142,7 +142,7 @@ class ADCDev final : public EKitVirtualDevice {
     /// \return Number of bytes accumulated in circular buffer (including status).
     size_t status_priv(uint16_t* flags, EKitTimeout& to);
 
-    void write_device(uint8_t* ptr, size_t size, uint8_t flag);
+    void send_command(uint8_t* ptr, size_t size, uint8_t command);
     std::vector<std::pair<double, double>> signal_ranges;
     std::vector<uint16_t> data_buffer;
     volatile uint16_t* data_status;

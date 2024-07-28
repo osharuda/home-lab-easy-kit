@@ -398,7 +398,7 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> adc_status_handler;
         std::shared_ptr<CommandHandler> adc_config_handler;
         std::shared_ptr<CommandHandler> adc_stop_handler;
-        std::shared_ptr<CommandHandler> adc_clear_handler;
+        std::shared_ptr<CommandHandler> adc_reset_handler;
         std::shared_ptr<CommandHandler> adc_read_handler;
     };
 
@@ -414,7 +414,7 @@ int main(int argc, char* argv[])
         h.adc_status_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_config_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevConfigHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_stop_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.adc_clear_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevClearHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.adc_reset_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevResetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.adc_read_handler.reset(dynamic_cast<CommandHandler*>(new ADCDevReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
 
 
@@ -422,7 +422,7 @@ int main(int argc, char* argv[])
         ui->add_command(cmd_index++, h.adc_start_handler);
         ui->add_command(cmd_index++, h.adc_config_handler);
         ui->add_command(cmd_index++, h.adc_stop_handler);
-        ui->add_command(cmd_index++, h.adc_clear_handler);
+        ui->add_command(cmd_index++, h.adc_reset_handler);
         ui->add_command(cmd_index++, h.adc_read_handler);  
     }
 #endif    
@@ -670,6 +670,7 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> timetrackerdev_status_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_start_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_stop_handler;
+        std::shared_ptr<CommandHandler> timetrackerdev_reset_handler;
         std::shared_ptr<CommandHandler> timetrackerdev_read_handler;
     };
 
@@ -685,11 +686,13 @@ int main(int argc, char* argv[])
         h.timetrackerdev_status_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_start_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStartHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_stop_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.timetrackerdev_reset_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevResetHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.timetrackerdev_read_handler.reset(dynamic_cast<CommandHandler*>(new TimeTrackerDevReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
 
         ui->add_command(cmd_index++, h.timetrackerdev_status_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_start_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_stop_handler);
+        ui->add_command(cmd_index++, h.timetrackerdev_reset_handler);
         ui->add_command(cmd_index++, h.timetrackerdev_read_handler);
     }
 #endif  

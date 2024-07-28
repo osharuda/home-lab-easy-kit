@@ -1293,17 +1293,17 @@ void ADCDevStopHandler::handle(const std::vector<std::string>& args) {
 
 
 //----------------------------------------------------------------------------------------------//
-//                                    ADCDevClearHandler                                        //
+//                                    ADCDevResetHandler                                        //
 //----------------------------------------------------------------------------------------------//
-DEFINE_HANDLER_DEFAULT_IMPL(ADCDevClearHandler,"adc::", "::clear")
-std::string ADCDevClearHandler::help() const {
+DEFINE_HANDLER_DEFAULT_IMPL(ADCDevResetHandler,"adc::", "::reset")
+std::string ADCDevResetHandler::help() const {
     return tools::format_string("# %s resets ADC data. No arguments are required.\n",
                                 get_command_name());
 }
-void ADCDevClearHandler::handle(const std::vector<std::string>& args) {
+void ADCDevResetHandler::handle(const std::vector<std::string>& args) {
     auto adc = dynamic_cast<ADCDev*>(device.get());
     size_t argc = check_arg_count(args, 0);
-    adc->clear();
+    adc->reset();
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -2500,7 +2500,7 @@ std::string TimeTrackerDevStartHandler::help() const {
 
 void TimeTrackerDevStartHandler::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<TimeTrackerDev*>(device.get());
-    d->start(true);
+    d->start();
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -2571,6 +2571,24 @@ void TimeTrackerDevStatusHandler::handle(const std::vector<std::string>& args) {
 
     ui->log(tools::str_format("%d timestamps are stored in the buffer.", n));
     ui->log(tools::str_format("First timestamp is %f", (double)first_ts/(double)d->config->tick_freq));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    TimeTrackerDevResetHandler                                //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(TimeTrackerDevResetHandler,"timetrackerdev::", "::reset")
+std::string TimeTrackerDevResetHandler::help() const {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    auto cn = get_command_name();
+    auto dn = d->get_dev_name();
+    return tools::format_string("# %s Reset %s device circular buffer. No parameters are required.\n",
+                                cn.c_str(),
+                                dn.c_str());
+}
+
+void TimeTrackerDevResetHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<TimeTrackerDev*>(device.get());
+    d->reset();
 }
 
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613

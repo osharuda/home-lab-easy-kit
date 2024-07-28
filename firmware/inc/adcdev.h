@@ -50,9 +50,9 @@ typedef void (*ADCResetFunc)(volatile void*, volatile void*);
 
 #define ADC_CR1_FLAG_SCAN          ((uint32_t)0x00000100)
 
-/// \struct tag_ADCDevFwPrivData
+/// \struct ADCDevFwPrivData
 /// \brief Structure that describes private ADCDev values
-typedef struct __attribute__ ((aligned)) tag_ADCDevFwPrivData {
+struct __attribute__ ((aligned)) ADCDevFwPrivData {
     ADCStartSamplingFunc adc_continue_sampling_ptr;  ///< Function pointer that schedules (continues) next ADC sampling.
 
     ADCResetFunc adc_hw_reset_ptr;                ///< Pointer to the function that reset adc hardware
@@ -76,63 +76,63 @@ typedef struct __attribute__ ((aligned)) tag_ADCDevFwPrivData {
 
     uint16_t period;                              ///< Timer period value. If this value and tag_ADCDevFwPrivData#prescaller are zero
                                                   ///  conversions will follow each other without delay.
-} ADCDevFwPrivData;
+};
 
 
-/// \struct tag_ADCDevFwChannel
+/// \struct ADCDevFwChannel
 /// \brief Structure that describes ADC channel
-typedef struct tag_ADCDevFwChannel {
+struct ADCDevFwChannel {
         GPIO_TypeDef* port;           ///< Port being used by corresponding GPIO pin
         uint16_t      pin;            ///< GPIO pin (bitmask)
         uint8_t       channel;        ///< Channel number (ADC_Channel_XXX values from CMSIS library)
         uint8_t       sample_time;    ///< Sampling time (ADC_SampleTime_XXX values from CMSIS library)
 } ADCDevFwChannel;
 
-/// \struct tag_ADCDevFwInstance
+/// \struct ADCDevFwInstance
 /// \brief Structure that describes ADCDev virtual device
-typedef struct __attribute__ ((aligned)) tag_ADCDevFwInstance {
-        volatile DeviceContext      dev_ctx __attribute__ ((aligned)); ///< Virtual device context
+struct __attribute__ ((aligned)) ADCDevFwInstance {
+        struct DeviceContext      dev_ctx __attribute__ ((aligned)); ///< Virtual device context
 
-        volatile struct CircBuffer         circ_buffer;        ///< Circular buffer control structure
+        struct CircBuffer         circ_buffer;        ///< Circular buffer control structure
 
-        volatile ADCDevFwPrivData   privdata;           ///< Private data used by this ADCDev device
+        struct ADCDevFwPrivData   privdata;           ///< Private data used by this ADCDev device
 
-        volatile ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
+        struct ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
 
-        volatile uint16_t*          measurement_buffer; ///< Buffer for values to be measured (and averaged later).
+        uint16_t*                 measurement_buffer; ///< Buffer for values to be measured (and averaged later).
 
-        volatile uint8_t*           sample_time_buffer; ///< Sample time buffer, used to keep current sample time settings.
+        uint8_t*                  sample_time_buffer; ///< Sample time buffer, used to keep current sample time settings.
 
-        volatile uint32_t*          accumulator_buffer; ///< Accumulator buffer.
+        uint32_t*                 accumulator_buffer; ///< Accumulator buffer.
 
-        volatile uint8_t*           buffer;             ///< Memory block used for circular buffer as storage
+        uint8_t*                  buffer;             ///< Memory block used for circular buffer as storage
 
-        ADC_TypeDef*                adc;                ///< ADC being used
+        ADC_TypeDef*              adc;                ///< ADC being used
 
-        TIM_TypeDef*                timer;              ///< Timer being used
+        TIM_TypeDef*              timer;              ///< Timer being used
 
-        uint32_t                    adc_dr_address;     ///< ADC data register address
+        uint32_t                  adc_dr_address;     ///< ADC data register address
 
-        DMA_Channel_TypeDef*        dma_channel;        ///< DMA channel being used (0 in interrupt mode)
+        DMA_Channel_TypeDef*      dma_channel;        ///< DMA channel being used (0 in interrupt mode)
 
-        DMA_TypeDef *               dma;                ///< DMA being used  (0 in interrupt mode)
+        DMA_TypeDef *             dma;                ///< DMA being used  (0 in interrupt mode)
 
-        uint32_t                    dma_it;             ///< DMA transfer complete interrupt being used (DMA1_IT_XXX from CMSIS library)
+        uint32_t                  dma_it;             ///< DMA transfer complete interrupt being used (DMA1_IT_XXX from CMSIS library)
 
-        uint16_t                    buffer_size;        ///< Circular buffer size
+        uint16_t                  buffer_size;        ///< Circular buffer size
 
-        uint16_t                    sample_block_size;  ///< Amount of bytes used for sample buffer
+        uint16_t                  sample_block_size;  ///< Amount of bytes used for sample buffer
 
-        uint16_t                    max_measurement_per_sample; ///< Maximum number of measurements per sample
+        uint16_t                  max_measurement_per_sample; ///< Maximum number of measurements per sample
 
-        IRQn_Type                   timer_irqn;         ///< Timer interrupt number
+        IRQn_Type                 timer_irqn;         ///< Timer interrupt number
 
-        IRQn_Type                   scan_complete_irqn; ///< Either DMA transfer complete or ADC complete interrupt number
+        IRQn_Type                 scan_complete_irqn; ///< Either DMA transfer complete or ADC complete interrupt number
 
-        uint8_t                     dev_id;             ///< Device ID for ADCDev virtual device
+        uint8_t                   dev_id;             ///< Device ID for ADCDev virtual device
 
-        uint8_t                     input_count;        ///< Number of ADC channels used
-} ADCDevFwInstance;
+        uint8_t                   input_count;        ///< Number of ADC channels used
+};
 
 /// \def ADC_DMA_MODE
 /// \brief This macro is used to check if running in DMA mode

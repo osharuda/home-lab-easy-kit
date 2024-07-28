@@ -25,6 +25,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "i2c_proto.h"
 
 {__ADC_SHARED_HEADER__}
 
@@ -40,17 +41,17 @@
 #define ADC_SampleTime_71Cycles5        6
 #define ADC_SampleTime_239Cycles5       7
 
-/// \struct tag_ADCInput
+/// \struct ADCInput
 /// \brief Describes ADCDev input
-typedef struct tag_ADCInput {{
+struct ADCInput {{
     const char*   in_name;                ///< Input name as specified in JSON configuration file
     const char*   adc_input;              ///< Channel name as specified in JSON configuration file (CMSIS channel name)
     const uint8_t default_sampling_time;  ///< Default sampling time
-}} ADCInput;
+}};
 
-/// \struct tag_ADCConfig
+/// \struct ADCConfig
 /// \brief ADC configuration structure.
-typedef struct tag_ADCConfig{{
+struct ADCConfig {{
     uint8_t         dev_id;             ///< Device ID for ADCDev virtual device
     const char*     dev_name;           ///< Name of the ADCDev virtual device as given in JSON configuration file
     uint16_t        dev_buffer_len;     ///< Length of the ADCDev internal circular buffer
@@ -59,6 +60,6 @@ typedef struct tag_ADCConfig{{
     uint32_t        timer_freq;         ///< Timer clock frequency
     uint16_t        adc_maxval;         ///< Maximum value ADC may return
     const ADCInput* inputs;
-}} ADCConfig;
+}};
 
 /// @}}

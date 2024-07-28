@@ -22,6 +22,7 @@
 
 #include "main.hpp"
 #include <iostream>
+#include <iomanip>
 
 #include <libhlek/info_dev.hpp>
 #include <libhlek/ekit_i2c_bus.hpp>
@@ -45,6 +46,23 @@ void help() {
 
 std::atomic_bool g_exit(false);
 
+void print_result(  const std::string& name,
+                    size_t n_smpl,
+                    double mean_value,
+                    double min_value,
+                    double max_value,
+                    char var_letter,
+                    const std::string& unit) {
+    if (n_smpl) {
+        std::cout << std::setw(5) << "[" << name << ": Nₛₐₘₚₗₑ=" << n_smpl << "] " << std::setw(10)
+                  << var_letter << "ₘₑₐₙ =" << mean_value << unit << "  "
+                  << var_letter << "ₘᵢₙ  =" << min_value << unit << "  "
+                  << var_letter << "ₘₐₓ  =" << max_value << unit << std::endl;
+    } else {
+        std::cout << std::setw(5) << "[" << name << ": NO DATA]" << std::endl;
+    }
+}
+
 void adc_thread_func(std::shared_ptr<ADCDev> adc) {
     constexpr double mean_value = 3.3l / 2.0l;
     constexpr double value_error = 0.5l / 2.0l;
@@ -58,7 +76,7 @@ void adc_thread_func(std::shared_ptr<ADCDev> adc) {
 
     while (!g_exit.load()) {
         adc->stop();
-        adc->clear();
+        adc->reset();
         adc->configure(0.001, 1, sampling_info);
         adc->start(0);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -69,7 +87,7 @@ void adc_thread_func(std::shared_ptr<ADCDev> adc) {
         size_t n = samples.size();
 
         if (n==0) {
-            std::cout << "[ADCDev] No values." << std::endl;
+            print_result("ADCDev", n, 0.0L, 0.0L, 0.0L, 'U', "V");
         } else {
             double acc = 0.0l;
             double min_x = std::numeric_limits<double>::max();
@@ -84,7 +102,8 @@ void adc_thread_func(std::shared_ptr<ADCDev> adc) {
                 acc += x / (double)n;
             }
 
-            std::cout << "[ADCDev] Vmean=" << acc << " N=" << n << " Vmin=" << min_x << " Vmax=" << max_x << std::endl;
+            //std::cout << "[ADCDev] Uₘₑₐₙ=" << acc << " N=" << n << " Uₘᵢₙ=" << min_x << " Uₘₐₓ=" << max_x << std::endl;
+            print_result("ADCDev      ", n, acc, min_x, max_x, 'U', "V");
         }
 
 
@@ -104,7 +123,9 @@ void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
 
     std::vector<double> timestamps;
     while (!g_exit.load()) {
-        tt->start(true);
+        tt->stop();
+        tt->reset();
+        tt->start();
 
         // SPWM is set to 10 KHZ, so we would have 200 events in 100ms
         std::this_thread::sleep_for(std::chrono::milliseconds (100));
@@ -150,9 +171,10 @@ void time_tracker_thread_func(std::shared_ptr<TimeTrackerDev> tt) {
                 last_value = *ts;
             }
 
-            std::cout << "[TimeTrackDev] Vmean=" << acc << " N=" << n << " Vmin=" << min_hp << " Vmax=" << max_hp << std::endl;
+            print_result("TimeTrackDev", n, acc, min_hp, max_hp, 'T', "sec");
+            //std::cout << "[TimeTrackDev: Nₛₐₘₚₗₑ=" << n << "] Uₘₑₐₙ=" << std::setw(10) << acc << " N=" << n << " Tₘᵢₙ=" << min_hp << " Tₘₐₓ=" << max_hp << std::endl;
         } else {
-            std::cout << "[TimeTrackDev] No Timestamps." << std::endl;
+            print_result("TimeTrackDev", 0, 0.0L, 0.0L, 0.0L, 'T', "sec");
         }
         timestamps.clear();
     }

@@ -37,7 +37,7 @@
 
 namespace {__NAMESPACE_NAME__} {{
     constexpr size_t {__ADCDEV_CONFIGURATION_ARRAY_NAME__}_number = {__ADCDEV_DEVICE_COUNT__};
-    extern const ADCConfig {__ADCDEV_CONFIGURATION_ARRAY_NAME__}[];
+    extern const struct ADCConfig {__ADCDEV_CONFIGURATION_ARRAY_NAME__}[];
 
     {__ADCDEV_CONFIGURATION_DECLARATIONS__}
 }}

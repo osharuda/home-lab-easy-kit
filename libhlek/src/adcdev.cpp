@@ -65,17 +65,17 @@ size_t ADCDev::get_input_count() const {
 void   ADCDev::start(uint16_t sample_count) {
     static const char* const func_name = "ADCDev::start";
     ADCDevCommand data = {.sample_count=sample_count};
-    write_device((uint8_t*)&data, sizeof(ADCDevCommand), ADCDEV_START);
+    send_command((uint8_t *) &data, sizeof(ADCDevCommand), ADCDEV_START);
 }
 
 void ADCDev::stop() {
     static const char* const func_name = "ADCDev::stop";
-    write_device(nullptr, 0, ADCDEV_STOP);
+    send_command(nullptr, 0, ADCDEV_STOP);
 }
 
-void ADCDev::clear() {
-    static const char* const func_name = "ADCDev::clear";
-    write_device(nullptr, 0, ADCDEV_CLEAR);
+void ADCDev::reset() {
+    static const char* const func_name = "ADCDev::reset";
+    send_command(nullptr, 0, ADCDEV_RESET);
 }
 
 void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t, uint8_t>& sampling) {
@@ -115,15 +115,15 @@ void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t
     }
 
     // Do I/O operation
-    write_device(adc_config_buffer.data(), adc_config_buffer.size(), ADCDEV_CONFIGURE);
+    send_command(adc_config_buffer.data(), adc_config_buffer.size(), ADCDEV_CONFIGURE);
 }
 
-void ADCDev::write_device(uint8_t* ptr, size_t size, uint8_t flag) {
-    static const char* const func_name = "ADCDev::write_device";
+void ADCDev::send_command(uint8_t* ptr, size_t size, uint8_t command) {
+    static const char* const func_name = "ADCDev::send_command";
     EKitTimeout to(get_timeout());
     BusLocker   blocker(bus, get_addr(), to);
 
-    EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, flag, to);
+    EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }

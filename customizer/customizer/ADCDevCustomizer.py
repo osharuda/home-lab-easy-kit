@@ -242,20 +242,20 @@ class ADCDevCustomizer(DeviceCustomizer):
     {fw_inputs_name}                       /* Inputs */ }}""")
 
             # Device data arrays
-            fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
-            fw_device_measurement_buffers.append("volatile uint16_t {0}[{1}];\\".format(fw_measurement_buffer_name, fw_measurement_buffer_size))
-            fw_device_analog_inputs.append("volatile ADCDevFwChannel {0}[]= {{ {1} }};\\".format(fw_inputs_name,
+            fw_device_buffers.append("uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+            fw_device_measurement_buffers.append("uint16_t {0}[{1}];\\".format(fw_measurement_buffer_name, fw_measurement_buffer_size))
+            fw_device_analog_inputs.append("struct ADCDevFwChannel {0}[]= {{ {1} }};\\".format(fw_inputs_name,
                                                                                                  ", ".join(fw_analog_inputs)))
-            fw_device_sample_time_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_sample_time_buffer_name, adc_input_number))
-            fw_device_accumulator_buffers.append("volatile uint32_t {0}[{1}];\\".format(fw_accumulator_buffer_name, adc_input_number))
+            fw_device_sample_time_buffers.append("uint8_t {0}[{1}];\\".format(fw_sample_time_buffer_name, adc_input_number))
+            fw_device_accumulator_buffers.append("uint32_t {0}[{1}];\\".format(fw_accumulator_buffer_name, adc_input_number))
 
 
             # Software data arrays
-            sw_device_analog_inputs.append("const ADCInput {0}[]= {{ {1} }};\\".format(fw_inputs_name,
+            sw_device_analog_inputs.append("const struct ADCInput {0}[]= {{ {1} }};\\".format(fw_inputs_name,
                                                                                                  ", ".join(sw_analog_inputs)))
             sw_config_name = "adc_{0}_config".format(dev_name)
-            sw_config_declarations.append(f"extern const ADCConfig* {sw_config_name};")
-            sw_configs.append(f"const ADCConfig* {sw_config_name} = {sw_config_array_name} + {index};")
+            sw_config_declarations.append(f"extern const struct ADCConfig* {sw_config_name};")
+            sw_configs.append(f"const struct ADCConfig* {sw_config_name} = {sw_config_array_name} + {index};")
 
             index += 1
 

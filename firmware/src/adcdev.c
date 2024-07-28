@@ -44,7 +44,7 @@ ADCDEV_FW_SAMPLE_TIME_BUFFERS
 ADCDEV_FW_ACCUMULATOR_BUFFERS
 
 /// \brief Global array that stores all virtual ADCDev devices configurations.
-volatile ADCDevFwInstance g_adc_devs[] = ADCDEV_FW_DEV_DESCRIPTOR;
+struct ADCDevFwInstance g_adc_devs[] = ADCDEV_FW_DEV_DESCRIPTOR;
 /// @}
 
 //---------------------------- FORWARD DECLARATIONS (COMMON FUNCTIONS) ----------------------------
@@ -53,7 +53,9 @@ volatile ADCDevFwInstance g_adc_devs[] = ADCDEV_FW_DEV_DESCRIPTOR;
 /// \param dev - device instance firmware configuration.
 /// \param pdata - device private data.
 /// \param cmddata - command structure passed in by software (number of samples).
-void adc_start(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata, volatile ADCDevCommand* cmddata);
+/// \param length - length of the cmddata
+/// \return Result of the operation as communication status.
+uint8_t adc_start(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata, struct ADCDevCommand* cmddata, uint16_t length);
 
 /// \brief Suspends ADC sampling.
 /// \param dev - device instance firmware configuration.
@@ -61,7 +63,7 @@ void adc_start(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata,
 ///       \ref adc_continue_int_sampling (for ADC interrupt mode) should be called. Typically this calls will be made in
 ///       context of timer IRQ handler. It is used to temporary disable sampling between two sampling points.
 /// \note This function doesn't affect ADC device status ( \ref ADCDevFwPrivData::status ).
-static inline void adc_suspend(volatile ADCDevFwInstance* dev);
+static inline void adc_suspend(struct ADCDevFwInstance* dev);
 
 /// \brief Stops ADC sampling.
 /// \param dev - device instance firmware configuration.
@@ -69,24 +71,19 @@ static inline void adc_suspend(volatile ADCDevFwInstance* dev);
 /// \note This function stops sampling. Stop means timer is disabled, ADC is suspended, DMA/ADC interrupt is disabled.
 ///       In this sampling is stopped, to start it again \ref adc_start should be called.
 /// \note This function affects ADC device status ( \ref ADCDevFwPrivData::status ).
-void adc_stop(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata);
-
-/// \brief Resets ADC device completely.
-/// \param dev - device instance firmware configuration.
-/// \param pdata - device private data.
-/// \note Does complete device data reset. Is used for initial initialization only.
-void adc_reset(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata);
+void adc_stop(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata);
 
 /// \brief Resets ADC peripherals.
 /// \param dev - device instance firmware configuration.
 /// \param pdata - device private data.
 /// \note Resets every peripheral related to ADC sampling: timer, ADC, DMA, device status ( \ref ADCDevFwPrivData::status ).
-void adc_reset_peripherals(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata);
+void adc_reset_peripherals(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata);
 
 /// \brief Resets ADC sampled data (in circular buffer)
 /// \param dev - device instance firmware configuration.
+/// \return Status of the operation (communication status)
 /// \note May be called during sampling.
-static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev);
+static inline uint8_t adc_reset_circ_buffer(struct ADCDevFwInstance* dev);
 
 /// \brief Finalizes current sample.
 /// \param dev - device instance firmware configuration.
@@ -96,7 +93,7 @@ static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev);
 ///       1. Averages and put sampled data into circular buffer.
 ///       2. Clears \ref ADCDEV_STATUS_SAMPLING flag to control
 ///       3. Detects if sampling should be stopped (all requested samples are made or circular buffer is overflown).
-void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile struct CircBuffer* circ_buffer);
+void adc_complete(struct ADCDevFwInstance *dev, struct ADCDevFwPrivData* pdata, struct CircBuffer* circ_buffer);
 
 
 
@@ -105,14 +102,15 @@ void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pda
 /// \param pdata - device private data.
 /// \param cfgdata - Structure with parameters. Note this is a variable length structure.
 /// \param cfgdata_size - Size of the cfgdata structure.
-void adc_configure(volatile ADCDevFwInstance* dev,
-                   volatile ADCDevFwPrivData* pdata,
-                   volatile ADCDevConfig* cfgdata,
+/// \return Result of the operation as communication status.
+uint8_t adc_configure(struct ADCDevFwInstance* dev,
+                   struct ADCDevFwPrivData* pdata,
+                   struct ADCDevConfig* cfgdata,
                    uint16_t cfgdata_size);
 
 /// \brief Initializes ADC device channels and corresponding GPIO.
 /// \param dev - device instance firmware configuration.
-void adc_init_channels(volatile ADCDevFwInstance* dev);
+void adc_init_channels(struct ADCDevFwInstance* dev);
 
 //---------------------------- FORWARD DECLARATIONS (DMA MODE FUNCTIONS) ----------------------------
 
@@ -141,8 +139,8 @@ void adc_int_reset(volatile void* d, volatile void* p);
 //---------------------------- TIMER IRQ HANDLER ----------------------------
 void ADC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     assert_param(index<ADCDEV_DEVICE_COUNT);
-    volatile ADCDevFwInstance* dev = g_adc_devs+index;
-    volatile ADCDevFwPrivData* pdata = (&dev->privdata);
+    struct ADCDevFwInstance* dev = g_adc_devs+index;
+    struct ADCDevFwPrivData* pdata = (&dev->privdata);
 
     if (TIM_GetITStatus(dev->timer, TIM_IT_Update) == RESET) {
         return;
@@ -176,7 +174,7 @@ ADCDEV_FW_TIMER_IRQ_HANDLERS
     NVIC_RESTORE_IRQ(dev->scan_complete_irqn, scan_complete_state);         \
     NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);
 
-static inline void adc_suspend(volatile ADCDevFwInstance* dev) {
+static inline void adc_suspend(struct ADCDevFwInstance* dev) {
     // Special note: it seems like SR may not be set until conversion is stopped. ADC is configured in scan mode (group),
     // therefor we have these options:
     // 1. Disable ADC. It is ineffective because this requires ADC configuration, calibration, etc.
@@ -186,7 +184,7 @@ static inline void adc_suspend(volatile ADCDevFwInstance* dev) {
     dev->adc->SR = 0;
 }
 
-void adc_stop(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) {
+void adc_stop(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata) {
     ADC_DISABLE_IRQs;
 
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {
@@ -202,71 +200,53 @@ void adc_stop(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) 
 
 uint8_t adc_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     uint16_t index = comm_dev_context(cmd_byte)->dev_index;
-    volatile ADCDevFwInstance* dev    = (volatile ADCDevFwInstance*)g_adc_devs+index;
-    volatile ADCDevFwPrivData* pdata  = &(dev->privdata);
-    volatile ADCDevConfig* cfgdata    = (volatile ADCDevConfig*)data;
-    volatile ADCDevCommand* startdata = (volatile ADCDevCommand*)data;
+    struct ADCDevFwInstance* dev    = (struct ADCDevFwInstance*)g_adc_devs+index;
+    struct ADCDevFwPrivData* pdata  = &(dev->privdata);
+    struct ADCDevConfig* cfgdata    = (struct ADCDevConfig*)data;
+    struct ADCDevCommand* startdata = (struct ADCDevCommand*)data;
 
-    uint8_t adc_started = IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED);
-
+    uint8_t command = cmd_byte & COMM_CMDBYTE_SPECIFIC_MASK;
     uint8_t status = COMM_STATUS_FAIL;
-    uint8_t start_adc = CHECK_FLAGS(cmd_byte, COMM_CMDBYTE_DEV_SPECIFIC_MASK, ADCDEV_START);
-    uint8_t stop_adc = ( adc_started != 0 ) && ( ( cmd_byte & (ADCDEV_STOP | ADCDEV_CONFIGURE)) != 0 );
-    uint8_t reset_adc = stop_adc;
 
-    // Check configure params are OK
-    if ( (cmd_byte & ADCDEV_CONFIGURE) &&
-         ( (length < sizeof(ADCDevConfig)) || (length > (sizeof(ADCDevConfig) + dev->input_count)) ||
-           (cfgdata->measurements_per_sample > dev->max_measurement_per_sample) ||
-           (cfgdata->measurements_per_sample < 1))) {
-        goto done;
+    switch (command) {
+        case ADCDEV_START:
+            status = adc_start(dev, pdata, startdata, length);
+        break;
+
+        case ADCDEV_STOP:
+            adc_stop(dev, pdata);
+            status = COMM_STATUS_OK;
+        break;
+
+        case ADCDEV_RESET:
+            status = adc_reset_circ_buffer(dev);
+        break;
+
+        case ADCDEV_CONFIGURE:
+            status = adc_configure(dev, pdata, cfgdata, length);
+        break;
     }
 
-    // Check start params are OK
-    if (start_adc && ( (length!=sizeof(ADCDevCommand)) || adc_started)) {
-        goto done;
-    }
-
-    if (stop_adc) {
-        adc_stop(dev, pdata);
-    }
-
-    if (cmd_byte & ADCDEV_CONFIGURE) {
-        adc_configure(dev, pdata, cfgdata, length);
-
-        // A special note: Configuration must re-initialize hardware despite ADC was stopped or not.
-        adc_reset_peripherals(dev, pdata);
-        reset_adc = 0;
-    }
-
-    if (reset_adc) {
-        // A special note: if ADC sampling is aborted, ADC peripherals may stay in undetermined state, therefore
-        // peripherals reset is required if sampling was stopped by software.
-        adc_reset_peripherals(dev, pdata);
-    }
-
-    if (cmd_byte & ADCDEV_CLEAR) {
-        adc_reset_circ_buffer(dev);
-    }
-
-    if (start_adc) {
-        adc_start(dev, pdata, startdata);
-    }
-
-    status = COMM_STATUS_OK;
-done:
     return status;
 }
 
-void adc_configure(volatile ADCDevFwInstance* dev,
-                   volatile ADCDevFwPrivData* pdata,
-                   volatile ADCDevConfig* cfgdata,
+uint8_t adc_configure(struct ADCDevFwInstance* dev,
+                      struct ADCDevFwPrivData* pdata,
+                      struct ADCDevConfig* cfgdata,
                    uint16_t cfgdata_size) {
+    uint8_t result = COMM_STATUS_FAIL;
+
+    if ( (cfgdata_size < sizeof(struct ADCDevConfig)) || (cfgdata_size > (sizeof(struct ADCDevConfig) + dev->input_count)) ||
+         (cfgdata->measurements_per_sample > dev->max_measurement_per_sample) ||
+         (cfgdata->measurements_per_sample < 1)) {
+        goto done;
+    }
+
     pdata->prescaller = cfgdata->timer_prescaller;
     pdata->period     = cfgdata->timer_period;
     pdata->measurement_per_sample = cfgdata->measurements_per_sample;
 
-    uint16_t st_num = cfgdata_size - sizeof(ADCDevConfig);
+    uint16_t st_num = cfgdata_size - sizeof(struct ADCDevConfig);
     uint16_t ch=0;
 
     // Configured values
@@ -278,11 +258,27 @@ void adc_configure(volatile ADCDevFwInstance* dev,
     for (;ch<dev->input_count; ch++) {
         dev->sample_time_buffer[ch] = dev->channels[ch].sample_time;
     }
+
+    // A special note: Configuration must re-initialize hardware despite ADC was stopped or not.
+    adc_reset_peripherals(dev, pdata);
+
+    result = COMM_STATUS_OK;
+
+done:
+    return result;
 }
 
-void adc_start( volatile ADCDevFwInstance* dev,
-                volatile ADCDevFwPrivData* pdata,
-                volatile ADCDevCommand* cmddata) {
+uint8_t adc_start(struct ADCDevFwInstance* dev,
+                  struct ADCDevFwPrivData* pdata,
+                  struct ADCDevCommand* cmddata,
+                  uint16_t length) {
+    uint8_t result = COMM_STATUS_FAIL;
+    uint8_t adc_started = IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED);
+
+    if ((length!=sizeof(struct ADCDevCommand)) || adc_started) {
+        goto done;
+    }
+
     if (cmddata->sample_count == 0) {
         SET_FLAGS(pdata->status, (uint16_t)ADCDEV_STATUS_UNSTOPPABLE);
         pdata->samples_left = 0;
@@ -305,28 +301,34 @@ void adc_start( volatile ADCDevFwInstance* dev,
                    dev->timer_irqn,
                    dev->privdata.interrupt_priority,
                    1);
+
+    result = COMM_STATUS_OK;
+
+done:
+    return result;
 }
 
 uint8_t adc_read_done(uint8_t device_id, uint16_t length) {
     uint16_t index = comm_dev_context(device_id)->dev_index;
-    volatile ADCDevFwInstance* dev = g_adc_devs+index;
+    struct ADCDevFwInstance* dev = g_adc_devs+index;
     volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
     uint8_t status = circbuf_get_ovf(circbuf) ? COMM_STATUS_OVF : COMM_STATUS_OK;
     circbuf_stop_read(circbuf, length);
-    circbuf_clear_ovf(circbuf);
+//    circbuf_clear_ovf(circbuf);
     return status;
 }
 
-static inline void adc_reset_circ_buffer(volatile ADCDevFwInstance* dev) {
-    volatile struct CircBuffer* circ_buffer = (volatile struct CircBuffer*)&(dev->circ_buffer);
-    ADC_DISABLE_IRQs;
-    circbuf_init(circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size, 0);
-    circbuf_init_block_mode(circ_buffer, dev->sample_block_size);
-    circbuf_init_status(circ_buffer,
-                        (volatile uint8_t*)&(dev->privdata.status),
-                        STRUCT_MEMBER_SIZE(ADCDevFwPrivData,status));
-    dev->dev_ctx.bytes_available = 0;
-    ADC_RESTORE_IRQs;
+static inline uint8_t adc_reset_circ_buffer(struct ADCDevFwInstance* dev) {
+    uint8_t result = COMM_STATUS_FAIL;
+    if (IS_SET(dev->privdata.status, (uint16_t)ADCDEV_STATUS_STARTED)) {
+        goto done;
+    }
+
+    struct CircBuffer* circ_buffer = (struct CircBuffer*)&(dev->circ_buffer);
+    circbuf_reset(circ_buffer);
+    result = COMM_STATUS_OK;
+done:
+    return result;
 }
 
 void adc_init() {
@@ -335,29 +337,32 @@ void adc_init() {
     RCC_ADCCLKConfig(RCC_PCLK2_Div6);
 
     for (uint16_t i=0; i<ADCDEV_DEVICE_COUNT; i++) {
-        volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)g_adc_devs+i;
-        volatile ADCDevFwPrivData* pdata = &(dev->privdata);
-        volatile PDeviceContext devctx = (volatile PDeviceContext)&(dev->dev_ctx);
+        struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)g_adc_devs+i;
+        struct ADCDevFwPrivData* pdata = &(dev->privdata);
+        struct DeviceContext* devctx = (struct DeviceContext*)&(dev->dev_ctx);
 
         IS_SIZE_ALIGNED(&pdata->status);
 
-        memset((void*)devctx, 0, sizeof(DeviceContext));
+        memset((void*)devctx, 0, sizeof(struct DeviceContext));
 
         // Initialize device context structure
         dev->dev_ctx.device_id = dev->dev_id;
         dev->dev_ctx.dev_index = i;
         dev->dev_ctx.on_command = adc_dev_execute;
         dev->dev_ctx.on_read_done = adc_read_done;
-        dev->dev_ctx.circ_buffer = (volatile struct CircBuffer*)( &(dev->circ_buffer) );
+        dev->dev_ctx.circ_buffer = (struct CircBuffer*)( &(dev->circ_buffer) );
 
         // Initialize circular buffer
-        adc_reset_circ_buffer(dev);
-
+        circbuf_init(dev->dev_ctx.circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size);
+        circbuf_init_block_mode(dev->dev_ctx.circ_buffer, dev->sample_block_size);
+        circbuf_init_status(dev->dev_ctx.circ_buffer,
+                            (uint8_t*)&(dev->privdata.status),
+                            STRUCT_MEMBER_SIZE(struct ADCDevFwPrivData, status) );
 
         // Initialize for the first time.
         // Note: ADC channels are not initialized, but gpio and sample_time_buffer are configured.
         for (uint16_t ch=0; ch<dev->input_count; ch++) {
-            volatile  ADCDevFwChannel* channel_data = (volatile  ADCDevFwChannel*)(dev->channels+ch);
+            struct ADCDevFwChannel* channel_data = (struct ADCDevFwChannel*)(dev->channels+ch);
             if ( (channel_data->channel == ADC_Channel_TempSensor) ||
                  (channel_data->channel == ADC_Channel_Vrefint))
                 continue;
@@ -367,14 +372,39 @@ void adc_init() {
         }
 
         // Reset hardware and internal structures
-        adc_reset(dev, pdata);
+        TIM_DeInit(dev->timer);
+        timer_disable_ex(dev->timer);
+
+        // Init private data (by default zeroed)
+        memset((void*)pdata, 0, sizeof(struct ADCDevFwPrivData));
+
+        // By default 1 sample per 1 seconds
+        pdata->prescaller = 1098;
+        pdata->period = 65513;
+        pdata->measurement_count = 1;
+        pdata->measurement_per_sample = 1;   // by default one sample
+        // Reset function pointers
+        if (ADC_INT_MODE(dev)) {
+            // Interrupt mode uses lower priority. It should be used for very slow sample rates only, because it causes
+            // a lot of IRQs to be handled.
+            pdata->interrupt_priority = IRQ_PRIORITY_ADC_LO_PRIO;
+            pdata->adc_continue_sampling_ptr = adc_continue_int_sampling;
+            pdata->adc_hw_reset_ptr = adc_int_reset;
+        } else {
+            pdata->interrupt_priority = IRQ_PRIORITY_ADC_HI_PRIO;
+            pdata->adc_continue_sampling_ptr = adc_continue_dma_sampling;
+            pdata->adc_hw_reset_ptr = adc_dma_reset;
+        }
+
+        // Reset peripherals
+        adc_reset_peripherals(dev, pdata);
 
         // Register device context
         comm_register_device(&dev->dev_ctx);
     }
 }
 
-void adc_reset_peripherals(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) {
+void adc_reset_peripherals(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata) {
     ADC_InitTypeDef adcinit;
 
     // Private data must be initialized.
@@ -426,37 +456,8 @@ void adc_reset_peripherals(volatile ADCDevFwInstance* dev, volatile ADCDevFwPriv
     pdata->adc_hw_reset_ptr(dev, pdata);
 }
 
-void adc_reset(volatile ADCDevFwInstance* dev, volatile ADCDevFwPrivData* pdata) {
-    TIM_DeInit(dev->timer);
-    timer_disable_ex(dev->timer);
 
-    // Init private data (by default zeroed)
-    memset((void*)pdata, 0, sizeof(ADCDevFwPrivData));
-
-    // By default 1 sample per 1 seconds
-    pdata->prescaller = 1098;
-    pdata->period = 65513;
-    pdata->measurement_count = 1;
-    pdata->measurement_per_sample = 1;   // by default one sample
-    // Reset function pointers
-    if (ADC_INT_MODE(dev)) {
-        // Interrupt mode uses lower priority. It should be used for very slow sample rates only, because it causes
-        // a lot of IRQs to be handled.
-        pdata->interrupt_priority = IRQ_PRIORITY_ADC_LO_PRIO;
-        pdata->adc_continue_sampling_ptr = adc_continue_int_sampling;
-        pdata->adc_hw_reset_ptr = adc_int_reset;
-    } else {
-        pdata->interrupt_priority = IRQ_PRIORITY_ADC_HI_PRIO;
-        pdata->adc_continue_sampling_ptr = adc_continue_dma_sampling;
-        pdata->adc_hw_reset_ptr = adc_dma_reset;
-    }
-
-    // Clear circular buffer
-    adc_reset_circ_buffer(dev);
-    adc_reset_peripherals(dev, pdata);
-}
-
-void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pdata, volatile struct CircBuffer* circ_buffer) {
+void adc_complete(struct ADCDevFwInstance *dev, struct ADCDevFwPrivData* pdata, struct CircBuffer* circ_buffer) {
     // State sanity check
     assert_param(IS_SET(pdata->status, (uint16_t)(ADCDEV_STATUS_SAMPLING | ADCDEV_STATUS_STARTED)));
     uint8_t stop_sampling = 0;
@@ -499,11 +500,11 @@ void adc_complete(volatile ADCDevFwInstance *dev, volatile ADCDevFwPrivData* pda
     }
 }
 
-void adc_init_channels(volatile ADCDevFwInstance* dev) {
+void adc_init_channels(struct ADCDevFwInstance* dev) {
     START_PIN_DECLARATION
 
     for (uint16_t ch=0; ch<dev->input_count; ch++) {
-        volatile  ADCDevFwChannel* channel_data = (volatile  ADCDevFwChannel*)(dev->channels+ch);
+        struct ADCDevFwChannel* channel_data = (struct ADCDevFwChannel*)(dev->channels+ch);
         uint8_t channel = channel_data->channel;
 
         if (channel==ADC_Channel_TempSensor || channel==ADC_Channel_Vrefint) {
@@ -525,8 +526,8 @@ void adc_init_channels(volatile ADCDevFwInstance* dev) {
 void ADC_COMMON_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<ADCDEV_DEVICE_COUNT);
 
-    volatile ADCDevFwInstance* dev = g_adc_devs+index;
-    volatile ADCDevFwPrivData* pdata = (&dev->privdata);
+    struct ADCDevFwInstance* dev = g_adc_devs+index;
+    struct ADCDevFwPrivData* pdata = (&dev->privdata);
 
     // Disable sampling
     adc_suspend(dev);
@@ -539,8 +540,8 @@ ADCDEV_FW_DMA_IRQ_HANDLERS
 void adc_dma_reset(volatile void* d, volatile void* p) {
     DMA_InitTypeDef dmainit;
 
-    volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)d;
-    volatile ADCDevFwPrivData* pdata = (volatile ADCDevFwPrivData*)p;
+    struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)d;
+    struct ADCDevFwPrivData* pdata = (struct ADCDevFwPrivData*)p;
 
     // Init DMA
     DMA_DeInit(dev->dma_channel);
@@ -577,8 +578,8 @@ void adc_dma_reset(volatile void* d, volatile void* p) {
 }
 
 void adc_continue_dma_sampling(volatile void* d, volatile void* p) {
-    volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)d;
-    volatile ADCDevFwPrivData* pdata = (volatile ADCDevFwPrivData*)p;
+    struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)d;
+    struct ADCDevFwPrivData* pdata = (struct ADCDevFwPrivData*)p;
 
     // Reinitialize DMA
     pdata->current_measurement = dev->measurement_buffer;
@@ -604,9 +605,9 @@ void adc_continue_dma_sampling(volatile void* d, volatile void* p) {
 //---------------------------- ADC IRQ HANDLER ----------------------------
 void ADC_COMMON_ADC_IRQ_HANDLER(uint16_t index) {
     assert_param(index < ADCDEV_DEVICE_COUNT);
-    volatile ADCDevFwInstance *dev = g_adc_devs + index;
-    volatile ADCDevFwPrivData* pdata = (&dev->privdata);
-    volatile struct CircBuffer* circ_buffer = (volatile struct CircBuffer*)&(dev->circ_buffer);
+    struct ADCDevFwInstance *dev = g_adc_devs + index;
+    struct ADCDevFwPrivData* pdata = (&dev->privdata);
+    struct CircBuffer* circ_buffer = (struct CircBuffer*)&(dev->circ_buffer);
 
     // get actual value and increase current pointer.
     *pdata->current_measurement = ADC_GetConversionValue(dev->adc);
@@ -626,8 +627,8 @@ void ADC_COMMON_ADC_IRQ_HANDLER(uint16_t index) {
 ADCDEV_FW_ADC_IRQ_HANDLERS
 
 void adc_int_reset(volatile void* d, volatile void* p) {
-    volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)d;
-    volatile ADCDevFwPrivData* pdata = (volatile ADCDevFwPrivData*)p;
+    struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)d;
+    struct ADCDevFwPrivData* pdata = (struct ADCDevFwPrivData*)p;
 
     // Setup interrupt, priorities, etc.
 
@@ -645,7 +646,7 @@ void adc_int_reset(volatile void* d, volatile void* p) {
 }
 
 void adc_continue_int_sampling(volatile void* d, volatile void* p) {
-    volatile ADCDevFwInstance* dev = (volatile ADCDevFwInstance*)d;
+    struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)d;
     UNUSED(p);
 
     // Start ADC

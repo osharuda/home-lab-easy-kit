@@ -23,22 +23,27 @@
 /// \addtogroup group_adc_dev
 /// @{{
 
-/// \def ADCDEV_CONFIGURE
-/// \brief Instructs to configure ADCDev (using /ref ADCDevConfig structure). Ongoing sampling will be stopped.
-#define ADCDEV_CONFIGURE             128
-
-/// \def ADCDEV_CLEAR
-/// \brief Instructs to clear circular buffer. Ongoing sampling will NOT be stopped.
-#define ADCDEV_CLEAR                 64
+/// \def ADCDEV_START
+/// \brief Defines ADCDev "Start" command. This command is sent via device specific
+///        part of the command byte
+#define ADCDEV_START                  (1 << COMM_CMDBYTE_SPECIFIC_OFFSET)
 
 /// \def ADCDEV_STOP
-/// \brief Stops ongoing sampling. To start ADCDEV all flags should be cleared.
-#define ADCDEV_STOP                  32
+/// \brief Defines ADCDev "Stop" command. This command is sent via device specific
+///        part of the command byte
+#define ADCDEV_STOP                   (2 << COMM_CMDBYTE_SPECIFIC_OFFSET)
 
-/// \def ADCDEV_START
-/// \brief Starts sampling. If ADC is currently sampling returns COMM_STATUS_FAIL.
-/// \note This is equivalent to clear all flags.
-#define ADCDEV_START                 0
+/// \def ADCDEV_RESET
+/// \brief Defines ADCDev "Reset" command. This command is sent via device specific
+///        part of the command byte
+/// \note Device must be in stopped state to execute this command.
+#define ADCDEV_RESET                  (3 << COMM_CMDBYTE_SPECIFIC_OFFSET)
+
+/// \def ADCDEV_CONFIGURE
+/// \brief Defines ADCDev "Configure" command. This command is sent via device specific
+///        part of the command byte
+/// \note Device must be in stopped state to execute this command.
+#define ADCDEV_CONFIGURE              (4 << COMM_CMDBYTE_SPECIFIC_OFFSET)
 
 
 /// \def ADCDEV_STATUS_STARTED
@@ -47,7 +52,7 @@
 #define ADCDEV_STATUS_STARTED       ((uint16_t)(1))
 
 /// \def ADCDEV_STATUS_UNSTOPPABLE
-/// \brief Device is sampling continuously, until it is not explicitly stopped.
+/// \brief Device is sampling continuously, until it is not explicitly stopped or buffer overflow.
 #define ADCDEV_STATUS_UNSTOPPABLE   ((uint16_t)(1 << 1))
 
 /// \def ADCDEV_STATUS_TOO_FAST
@@ -61,15 +66,15 @@
 #define ADCDEV_STATUS_SAMPLING      ((uint16_t)(1 << 3))
 
 #pragma pack(push, 1)
-    /// \struct tag_ADCDevCommand
+    /// \struct ADCDevCommand
     /// \brief This structure describes command payload that is used to start sampling by ADCDev
-    typedef struct tag_ADCDevCommand {{
+    struct ADCDevCommand {{
         uint16_t sample_count;      ///< Number of samples to be sampled. Ignored if #ADCDEV_UNSTOPPABLE is specified.
-    }} ADCDevCommand;
+    }};
 
-    /// \struct tag_ADCDevConfig
+    /// \struct ADCDevConfig
     /// \brief This structure describes ADCDev configuration.
-    typedef struct tag_ADCDevConfig {{
+    struct ADCDevConfig {{
         uint16_t timer_prescaller;  ///< Timer prescaller value. If this value and tag_ADCDevCommand#timer_period are zero
         ///  conversions will follow each other without delay.
 
@@ -80,7 +85,7 @@
                                           ///< measurements to average, as specified in json configuration file ("measurements_per_sample").
 
         uint8_t  channel_sampling[];   ///< Sampling time per channel (may be omitted by software, in this case default value is used).
-    }} ADCDevConfig;
+    }};
 
 #pragma pack(pop)
 /// @}}
