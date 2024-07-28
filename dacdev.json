@@ -5,8 +5,9 @@
       "clock_speed" : 100000,
       "buffer_size" : 512,
       "address" : 19,
-      "requires" :  {"i2c" : "I2C2"}
-    }},
+      "requires" :  {"i2c" : "I2C2"}},
+      "sys_tick": {"requires" : {"timer": "TIM3"}}
+    },
 
   "devices" : {
     "SPIDACCustomizer": {

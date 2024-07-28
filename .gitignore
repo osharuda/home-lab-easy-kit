@@ -76,3 +76,5 @@ misc/*/software
 /step_motors
 /misc/test_i2c_comm/testbench
 /timetrackerdev
+/testbench
+/motor_test
