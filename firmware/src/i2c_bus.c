@@ -237,9 +237,7 @@ void i2c_bus_init_peripherals(void) {
     i2c.I2C_OwnAddress1             = I2C_FIRMWARE_ADDRESS << 1;
 
     // Initialize and enable I2C
-    DISABLE_IRQ
     I2C_Init(I2C_BUS_PERIPH, &i2c);
-    ENABLE_IRQ
 
     // Disable two addresses
     I2C_DualAddressCmd(I2C_BUS_PERIPH, DISABLE);
