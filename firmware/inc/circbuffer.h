@@ -261,6 +261,34 @@ void circbuf_init_block_mode(volatile struct CircBuffer* circ, int32_t bs);
                                                 ( (data_len) >= (circ)->warn_high_thr ) )
 
 
+/// \brief Performs circular buffer reset.
+/// \param circ - pointer to the circular buffer structure.
+/// \warning !!!____T_H_I_S____F_U_N_C_T_I_O_N____I_S____N_O_T____M_U_L_T_I_T_H_R_E_A_D___S_A_F_E___!!!
+///          Caller device must make everything to make asynchronous access to circular buffer impossible at the moment
+///          of the call.
+///
+///          !!!_________________D_O____N_O_T____D_I_S_A_B_L_E____I_N_T_E_R_R_U_P_T_S_______________!!!
+///          Disabling interrupts or I2C interrupt will break I2C communication. Alternative is the following:
+///          1. Software must disable device prior to reset it.
+///          2. Software sends 'reset' command.
+///          3. Software reads CommResponseHeader (may be with status) until it's length member is not zeroed and
+///             COMM_STATUS_BUSY is cleared.
+///
+///          So, might be difficult, but works:
+///          (1) Ensures device is not writing into circular buffer in any context.
+///          (2) Reset's circular buffer.
+///          (3) Ensures I2C bus is not reading from buffer, because CommResponseHeader is not part of the circular buffer.
+__attribute__((always_inline))
+static inline void circbuf_reset(volatile struct CircBuffer* circ) {
+    /// Writing from writer to reader state because reader_state.get_ptr may be unaligned by block size,
+    /// while writer_state.put_ptr is always aligned by block size.
+    circ->reader_state.get_ptr = circ->writer_state.put_ptr;
+    circ->get_bytes_counter = circ->put_bytes_counter;
+    circ->ovf = 0;
+    circ->wrn = circbuf_check_warning(circ, 0);
+}
+
+
 /// \brief [CONST] Returns amount of data stored in circular buffer (not including status data memory block)
 /// \param circ - pointer to the circular buffer structure
 /// \return amount of data stored in circular buffer, in bytes.
