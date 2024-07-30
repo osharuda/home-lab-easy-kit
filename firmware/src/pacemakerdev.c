@@ -50,6 +50,17 @@ struct PaceMakerDevInstance g_pacemakerdev_devs[] = PACEMAKERDEV_FW_DEV_DESCRIPT
 
 /// @}
 
+#define PACEMAKER_DISABLE_IRQs                                              \
+    uint32_t int_timer_state = NVIC_IRQ_STATE(dev->internal_timer_irqn);    \
+    uint32_t main_timer_state = NVIC_IRQ_STATE(dev->main_timer_irqn);       \
+    NVIC_DISABLE_IRQ(dev->internal_timer_irqn, int_timer_state);            \
+    NVIC_DISABLE_IRQ(dev->main_timer_irqn, main_timer_state);
+
+#define PACEMAKER_RESTORE_IRQs                                              \
+    NVIC_RESTORE_IRQ(dev->main_timer_irqn, main_timer_state);               \
+    NVIC_RESTORE_IRQ(dev->internal_timer_irqn, int_timer_state);
+
+
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 /// \brief Start signal sequences generation command implementation.
 /// \param dev - device instance to be started.
@@ -86,7 +97,6 @@ uint8_t pacemaker_set_data(struct PaceMakerDevPrivData* pdata, struct PaceMakerD
 /// \param dev - device instance to be stopped.
 /// \param pdata - pointer to the virtual device private data.
 static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, struct PaceMakerDevPrivData* pdata, EKIT_ERROR err) {
-    ASSERT_IRQ_DISABLED;
     assert_param(pdata->status->started); // Must be started
 
     // Disable all interrupts
@@ -109,7 +119,7 @@ static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, s
 static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
                                                struct PaceMakerDevPrivData* pdata) {
     struct PaceMakerTransition* trans;
-    DISABLE_IRQ
+    PACEMAKER_DISABLE_IRQs
     trans = pdata->transitions;
     dev->pfn_set_gpio(dev->default_pin_state);
     pdata->status->internal_index = 0;
@@ -118,7 +128,7 @@ static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
         if (pdata->status->main_counter == 0) {
             // limited mode, stop signal generation and switch to default gpio
             pacemaker_stop_generation(dev, pdata, EKIT_OK);
-            ENABLE_IRQ
+            PACEMAKER_RESTORE_IRQs
             return;
         }
         pdata->status->main_counter--;
@@ -130,13 +140,13 @@ static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
                    dev->internal_timer_irqn,
                    IRQ_PRIORITY_PACEMAKER_INTERNAL,
                    0);
-    ENABLE_IRQ
+    PACEMAKER_RESTORE_IRQs
 }
 
 static inline void pacemaker_next_transition( struct PaceMakerDevInstance* dev,
                                               struct PaceMakerDevPrivData* pdata) {
     struct PaceMakerTransition* trans;
-    DISABLE_IRQ
+    PACEMAKER_DISABLE_IRQs
     trans = pdata->transitions + pdata->status->internal_index;
     dev->pfn_set_gpio(trans->signal_mask);
     pdata->status->internal_index++;
@@ -149,7 +159,7 @@ static inline void pacemaker_next_transition( struct PaceMakerDevInstance* dev,
         trans++;
         timer_reschedule(dev->internal_timer, trans->prescaller, trans->counter);
     }
-    ENABLE_IRQ
+    PACEMAKER_RESTORE_IRQs
 }
 
 /// \brief Common MAIN TIMER IRQ handler
@@ -158,22 +168,22 @@ void PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     assert_param(index<PACEMAKERDEV_DEVICE_COUNT);
 
     assert_param(index<PACEMAKERDEV_DEVICE_COUNT);
-    struct PaceMakerDevInstance* device = g_pacemakerdev_devs+index;
-    struct PaceMakerDevPrivData* priv_data = (&device->privdata);
+    struct PaceMakerDevInstance* dev = g_pacemakerdev_devs + index;
+    struct PaceMakerDevPrivData* priv_data = (&dev->privdata);
 
     // <CHECKIT> Do we actually need this check?
-    if (TIM_GetITStatus(device->main_timer, TIM_IT_Update) == RESET) {
+    if (TIM_GetITStatus(dev->main_timer, TIM_IT_Update) == RESET) {
         return;
     }
 
-    TIM_ClearITPendingBit(device->main_timer, TIM_IT_Update);
+    TIM_ClearITPendingBit(dev->main_timer, TIM_IT_Update);
 
     if (priv_data->status->internal_index < priv_data->trans_number) {
-        DISABLE_IRQ
-        pacemaker_stop_generation(device, priv_data, EKIT_TOO_FAST);
-        ENABLE_IRQ
+        PACEMAKER_DISABLE_IRQs
+        pacemaker_stop_generation(dev, priv_data, EKIT_TOO_FAST);
+        PACEMAKER_RESTORE_IRQs
     } else {
-        pacemaker_first_transition(device, priv_data);
+        pacemaker_first_transition(dev, priv_data);
     }
 }
 PACEMAKERDEV_FW_MAIN_TIMER_IRQ_HANDLERS
@@ -205,10 +215,7 @@ void pacemakerdev_init_vdev(struct PaceMakerDevInstance* dev, uint16_t index) {
     devctx->buffer       = dev->buffer;
     devctx->bytes_available = dev->buffer_size;
 
-    DISABLE_IRQ;
     pacemaker_reset(dev, &(dev->privdata));
-    ENABLE_IRQ;
-
     comm_register_device(devctx);
 }
 
@@ -227,27 +234,35 @@ uint8_t pacemakerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
 
     switch (cmd_byte & (~COMM_MAX_DEV_ADDR)) {
         case PACEMAKERDEV_START:
-            DISABLE_IRQ;
+        {
+            PACEMAKER_DISABLE_IRQs;
             result = pacemaker_start(dev, pdata, (struct PaceMakerStartCommand*)data, length);
-            ENABLE_IRQ;
+            PACEMAKER_RESTORE_IRQs;
+        }
         break;
 
         case PACEMAKERDEV_STOP:
-            DISABLE_IRQ
+        {
+            PACEMAKER_DISABLE_IRQs
             result = pacemaker_stop(dev, pdata);
-            ENABLE_IRQ
+            PACEMAKER_RESTORE_IRQs
+        }
         break;
 
         case PACEMAKERDEV_DATA:
-            DISABLE_IRQ;
+        {
+            PACEMAKER_DISABLE_IRQs;
             result = pacemaker_set_data(pdata, (struct PaceMakerDevData*)data, length);
-            ENABLE_IRQ;
+            PACEMAKER_RESTORE_IRQs;
+        }
         break;
 
         case PACEMAKERDEV_RESET:
-            DISABLE_IRQ;
+        {
+            PACEMAKER_DISABLE_IRQs;
             result = pacemaker_reset(dev, pdata);
-            ENABLE_IRQ;
+            PACEMAKER_RESTORE_IRQs;
+        }
         break;
     }
 
@@ -266,8 +281,6 @@ uint8_t pacemakerdev_read_done(uint8_t device_id, uint16_t length) {
 
 uint8_t pacemaker_reset(struct PaceMakerDevInstance* dev, struct PaceMakerDevPrivData* pdata) {
     uint8_t result = COMM_STATUS_FAIL;
-
-    ASSERT_IRQ_DISABLED;    // Must execute with IRQ disabled.
 
     // Stop all timers
     timer_disable_no_irq(dev->main_timer, dev->main_timer_irqn);
@@ -302,7 +315,7 @@ uint8_t pacemaker_start(    struct PaceMakerDevInstance* dev,
                             uint16_t length) {
     uint8_t result = COMM_STATUS_FAIL;
     struct PaceMakerStatus* status = priv_data->status;
-    ASSERT_IRQ_DISABLED;
+
     if (status->started) {
         status->last_error = EKIT_NOT_STOPPED;
         goto done; // Device must be stopped.
@@ -342,7 +355,7 @@ done:
 uint8_t pacemaker_stop(struct PaceMakerDevInstance* dev, struct PaceMakerDevPrivData* pdata) {
     uint8_t result = COMM_STATUS_FAIL;
     struct PaceMakerStatus* status = pdata->status;
-    ASSERT_IRQ_DISABLED;
+
     if (status->started == 0) {
         status->last_error = EKIT_NOT_STARTED;
         goto done; // Device must be stopped.
@@ -358,8 +371,6 @@ done:
 uint8_t pacemaker_set_data(struct PaceMakerDevPrivData* pdata, struct PaceMakerDevData* data, uint16_t length) {
     uint8_t result = COMM_STATUS_FAIL;
     struct PaceMakerStatus* status = pdata->status;
-
-    ASSERT_IRQ_DISABLED;
 
     if (status->started) {
         status->last_error = EKIT_NOT_SUSPENDED;

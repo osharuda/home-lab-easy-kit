@@ -44,6 +44,22 @@ struct SPIProxyInstance g_spiproxy_devs[] = SPIPROXY_FW_DEV_DESCRIPTOR;
 
 /// @}
 
+#define SPI_PROXY_DISABLE_IRQ \
+{                                                                               \
+    uint32_t tx_dma_complete_state = NVIC_IRQ_STATE(dev->tx_dma_complete_irqn); \
+    uint32_t rx_dma_complete_state = NVIC_IRQ_STATE(dev->rx_dma_complete_irqn); \
+    uint32_t spi_state = NVIC_IRQ_STATE(dev->spi_interrupt_irqn);               \
+    NVIC_DISABLE_IRQ(dev->tx_dma_complete_irqn, tx_dma_complete_state);         \
+    NVIC_DISABLE_IRQ(dev->rx_dma_complete_irqn, rx_dma_complete_state);         \
+    NVIC_DISABLE_IRQ(dev->spi_interrupt_irqn, spi_state);
+
+
+#define SPI_PROXY_RESTORE_IRQ                                                   \
+    NVIC_RESTORE_IRQ(dev->spi_interrupt_irqn, spi_state);                       \
+    NVIC_RESTORE_IRQ(dev->rx_dma_complete_irqn, rx_dma_complete_state);         \
+    NVIC_RESTORE_IRQ(dev->tx_dma_complete_irqn, tx_dma_complete_state);         \
+}
+
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 void spiproxy_initialize(struct SPIProxyInstance* dev, uint16_t index);
 void spiproxy_init_vdev(struct SPIProxyInstance* dev, uint16_t index);
@@ -87,13 +103,13 @@ void SPI_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     DMA_ClearITPendingBit(dev->dma_tx_it);
     DMA_Cmd(dev->tx_dma_channel, DISABLE);
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     assert_param(priv_data->status->running);
     priv_data->send_frame_counter = priv_data->frame_number;
     if (priv_data->recv_frame_counter==(priv_data->frame_number & priv_data->recv_frames_mask)) {
         spiproxy_stop(dev);
     }
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_TX_DMA_IRQ_HANDLERS
 
@@ -109,13 +125,13 @@ void SPI_COMMON_RX_DMA_IRQ_HANDLER(uint16_t index) {
     DMA_ClearITPendingBit(dev->dma_rx_it);
     DMA_Cmd(dev->rx_dma_channel, DISABLE);
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     assert_param(priv_data->status->running);
     priv_data->recv_frame_counter = priv_data->frame_number & priv_data->recv_frames_mask;
     if (priv_data->send_frame_counter==priv_data->frame_number) {
         spiproxy_stop(dev);
     }
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_RX_DMA_IRQ_HANDLERS
 
@@ -154,7 +170,7 @@ void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
         assert_param(0);
     }
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     if (    (priv_data->send_frame_counter==priv_data->frame_number) &&
             (priv_data->recv_frame_counter==(priv_data->frame_number & priv_data->recv_frames_mask)) &&
              priv_data->status->running) {
@@ -162,7 +178,7 @@ void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
         dev_ctx->bytes_available =  sizeof(struct SPIProxyStatus) +
                                     (priv_data->transmit_len & priv_data->recv_frames_mask);
     }
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_IRQ_HANDLERS
 
@@ -209,9 +225,9 @@ uint8_t spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     priv_data->transmit_len = length;
     devctx->bytes_available = sizeof(struct SPIProxyStatus);   // Allow read status until data is fully received
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     spiproxy_start(dev);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 
     res = COMM_STATUS_OK;
 
@@ -315,9 +331,9 @@ void spiproxy_init_gpio(struct SPIProxyInstance* dev){
 
     // Configure SCK and NSS pins as output
     DECLARE_PIN(dev->sck_port, 1 << dev->sck_pin, GPIO_Mode_AF_PP);
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     spiproxy_stop(dev);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 }
 
 /// \brief Initializes virtual device SPI peripherals.
@@ -391,19 +407,19 @@ void spiproxy_send(struct SPIProxyInstance* dev) {
     uint8_t* pdata = (uint8_t*)&data;
     uint16_t data_offset;
     struct SPIProxyPrivData* priv_data = &(dev->privdata);
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     data_offset = priv_data->send_frame_counter << dev->frame_size;
     assert_param(data_offset < dev->buffer_size);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 
     pdata[0] = dev->out_buffer[data_offset];
     pdata[dev->frame_size] = dev->out_buffer[data_offset+dev->frame_size];
     SPI_I2S_SendData(dev->spi, data);
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     priv_data->send_frame_counter++;
     assert_param(priv_data->send_frame_counter <= priv_data->frame_number);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 }
 
 /// \brief Receives a frame from SPI (interrupt mode only)
@@ -421,18 +437,18 @@ void spiproxy_receive(struct SPIProxyInstance* dev) {
 
     data = SPI_I2S_ReceiveData(dev->spi);
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     data_offset = priv_data->recv_frame_counter << dev->frame_size;
     assert_param(data_offset < dev->buffer_size);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 
     priv_data->in_data_buffer[data_offset] = pdata[0];
     priv_data->in_data_buffer[data_offset+dev->frame_size] = pdata[dev->frame_size];
 
-    DISABLE_IRQ
+    SPI_PROXY_DISABLE_IRQ
     priv_data->recv_frame_counter++;
     assert_param(priv_data->recv_frame_counter <= priv_data->frame_number);
-    ENABLE_IRQ
+    SPI_PROXY_RESTORE_IRQ
 
 done:
     return;

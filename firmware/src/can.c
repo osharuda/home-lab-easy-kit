@@ -43,6 +43,24 @@ CAN_FW_BUFFERS
 /// \brief Global array that stores all virtual Can devices configurations.
 struct CanInstance g_can_devs[] = CAN_FW_DEV_DESCRIPTOR;
 
+#define CAN_DISABLE_IRQs                                                    \
+{                                                                           \
+    uint32_t irqn_tx_state = NVIC_IRQ_STATE(dev->irqn_tx);                  \
+    uint32_t irqn_rx0_state = NVIC_IRQ_STATE(dev->irqn_rx0);                \
+    uint32_t irqn_rx1_state = NVIC_IRQ_STATE(dev->irqn_rx1);                \
+    uint32_t irqn_sce_state = NVIC_IRQ_STATE(dev->irqn_sce);                \
+    NVIC_DISABLE_IRQ(dev->irqn_tx,  irqn_tx_state);                         \
+    NVIC_DISABLE_IRQ(dev->irqn_rx0, irqn_rx0_state);                        \
+    NVIC_DISABLE_IRQ(dev->irqn_rx1, irqn_rx1_state);                        \
+    NVIC_DISABLE_IRQ(dev->irqn_sce, irqn_sce_state);
+
+#define CAN_RESTORE_IRQs                                                    \
+    NVIC_RESTORE_IRQ(dev->irqn_sce, irqn_sce_state);                        \
+    NVIC_RESTORE_IRQ(dev->irqn_rx1, irqn_rx1_state);                        \
+    NVIC_RESTORE_IRQ(dev->irqn_rx0, irqn_rx0_state);                        \
+    NVIC_RESTORE_IRQ(dev->irqn_tx,  irqn_tx_state);                         \
+}
+
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 /// \brief Starts CAN device (switches CAN to running mode).
 /// \param devctx - device context structure represented by #DeviceContext
@@ -504,14 +522,14 @@ uint8_t can_send(   struct DeviceContext* devctx,
     // Check result
     uint8_t mb = CAN_Transmit(dev->can, &message);
     if (mb!=CAN_TxStatus_NoMailBox) {
-        DISABLE_IRQ
+        CAN_DISABLE_IRQs
         SET_BIT(dev->privdata.status.state, 1 << (mb + CAN_STATE_MB_0_BUSY_BIT_OFFSET));
-        ENABLE_IRQ
+        CAN_RESTORE_IRQs
         result = 1;
     } else {
-        DISABLE_IRQ
+        CAN_DISABLE_IRQs
         SET_BIT(dev->privdata.status.state, CAN_ERROR_NO_MAILBOX);
-        ENABLE_IRQ
+        CAN_RESTORE_IRQs
     }
 
 done:

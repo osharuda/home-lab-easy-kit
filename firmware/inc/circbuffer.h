@@ -431,8 +431,6 @@ static inline int32_t circbuf_stop_read(volatile struct CircBuffer* circ, int32_
 /// \param b - byte to be put into circular buffer
 /// \return Number of bytes added ( 1 - success, 0 - failure ).
 /// \warning This function must be used for circular buffer working in byte mode only (block mode is disabled).
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
 __attribute__((always_inline))
 static inline uint8_t circbuf_put_byte(volatile struct CircBuffer* circ, uint8_t b) {
     assert_param(circ->block_size == 1);
@@ -463,8 +461,6 @@ static inline uint8_t circbuf_put_byte(volatile struct CircBuffer* circ, uint8_t
 /// \return non-zero if success, if circular buffer may not allocate block, returns zero
 /// \warning It is not possible to reserve more than one block at the moment.
 /// \warning This function must be used for circular buffer working in block mode only (byte mode is disabled).
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
 __attribute__((always_inline))
 static inline volatile void* circbuf_reserve_block(volatile struct CircBuffer* circ) {
     volatile uint8_t* current_block;
@@ -487,8 +483,6 @@ static inline volatile void* circbuf_reserve_block(volatile struct CircBuffer* c
 /// \brief [WRITER] Commits block into circular buffer
 /// \param circ - pointer to the circular buffer structure
 /// \warning This function must be used for circular buffer working in block mode only (byte mode is disabled).
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
 __attribute__((always_inline))
 static inline void circbuf_commit_block(volatile struct CircBuffer* circ) {
     assert_param(circ->block_mode == 1); // we must be in block mode

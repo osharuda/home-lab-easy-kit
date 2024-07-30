@@ -65,6 +65,22 @@ SPIDAC_FW_BUFFERS
 /// \brief Global array that stores all virtual SPIDAC devices configurations.
 struct SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 
+/// \define DAC_DISABLE_IRQs
+/// \brief Saves current DACDev NVIC IRQ state, and temporary disables specified IRQ
+#define DAC_DISABLE_IRQs                                                    \
+    uint32_t timer_state = NVIC_IRQ_STATE(dev->timer_irqn);                 \
+    uint32_t tx_dma_state = NVIC_IRQ_STATE(dev->tx_dma_complete_irqn);      \
+    NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);                         \
+    NVIC_DISABLE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);
+
+
+/// \define DAC_RESTORE_IRQs
+/// \brief Restores DAC IRQs state
+#define DAC_RESTORE_IRQs                                                    \
+    NVIC_RESTORE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);              \
+    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);
+
+
 /// \brief Common TX DMA IRQ handler
 /// \param index - index of the virtual device
 /// \note  We don't disable irq here because priority of DMA request is higher than priority of the DAC timer.
@@ -361,14 +377,13 @@ uint8_t spidac_read_done(uint8_t device_id, uint16_t length) {
 uint8_t spidac_stop(struct SPIDACInstance* dev) {
     uint8_t res = COMM_STATUS_FAIL;
 
-    DISABLE_IRQ
+
+    DAC_DISABLE_IRQs
     if (dev->priv_data.status->status == STARTED) {
         dev->priv_data.status->status = STOPPING;
-        ENABLE_IRQ
         res = COMM_STATUS_OK;
-    } else {
-        ENABLE_IRQ
     }
+    DAC_RESTORE_IRQs
 
     return res;
 }
@@ -394,16 +409,16 @@ uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length) 
 uint8_t spidac_start(struct SPIDACInstance* dev) {
     uint8_t res = COMM_STATUS_FAIL;
     struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
-    struct SPIDACStatus* status = (struct SPIDACStatus*)&(priv_data->status->status);
+    struct SPIDACStatus* status = (struct SPIDACStatus*)&(priv_data->status);
 
     if (priv_data->sample_ptr==priv_data->sample_ptr_end) {
         goto done;  // no data
     }
 
-    DISABLE_IRQ
+    DAC_DISABLE_IRQs
     if (status->status == SHUTDOWN) {
         status->status = STARTING;
-        ENABLE_IRQ
+        DAC_RESTORE_IRQs
 
         timer_start(dev->timer,
                     0,  // Minimal prescaller is used
@@ -413,8 +428,9 @@ uint8_t spidac_start(struct SPIDACInstance* dev) {
 
         res = COMM_STATUS_OK;
     } else {
-        ENABLE_IRQ
+        DAC_RESTORE_IRQs
     }
+
 done:
     return res;
 }
@@ -422,7 +438,7 @@ done:
 void spidac_shutdown(struct SPIDACInstance* dev) {
     struct SPIDACPrivData* priv_data = &(dev->priv_data);
 
-    DISABLE_IRQ
+    DAC_DISABLE_IRQs
     // Disable DMA
     DMA_DeInit(dev->tx_dma_channel);
 
@@ -435,7 +451,7 @@ void spidac_shutdown(struct SPIDACInstance* dev) {
     priv_data->status->status = SHUTDOWN;
     priv_data->sample_ptr = NULL;
     priv_data->sample_ptr_end = NULL;
-    ENABLE_IRQ
+    DAC_RESTORE_IRQs
 }
 
 static inline void spidac_set_sampling_buffer(  struct SPIDACPrivData* priv_data,
