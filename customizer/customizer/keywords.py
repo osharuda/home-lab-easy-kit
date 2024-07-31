@@ -84,7 +84,7 @@ KW_PUSH_PULL = "push-pull"
 KW_OPEN_DRAIN = "open-drain"
 
 # File names from source tree
-FILE_SEQ_LOCK_HDR = "seqlock.h"
+FILE_SYNCHRONIZATION_HDR = "synchronization.h"
 FILE_CIRC_BUF_HDR = "circbuffer.h"
 FILE_CIRC_BUF_SRC = "circbuffer.c"
 FILE_UTOOLS_BUF_HDR = "utools.h"

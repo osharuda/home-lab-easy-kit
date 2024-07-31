@@ -38,7 +38,7 @@ class LibhlekCustomizer(BaseCustomizer):
         self.add_copy(os.path.join(self.hlekio_dir, self.hlekio_ioctl), [os.path.join(self.libhlek_inc_dest_path, self.hlekio_ioctl)])
 
         # Copy files for test application
-        self.add_copy(os.path.join(self.fw_inc_source_path, FILE_SEQ_LOCK_HDR), [os.path.join(self.sw_testtool_dest, FILE_SEQ_LOCK_HDR)])
+        self.add_copy(os.path.join(self.fw_inc_source_path, FILE_SYNCHRONIZATION_HDR), [os.path.join(self.sw_testtool_dest, FILE_SYNCHRONIZATION_HDR)])
         self.add_copy(os.path.join(self.fw_inc_source_path, FILE_CIRC_BUF_HDR), [os.path.join(self.sw_testtool_dest, FILE_CIRC_BUF_HDR)])
         self.add_copy(os.path.join(self.fw_src_source_path, FILE_CIRC_BUF_SRC), [os.path.join(self.sw_testtool_dest, FILE_CIRC_BUF_SRC)])
         self.add_copy(os.path.join(self.fw_inc_source_path, FILE_UTOOLS_BUF_HDR), [os.path.join(self.sw_testtool_dest, FILE_UTOOLS_BUF_HDR)])

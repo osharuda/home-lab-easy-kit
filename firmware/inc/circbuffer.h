@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include <utools.h>
 #include <i2c_proto.h>
-#include <seqlock.h>
 
 #ifdef DISABLE_NOT_TESTABLE_CODE
 #else

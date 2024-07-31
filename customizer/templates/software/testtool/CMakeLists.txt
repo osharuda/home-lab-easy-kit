@@ -29,7 +29,17 @@ set_property(TARGET icu_io PROPERTY IMPORTED_LOCATION ${{ICU_IO_LIBRARIES}})
 set(ICU_TARGETS "icu_data icu_uc icu_i18n icu_io")
 
 ########################## TESTTOOL
-add_executable(${{MAIN_BINARY}} testtool.cpp circbuffer.c utools.c)
+add_executable( ${{MAIN_BINARY}}
+                testtool.cpp
+                circbuffer.c
+                utools.c
+                circbuffer_tests.cpp
+                misc_tests.cpp
+                sync_tests.cpp
+                text_tests.cpp
+                timer_tests.cpp)
+
+
 set_target_properties(${{MAIN_BINARY}} PROPERTIES
                    RUNTIME_OUTPUT_DIRECTORY_DEBUG build/debug
                    RUNTIME_OUTPUT_DIRECTORY_RELEASE build/release)

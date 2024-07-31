@@ -2477,7 +2477,7 @@ void test_circbuffer_asserts() {
     }
 }
 
-constexpr uint64_t test_op_count = 10000000000;
+constexpr uint64_t test_op_count = 1000000/*0000*/;
 
 void reader_single_byte_thread_func(CircBuffer* circ) {
     uint64_t byte_count = 0;

@@ -23,10 +23,6 @@
 #include "fw.h"
 #ifdef CAN_DEVICE_ENABLED
 
-/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
-/// I2C bus EV IRQ in order to synchronize I2C interrupt with other code. It is more efficient than disabling all interrupts.
-#define SEQ_LOCK_I2C_READER
-
 #include <string.h>
 #include <stm32f10x.h>
 #include "utools.h"

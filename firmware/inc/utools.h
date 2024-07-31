@@ -29,13 +29,14 @@
 #ifdef DISABLE_NOT_TESTABLE_CODE
 #include "stdint.h"
 #include "limits.h"
+#include <assert.h>
+
 /// Defines required by code to be tested
 #define MCU_FREQUENCY_MHZ                   72
 #define MCU_FREQUENCY                       72000000
 #define MCU_MAXIMUM_TIMER_US                59652323
 
-#define assert_param(x) g_assert_param_count+=((x)==0);
-extern int g_assert_param_count;
+#define assert_param(x) assert((x))
 
 #else
 

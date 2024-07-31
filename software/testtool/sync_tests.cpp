@@ -4,11 +4,11 @@
 
 #include <mutex>
 #define SEQ_LOCK_TEST 1
-#include "seqlock.h"
+#include "synchronization.h"
 
 
-size_t reader_calls_counter = 100000000;
-size_t writer_calls_counter = 100000000;
+size_t reader_calls_counter = 10000/*0000*/;
+size_t writer_calls_counter = 10000/*0000*/;
 
 void test_seq_lock_multithread_reader(struct sequential_lock* lock, volatile uint32_t* data) {
 

@@ -210,7 +210,7 @@ struct __attribute__ ((aligned (8))) StepMotorContext {
 /// \struct tag_StepMotorDescriptor
 /// \brief Describes stepper motor default configuration
 struct __attribute__ ((aligned)) StepMotorDescriptor {
-    uint32_t      config_flags;                 ///< flags used to describe default step motor behaviour. Corresponds to tag_StepMotorStatus#motor_state. See @ref group_step_motor_dev_configuration
+    uint32_t      config_flags;                 ///< flags used to describe default step motor behaviour. Corresponds to StepMotorStatus#motor_state. See @ref group_step_motor_dev_configuration
     uint16_t      buffer_size;                  ///< stepper motor command buffer size in bytes.
     uint64_t      default_speed;                ///< stepper motor default speed. tag_StepMotorDescriptor#default_speed is a number of microseconds between step pulses. It doesn't take into account microstepping.
     uint8_t       motor_driver;                 ///< stepper motor driver type. One of the STEP_MOTOR_DRIVER_XXX values. See @ref group_step_motor_dev_microstep_tables

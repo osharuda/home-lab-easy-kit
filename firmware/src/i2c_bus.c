@@ -22,10 +22,6 @@
 
 #include "fw.h"
 
-/// \brief I2C bus may work with circula buffers from different devices. Circular buffers require synchronization with device,
-///        which is guaranteed by sequential locks. The following macro specify how i2c bus reader will enter/leave into critical
-///        section for the sequential lock.
-#define SEQ_LOCK_I2C_READER 1
 
 #include <string.h>
 #include "utools.h"

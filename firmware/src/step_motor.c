@@ -26,32 +26,7 @@
 
 #include "utools.h"
 #include "circbuffer.h"
-
-/// This macro is used by sequential lock inside circular buffer implementation. It instructs sequential lock to disable
-/// corresponding stepper motor interrupt. Also custom inline functions are required as below.
-#define SEQ_LOCK_CUSTOM_INLINE
-
-__attribute__((always_inline))
-static inline void enter_writer_crit_section(volatile struct sequential_lock* lk) {
-    NVIC_DisableIRQ((IRQn_Type)(lk->context));
-}
-__attribute__((always_inline))
-static inline void leave_writer_crit_section(volatile struct sequential_lock* lk) {
-    NVIC_EnableIRQ((IRQn_Type)(lk->context));
-}
-
-__attribute__((always_inline))
-static inline void enter_reader_crit_section(volatile struct sequential_lock* lk) {
-    UNUSED(lk);
-}
-__attribute__((always_inline))
-static inline void leave_reader_crit_section(volatile struct sequential_lock* lk) {
-    UNUSED(lk);
-}
-
-
 #include <string.h>
-
 #include "step_motor.h"
 #include "step_motor_commands.h"
 #include "sys_tick_counter.h"
@@ -821,7 +796,7 @@ uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length)
     uint8_t mindex = 0;
     uint16_t len;
     uint16_t dev_index = comm_dev_context(cmd_byte)->dev_index;
-    uint8_t protocol_status = 0;
+    uint8_t protocol_status = COMM_STATUS_OK;
     struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
     struct StepMotorContext* mcontext = MOTOR_CONTEXT(dev, mindex);
     struct StepMotorStatus* mstatus;
@@ -882,6 +857,9 @@ uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length)
         case STEP_MOTOR_STOP:
             step_motor_dev_stop(dev);
         break;
+
+        default:
+            protocol_status = COMM_STATUS_FAIL;
     }
 done:
     return protocol_status;
