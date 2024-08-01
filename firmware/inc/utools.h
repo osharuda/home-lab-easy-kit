@@ -220,37 +220,47 @@ extern volatile uint8_t g_irq_disabled;
 #define PIN_RESET_SET(port, pin)    (port)->BRR = pin; \
                                     (port)->BSRR = pin;
 
+
+
+/// \brief Set's BASEPI register value
+/// \note Don't use CMSIS __set_BASEPRI() because it is not inline, which adds a function call. Let's allow compiler to
+///       make descision regarding inlining.
+static inline void set_BASEPRI(uint32_t x)
+{
+    __ASM volatile ("MSR basepri, %0" : : "r" (x) );
+}
+
 #ifndef NDEBUG
 
-#define ASSERT_IRQ_ENABLED assert_param(g_irq_disabled==0);
+#define ASSERT_OUT_CRIT_SECTION assert_param(g_irq_disabled==0);
+#define ASSERT_IN_CRIT_SECTION assert_param(g_irq_disabled==1);
 
-#define ASSERT_IRQ_DISABLED assert_param(g_irq_disabled==1);
+/// \brief Enters critical section for synchronization purposes (disables virtual devices IRQs)
+/// \note Interrupts above IRQ_PRIORITY_CRITICAL_SECTION are not disabled
+/// \warning Asserts if CRITICAL_SECTION_ENTER and CRITICAL_SECTION_LEAVE are not called in pairs correctly.
+#define CRITICAL_SECTION_ENTER                          \
+    set_BASEPRI(IRQ_PRIORITY_CRITICAL_SECTION << 4);  \
+    ASSERT_OUT_CRIT_SECTION                             \
+    g_irq_disabled = 1;
 
-/// \brief Disables interrupt generation
-/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
-#define DISABLE_IRQ __disable_irq();    \
-                    ASSERT_IRQ_ENABLED  \
-                    g_irq_disabled = 1;
-
-/// \brief Enables interrupt generation
-/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
-#define ENABLE_IRQ  ASSERT_IRQ_DISABLED \
-                    g_irq_disabled = 0; \
-                    __enable_irq();
+/// \brief Leaves critical section for synchronization purposes (enables virtual devices IRQs)
+/// \note Interrupts above IRQ_PRIORITY_CRITICAL_SECTION are not disabled
+/// \warning Asserts if CRITICAL_SECTION_ENTER and CRITICAL_SECTION_LEAVE are not called in pairs correctly.
+#define CRITICAL_SECTION_LEAVE                          \
+    ASSERT_IN_CRIT_SECTION                              \
+    g_irq_disabled = 0;                                 \
+    set_BASEPRI(0);
 
 #else
 
-#define ASSERT_IRQ_ENABLED (void)(0);
+#define ASSERT_OUT_CRIT_SECTION (void)(0);
+#define ASSERT_IN_CRIT_SECTION (void)(0);
 
-#define ASSERT_IRQ_DISABLED (void)(0);
+/// \brief Enters critical section for synchronization purposes (disables virtual devices IRQs)
+#define CRITICAL_SECTION_ENTER set_BASEPRI(IRQ_PRIORITY_CRITICAL_SECTION << 4);
 
-/// \brief Disables interrupt generation
-/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
-#define DISABLE_IRQ __disable_irq();
-
-/// \brief Enables interrupt generation
-/// \warning Make sure a pair of DISABLE_IRQ and ENABLE_IRQ are not used recursively.
-#define ENABLE_IRQ  __enable_irq();
+/// \brief Leaves critical section for synchronization purposes (enables virtual devices IRQs)
+#define CRITICAL_SECTION_LEAVE  set_BASEPRI(0);
 
 #endif
 
@@ -361,9 +371,9 @@ void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
 /// \param timer - timer to be disabled.
 void timer_disable_ex(TIM_TypeDef* timer);
 
-/// \brief Disables timer when IRQ is disabled.
+/// \brief Disables timer.
 /// \param timer - timer to be reinitialized.
-void timer_disable_no_irq(TIM_TypeDef* timer, IRQn_Type irqn);
+void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
 
 /// Define this macro to 1 if you need some help during debugging. It allows counted breaks and debug pins.
 #define EMERGENCY_DEBUG_TOOLS 1

@@ -59,27 +59,27 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 #define STEP_MOTOR_DRIVER_DRV8825   (uint8_t)(2)
 
 /// \def STEP_MOTOR_FULL_STEP
-/// \brief Defines full step. Corresponds to tag_StepMotorStatus#pos change by +(-) 32
+/// \brief Defines full step. Corresponds to StepMotorStatus#pos change by +(-) 32
 #define STEP_MOTOR_FULL_STEP          (5)
 
 /// \def STEP_MOTOR_FULL_STEP_DIV_2
-/// \brief Defines 1/2 step. Corresponds to tag_StepMotorStatus#pos change by +(-) 16
+/// \brief Defines 1/2 step. Corresponds to StepMotorStatus#pos change by +(-) 16
 #define STEP_MOTOR_FULL_STEP_DIV_2    (4)
 
 /// \def STEP_MOTOR_FULL_STEP_DIV_4
-/// \brief Defines 1/4 step. Corresponds to tag_StepMotorStatus#pos change by +(-) 8
+/// \brief Defines 1/4 step. Corresponds to StepMotorStatus#pos change by +(-) 8
 #define STEP_MOTOR_FULL_STEP_DIV_4    (3)
 
 /// \def STEP_MOTOR_FULL_STEP_DIV_8
-/// \brief Defines 1/8 step. Corresponds to tag_StepMotorStatus#pos change by +(-) 4
+/// \brief Defines 1/8 step. Corresponds to StepMotorStatus#pos change by +(-) 4
 #define STEP_MOTOR_FULL_STEP_DIV_8    (2)
 
 /// \def STEP_MOTOR_FULL_STEP_DIV_16
-/// \brief Defines 1/16 step. Corresponds to tag_StepMotorStatus#pos change by +(-) 2
+/// \brief Defines 1/16 step. Corresponds to StepMotorStatus#pos change by +(-) 2
 #define STEP_MOTOR_FULL_STEP_DIV_16   (1)
 
 /// \def STEP_MOTOR_FULL_STEP_DIV_32
-/// \brief Defines 1/32 step. Corresponds to tag_StepMotorStatus#pos change by +(-) 1
+/// \brief Defines 1/32 step. Corresponds to StepMotorStatus#pos change by +(-) 1
 #define STEP_MOTOR_FULL_STEP_DIV_32   (0)
 
 /// \def STEP_MOTOR_BAD_STEP
@@ -94,9 +94,9 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
                                     {{STEP_MOTOR_FULL_STEP,STEP_MOTOR_FULL_STEP_DIV_2,STEP_MOTOR_FULL_STEP_DIV_4,STEP_MOTOR_FULL_STEP_DIV_8,STEP_MOTOR_FULL_STEP_DIV_16,STEP_MOTOR_FULL_STEP_DIV_32,STEP_MOTOR_FULL_STEP_DIV_32,STEP_MOTOR_FULL_STEP_DIV_32}}}} /*Drv8825*/
 
 /// \def STEP_MOTOR_MICROSTEP_DELTA
-/// \brief Calculates a delta value that should be used to increment/decrement tag_StepMotorStatus#pos value per one step
+/// \brief Calculates a delta value that should be used to increment/decrement StepMotorStatus#pos value per one step
 /// \param step_shift - number of bits to shift 1 left in order to get required fraction of a full step, which consist of 32 microsteps.
-/// \return delta value to change tag_StepMotorStatus#pos
+/// \return delta value to change StepMotorStatus#pos
 #define STEP_MOTOR_MICROSTEP_DELTA(step_shift)          (1 << (step_shift))
 
 /// \def STEP_MOTOR_MICROSTEP_DIVIDER
@@ -631,20 +631,20 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 
 /// \def STEP_MOTOR_SET_DIR_CCW
 /// \brief Defines #STEP_MOTOR_SET command that set stepper motor rotation to counter-clock-wise (CCW).
-/// This command affects physical DIRECTION line (if used) of the stepper motor driver, tag_StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
+/// This command affects physical DIRECTION line (if used) of the stepper motor driver, StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
 /// This command doesn't require arguments.
 #define STEP_MOTOR_SET_DIR_CCW       (uint8_t)(0b00000000)
 
 /// \def STEP_MOTOR_SET_DIR_CW
 /// \brief Defines #STEP_MOTOR_SET command that set stepper motor rotation to clock-wise (CW).
-/// This command affects physical DIRECTION line (if used) of the stepper motor driver, tag_StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
+/// This command affects physical DIRECTION line (if used) of the stepper motor driver, StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
 /// This command doesn't require arguments.
 #define STEP_MOTOR_SET_DIR_CW        (uint8_t)(0b00000001)
 
 /// \def STEP_MOTOR_SET_MICROSTEP
 /// \brief Defines #STEP_MOTOR_SET command that set micro stepping options for the stepper motor drive. Requires 8 bit argument that may be a bitwise combination of the following flags:
 /// #STEP_MOTOR_SET_MICROSTEP_M1, #STEP_MOTOR_SET_MICROSTEP_M2, #STEP_MOTOR_SET_MICROSTEP_M3.
-/// This command affects physical physical micro stepping lines (M1, M2 and M3) of the stepper motor driver (if used), tag_StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
+/// This command affects physical physical micro stepping lines (M1, M2 and M3) of the stepper motor driver (if used), StepMotorStatus#pos calculation, hardware endstops or software limits processing during stepper motor rotation.
 #define STEP_MOTOR_SET_MICROSTEP     (uint8_t)(0b00000010)
 
 /// \def STEP_MOTOR_SET_STEP_WAIT
@@ -657,11 +657,11 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 #define STEP_MOTOR_MIN_STEP_WAIT    100
 
 /// \def STEP_MOTOR_SET_CW_SFT_LIMIT
-/// \brief Defines #STEP_MOTOR_SET command that set clock-wise (CW) software limit of the tag_StepMotorStatus#pos.
+/// \brief Defines #STEP_MOTOR_SET command that set clock-wise (CW) software limit of the StepMotorStatus#pos.
 #define STEP_MOTOR_SET_CW_SFT_LIMIT  (uint8_t)(0b00000100)
 
 /// \def STEP_MOTOR_SET_CCW_SFT_LIMIT
-/// \brief Defines #STEP_MOTOR_SET command that set counter-clock-wise (CCW) software limit of the tag_StepMotorStatus#pos.
+/// \brief Defines #STEP_MOTOR_SET command that set counter-clock-wise (CCW) software limit of the StepMotorStatus#pos.
 #define STEP_MOTOR_SET_CCW_SFT_LIMIT (uint8_t)(0b00000101)
 
 /// \def STEP_MOTOR_SET_MICROSTEP_M1
@@ -687,14 +687,14 @@ typedef StepMotorMicrostepTable StepMotorMicrostepTables[];
 ///
 /// \section sect_step_motor_dev_statuses_01 Status structures
 /// Stepper motor status information is separated on two parts:
-/// 1. StepMotorDev virtual device status. #tag_StepMotorDevStatus structure is used to describe virtual device status.
-/// 2. Stepper motors statuses. Stepper motor status is described by #tag_StepMotorStatus
-///    structure. Note, that #tag_StepMotorDevStatus contains an array of #tag_StepMotorStatus, which is obvious, stepper
+/// 1. StepMotorDev virtual device status. #StepMotorDevStatus structure is used to describe virtual device status.
+/// 2. Stepper motors statuses. Stepper motor status is described by #StepMotorStatus
+///    structure. Note, that #StepMotorDevStatus contains an array of #StepMotorStatus, which is obvious, stepper
 ///    motor status is a part of whole StepMotorDev device status.
 ///
 
 /// \def STEP_MOTOR_DEV_STATUS_STATE_MASK
-/// \brief Defines location of device status value in tag_StepMotorDevStatus#status
+/// \brief Defines location of device status value in StepMotorDevStatus#status
 #define STEP_MOTOR_DEV_STATUS_STATE_MASK    (uint8_t)(0b00000001)
 
 /// \def STEP_MOTOR_DEV_STATUS_IDLE
@@ -716,8 +716,9 @@ struct __attribute__ ((aligned)) StepMotorStatus {{
     int64_t  pos;               ///< Stepper motor position. CW moves increase (and CCW moves decrease) position (by 32 / microstep divider) value. See @ref group_step_motor_dev_microstep_tables
     int64_t  cw_sft_limit;      ///< Current software limit for stepper motor position during CW moves. Ignored if hardware end-stop is used
     int64_t  ccw_sft_limit;     ///< Current software limit for stepper motor position during CCW moves. Ignored if hardware end-stop is used
-    uint32_t motor_state;       ///< flags used to describe current motor status. Corresponds to tag_StepMotorDescriptor#config_flags. See @ref group_step_motor_dev_configuration
+    uint32_t motor_state;       ///< flags used to describe current motor status. Corresponds to StepMotorDescriptor#config_flags. See @ref group_step_motor_dev_configuration
     uint16_t bytes_remain;      ///< Number of unread bytes in motor command buffer.
+    uint16_t reserved;          ///< Reserved.
 }};
 
 /// \struct StepMotorDevStatus
@@ -725,7 +726,7 @@ struct __attribute__ ((aligned)) StepMotorStatus {{
 /// \warning Firmware code should make changes to this structure with interrupts disabled.
 struct __attribute__ ((aligned)) StepMotorDevStatus {{
     uint8_t status; ///< Stepper motor device status. One of the following values: #STEP_MOTOR_DEV_STATUS_IDLE, #STEP_MOTOR_DEV_STATUS_RUN, #STEP_MOTOR_DEV_STATUS_ERROR
-    struct StepMotorStatus mstatus[] __attribute__ ((aligned)); ///< Array of #tag_StepMotorStatus structures containing each motor status. Indexed as motor index.
+    struct StepMotorStatus mstatus[] __attribute__ ((aligned(8))); ///< Array of #StepMotorStatus structures containing each motor status. Indexed as motor index.
 }};
 
 /// @}}

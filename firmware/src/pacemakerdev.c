@@ -100,10 +100,10 @@ static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, s
     assert_param(pdata->status->started); // Must be started
 
     // Disable all interrupts
-    timer_disable_no_irq(dev->internal_timer, dev->internal_timer_irqn);
+    timer_disable(dev->internal_timer, dev->internal_timer_irqn);
     timer_disable_ex(dev->internal_timer);
 
-    timer_disable_no_irq(dev->main_timer, dev->main_timer_irqn);
+    timer_disable(dev->main_timer, dev->main_timer_irqn);
     timer_disable_ex(dev->main_timer);
 
     // Clear status
@@ -153,7 +153,7 @@ static inline void pacemaker_next_transition( struct PaceMakerDevInstance* dev,
 
     // setup next transition
     if (pdata->status->internal_index >= pdata->trans_number) {
-        timer_disable_no_irq(dev->internal_timer, dev->internal_timer_irqn);
+        timer_disable(dev->internal_timer, dev->internal_timer_irqn);
         timer_disable_ex(dev->internal_timer);
     } else {
         trans++;
@@ -283,9 +283,9 @@ uint8_t pacemaker_reset(struct PaceMakerDevInstance* dev, struct PaceMakerDevPri
     uint8_t result = COMM_STATUS_FAIL;
 
     // Stop all timers
-    timer_disable_no_irq(dev->main_timer, dev->main_timer_irqn);
+    timer_disable(dev->main_timer, dev->main_timer_irqn);
     timer_disable_ex(dev->main_timer);
-    timer_disable_no_irq(dev->internal_timer, dev->internal_timer_irqn);
+    timer_disable(dev->internal_timer, dev->internal_timer_irqn);
     timer_disable_ex(dev->internal_timer);
 
     // Clean status and private data

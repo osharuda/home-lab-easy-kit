@@ -152,17 +152,12 @@ void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us) {
     CLEAR_FLAGS(timer->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
 }
 
-void timer_disable_no_irq(TIM_TypeDef* timer, IRQn_Type irqn) {
-    TIM_ITConfig(timer, TIM_IT_Update, DISABLE);
-    TIM_Cmd(timer, DISABLE);
+void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn) {
+    assert_param(IS_TIM_ALL_PERIPH(timer));
+    timer->DIER &= (uint16_t)~TIM_IT_Update;
+    timer->CR1 &= (uint16_t)(~((uint16_t)TIM_CR1_CEN));
     timer->SR = (uint16_t)~TIM_IT_Update;
     NVIC_DisableIRQ(irqn);
-}
-
-void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn) {
-    DISABLE_IRQ
-    timer_disable_no_irq(timer, irqn);
-    ENABLE_IRQ
 }
 
 #if EMERGENCY_DEBUG_TOOLS!=0

@@ -103,9 +103,9 @@ uint8_t step_motor_general_enable(struct StepMotorDevice* dev, uint8_t mindex, s
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_RESET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_DISABLE_DEFAULT);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -118,9 +118,9 @@ uint8_t step_motor_general_sleep(struct StepMotorDevice* dev, uint8_t mindex, st
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_RESET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_WAKEUP_DEFAULT);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
@@ -134,9 +134,9 @@ uint8_t step_motor_general_disable(struct StepMotorDevice* dev, uint8_t mindex, 
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_SET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_DISABLE_DEFAULT);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -149,9 +149,9 @@ uint8_t step_motor_general_wakeup(struct StepMotorDevice* dev, uint8_t mindex, s
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_SET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_WAKEUP_DEFAULT);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -198,9 +198,9 @@ uint8_t step_motor_general_wait(struct StepMotorDevice* dev, uint8_t mindex, str
 uint8_t step_motor_general_config(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
     struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t value = STEP_MOTOR_CONFIG_BYTE_TO_FLAGS(cmd->param);
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     SET_BIT_FIELD(mstatus->motor_state, STEP_MOTOR_CONFIG_MASK, value);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
@@ -214,9 +214,9 @@ uint8_t step_motor_set_dir_cw(struct StepMotorDevice* dev, uint8_t mindex, struc
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_SET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_DIRECTION_CW);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext);
 
@@ -232,9 +232,9 @@ uint8_t step_motor_set_dir_ccw(struct StepMotorDevice* dev, uint8_t mindex, stru
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_RESET);
     }
 
-    DISABLE_IRQ
+    CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_DIRECTION_CW);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext);
 
@@ -253,9 +253,10 @@ uint8_t step_motor_set_microstep(struct StepMotorDevice* dev, uint8_t mindex, st
     m3 = (cmd->param & STEP_MOTOR_SET_MICROSTEP_M3) == 0 ? Bit_RESET : Bit_SET;
 
     uint32_t flag = (m1 << STEP_MOTOR_M1_DEFAULT_OFFSET) | (m2 << STEP_MOTOR_M2_DEFAULT_OFFSET) | (m3 << STEP_MOTOR_M3_DEFAULT_OFFSET);
-    DISABLE_IRQ
+
+    CRITICAL_SECTION_ENTER
     SET_BIT_FIELD(mstatus->motor_state, STEP_MOTOR_M1_DEFAULT | STEP_MOTOR_M2_DEFAULT | STEP_MOTOR_M3_DEFAULT, flag);
-    ENABLE_IRQ
+    CRITICAL_SECTION_LEAVE
 
     if (step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext)) {
         result = STE_MOTOR_CMD_RESULT_FAIL;
@@ -301,9 +302,10 @@ uint8_t step_motor_set_cw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex,
         // cw software limit may not be less or equal than ccw limit
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
-        DISABLE_IRQ
+        CRITICAL_SECTION_ENTER
+        /* PROBLEM */
         mstatus->cw_sft_limit = (int64_t)cmd->param;
-        ENABLE_IRQ
+        CRITICAL_SECTION_LEAVE
     }
 
 
@@ -322,9 +324,10 @@ uint8_t step_motor_set_ccw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex
         // ccw software limit may not greater or equal than cw limit
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
-        DISABLE_IRQ
+        CRITICAL_SECTION_ENTER
+        /* PROBLEM */
         mstatus->ccw_sft_limit = (int64_t)cmd->param;
-        ENABLE_IRQ
+        CRITICAL_SECTION_LEAVE
     }
 
     cmd->wait = 0;
@@ -343,9 +346,9 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
         switch (cmd->state) {
             case STEP_MOTOR_CMDSTATUS_INIT: {
                 // Clear all endstops
-                DISABLE_IRQ
+                CRITICAL_SECTION_ENTER
                 CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED | STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-                ENABLE_IRQ
+                CRITICAL_SECTION_LEAVE
 
                 // Mask/unmask endstops (this call must also set active endstop if required)
                 uint8_t stop = step_motor_prepare_for_move(dev->dev_ctx.dev_index, mindex, cmd);
@@ -359,9 +362,10 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
 
                 cmd->wait = step_motor_correct_timing(mcontext->step_wait, STEP_MOTOR_CORRECTION_FACTOR, mcontext);
 
-                DISABLE_IRQ
+                CRITICAL_SECTION_ENTER
+                /* PROBLEM */
                 mstatus->pos += mcontext->pos_change_by_step;
-                ENABLE_IRQ
+                CRITICAL_SECTION_LEAVE
 
                 cmd->state = STEP_MOTOR_CMDSTATUS_STEPWAIT;
             }
@@ -375,9 +379,11 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
                     if (mcontext->move_sw_endstop_flag) {
                         // This move must be finished by software limit
                         assert_param(mstatus->pos<=mstatus->ccw_sft_limit || mstatus->pos>=mstatus->cw_sft_limit);
-                        DISABLE_IRQ
+
+                        CRITICAL_SECTION_ENTER
                         SET_FLAGS(mstatus->motor_state, mcontext->move_sw_endstop_flag);
-                        ENABLE_IRQ
+                        CRITICAL_SECTION_LEAVE
+
                         uint8_t suspended = step_motor_handle_alarm(dev, mstatus, STEP_MOTOR_IGNORE_ENDSTOP_FLAG(direction), STEP_MOTOR_ALL_ENDSTOP_FLAG(direction));
                         if (suspended==0) {
                             // endstop was ignored, we have to continue move and restore command

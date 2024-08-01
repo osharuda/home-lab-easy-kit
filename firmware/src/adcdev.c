@@ -185,7 +185,7 @@ void adc_stop(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata) {
 
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {
         adc_suspend(dev);
-        timer_disable_no_irq(dev->timer, dev->timer_irqn);
+        timer_disable(dev->timer, dev->timer_irqn);
         NVIC_DisableIRQ(dev->scan_complete_irqn);
         CLEAR_FLAGS(pdata->status, (uint16_t) (ADCDEV_STATUS_STARTED | ADCDEV_STATUS_SAMPLING));
     }
