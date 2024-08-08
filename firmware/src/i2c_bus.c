@@ -91,10 +91,6 @@ volatile uint8_t g_returned_comm_status = 0;
 /// \brief This flag is used to keep current device id.
 uint8_t g_device_id = 0;
 
-/// \brief This variable indicates ongoing communication operation. Non-zero means ongoing communication is in progress.
-///        Zero means no active communication at the moment.
-volatile uint8_t g_i2c_busy = 0;
-
 /// \def BUS_CMD_NONE
 /// \brief Indicates no operation is requested by master (software) for given virtual device.
 #define BUS_CMD_NONE  0
@@ -109,6 +105,12 @@ volatile uint8_t g_i2c_busy = 0;
 ///        notified via tag_DeviceContext#on_read_done() callback.
 #define BUS_CMD_READ  2
 
+/// \def BUS_CMD_SYNC
+/// \brief Defines synchronization command. This command is executed every time when received number of bytes is less then
+///        sizeof(struct CommCommandHeader). It can be utilized to synchronize internal virtual device structures with device
+///        status being send to the software.
+#define BUS_CMD_SYNC  3
+
 /// \brief Value to enable I2C peripherals via CR1
 #define I2C_BUS_CR1_ENABLE              ((uint16_t)0x0001)
 
@@ -116,7 +118,7 @@ volatile uint8_t g_i2c_busy = 0;
 /// \brief Indicates type of completed operation. It's value is read periodically in #main() infinite loop to perform action
 ///        requested by master (software) for virtual device. It may be equal to either #BUS_CMD_NONE, #BUS_CMD_WRITE or
 ///        #BUS_CMD_READ
-/* volatile */ uint8_t g_cmd_type = BUS_CMD_NONE;
+uint8_t g_cmd_type = BUS_CMD_NONE;
 
 /// \brief Number of commands (virtual device callbacks calls) issued by I2C bus
 /// \note This value is compared to g_processed_cmd_count in order to detect if all commands were processed.
@@ -126,12 +128,12 @@ volatile uint32_t g_cmd_count __attribute__ ((aligned)) = 0;
 /// \note This value is compared to g_cmd_count in order to detect if all commands were processed.
 volatile uint32_t g_processed_cmd_count __attribute__ ((aligned)) = 0;
 
-// Receive variables
+/// Receive variables
 /// \brief Buffer for #CommCommandHeader structure to be received from the master(software)
 struct CommCommandHeader g_cmd_header;
 
 /// \brief Pointer to the #g_cmd_header_ptr. This variable is used for clearer code to avoid multiple type conversions.
-/* volatile */uint8_t* g_cmd_header_ptr = (/* volatile */ uint8_t*)&g_cmd_header;
+uint8_t* g_cmd_header_ptr = (uint8_t*)&g_cmd_header;
 
 /// \brief Receive buffer that is used to receive data from master (software). This is a place where master sends data.
 uint8_t g_recv_buffer[COMM_BUFFER_LENGTH];
@@ -139,57 +141,51 @@ uint8_t g_recv_buffer[COMM_BUFFER_LENGTH];
 /// \brief Total number of bytes received counter. It counts all bytes sent by master (software) to firmware except those
 ///        bytes which are exceed receive buffer (#g_recv_buffer) length defined by #COMM_BUFFER_LENGTH.
 /// \note This value includes #g_cmd_header
-/* volatile */uint16_t g_recv_total_pos __attribute__ ((aligned)) = 0;
+uint16_t g_recv_total_pos __attribute__ ((aligned)) = 0;
 
 /// \brief Number of bytes wrote into receive buffer (#g_recv_buffer). Later this value is passed to tag_DeviceContext#on_command() callback.
 /// \note This value excludes #g_cmd_header
-/* volatile */uint16_t g_recv_data_pos __attribute__ ((aligned)) = 0;
+uint16_t g_recv_data_pos __attribute__ ((aligned)) = 0;
 
 // Transmit variables
 /// \brief Buffer for #CommResponseHeader structure to be sent to the master(software)
 struct CommResponseHeader g_resp_header;
 
-/*TEST CODE*/
-struct CommResponseHeader g_resp_header_remove_later;
-
 
 /// \brief Pointer to the #g_resp_header. This variable is used for clearer code to avoid multiple type conversions.
-/* volatile */uint8_t* g_resp_header_ptr = (/*volatile*/ uint8_t*)&g_resp_header;
+uint8_t* g_resp_header_ptr = (/*volatile*/ uint8_t*)&g_resp_header;
 
 /// \brief Total number of bytes transmitted counter. It counts all bytes sent to the master, including #COMM_BAD_BYTE
 /// \note This variable may be decremented when transmission is complete. It is made because firmware preload a byte into
 ///       I2C data register. I2C stop condition is always unexpected, therefore one extra byte is preloaded on stop condition
 ///       in data register. Firmware should count this byte back on stop condition.
-/* volatile */uint16_t g_tran_total __attribute__ ((aligned)) = 0;   // Total number of bytes transmitted
+uint16_t g_tran_total __attribute__ ((aligned)) = 0;   // Total number of bytes transmitted
 
 /// \brief Total number of bytes transmitted to master (software) from virtual device buffer. This value is passed to
 ///        tag_DeviceContext#on_read_done() callback.
-/* volatile */uint16_t g_tran_dev_pos __attribute__ ((aligned)) = 0;	// Number of bytes transmitted from device buffer
+uint16_t g_tran_dev_pos __attribute__ ((aligned)) = 0;	// Number of bytes transmitted from device buffer
 
 /// \brief Communication control sum accumulator. Start value is defined by #COMM_CRC_INIT_VALUE
-/* volatile */uint8_t g_crc = COMM_CRC_INIT_VALUE; // CRC accumulator
+uint8_t g_crc = COMM_CRC_INIT_VALUE; // CRC accumulator
 
 /// \brief Value of the last byte put into (or read from) I2C data register. It's value is used for correct control sum calculations.
-/* volatile */uint8_t g_last_byte = 0;
+uint8_t g_last_byte = 0;
 
 /// \brief Cached next byte to be transmitted. It is updated by i2c_refresh_transmit_cache()
-/* volatile */uint8_t g_i2c_transmit_cache;
-
-/// \brief These variables are used to quickly restore i2c state after software reset.
-// volatile uint16_t g_i2c_cr1, g_i2c_cr2, g_i2c_oar1, g_i2c_oar2, g_i2c_ccr, g_i2c_trise;
+uint8_t g_i2c_transmit_cache;
 
 #define I2C_BUS_READ_RESPONSE_HEADER -1
 #define I2C_BUS_READ_LINEAR_BUFFER   0
 #define I2C_BUS_READ_CIRC_BUFFER     1
 #define I2C_BUS_READ_BAD_BYTE        2
 
-/*volatile */int8_t i2c_bus_finite_state_macnine;
+int8_t i2c_bus_finite_state_macnine;
 
 /// \brief Stores value to increment device buffer read counter (g_tran_dev_pos)
 ///        in the case prefetched byte is sent into the bus.
-/* volatile */ uint16_t i2c_device_buffer_increment __attribute__ ((aligned));
+uint16_t i2c_device_buffer_increment __attribute__ ((aligned));
 
-// Registered device
+/// Registered device
 /// \brief Array of the device context pointers. This array is field
 struct DeviceContext* g_devices[COMM_MAX_DEV_ADDR + 1];
 
@@ -304,10 +300,11 @@ struct DeviceContext* comm_dev_context(uint8_t cmd_byte) {
 // Called to check if there were command and to call device callbacks
 void i2c_check_command(void) {
     uint8_t status;
-    assert_param( ( g_cmd_count == g_processed_cmd_count) ||
-                  ( g_cmd_count == (g_processed_cmd_count + 1)) );
+    uint32_t cmd_count = g_cmd_count;
+    assert_param( ( cmd_count == g_processed_cmd_count) ||
+                  ( cmd_count == (g_processed_cmd_count + 1)) );
 
-    if (g_cmd_count != g_processed_cmd_count) {
+    if (cmd_count != g_processed_cmd_count) {
         switch (g_cmd_type) {
             case BUS_CMD_READ:
                 status = g_cur_device->on_read_done(g_cur_device->device_id, g_tran_dev_pos);
@@ -317,6 +314,12 @@ void i2c_check_command(void) {
 
             case BUS_CMD_WRITE:
                 status = g_cur_device->on_command(g_cmd_header.command_byte, g_recv_buffer, g_recv_data_pos);
+                g_returned_comm_status = status & (~COMM_MAX_DEV_ADDR);
+                g_processed_cmd_count++;
+            break;
+
+            case BUS_CMD_SYNC:
+                status = g_cur_device->on_sync(g_cmd_header.command_byte, g_recv_total_pos);
                 g_returned_comm_status = status & (~COMM_MAX_DEV_ADDR);
                 g_processed_cmd_count++;
             break;
@@ -370,9 +373,6 @@ void i2c_transmit_init_with_send(void) {
     I2C_STATUS_TRACK(g_crc, g_last_byte, 0xD2);
     // endregion
 
-    g_i2c_busy = 1; // Lock changes during communication
-    g_cmd_type = BUS_CMD_NONE;
-
     // Transmit
     g_tran_dev_pos = 0;
     g_transmit = 1;
@@ -400,9 +400,6 @@ void i2c_transmit_init_no_send(void) {
     uint8_t prev_crc = g_crc;
     g_crc = COMM_CRC_INIT_VALUE;
 
-    g_i2c_busy = 1; // Lock changes during communication
-    g_cmd_type = BUS_CMD_NONE;
-
     // Transmit
     g_tran_dev_pos = 0;
     g_transmit = 1;
@@ -429,9 +426,6 @@ void i2c_transmit_init_no_send(void) {
 __attribute__((always_inline)) static inline
 void i2c_receive_init(void) {
     g_crc = COMM_CRC_INIT_VALUE;
-
-    g_i2c_busy = 1; // Lock changes during communication
-    g_cmd_type = BUS_CMD_NONE;
     g_tran_total = 0;
 
     // Receive (this is new command)
@@ -479,7 +473,8 @@ void i2c_receive_byte(void) {
 			uint8_t dev_id = (g_last_byte & COMM_MAX_DEV_ADDR);
 			g_cur_device = g_devices[dev_id];
             g_device_id = dev_id;
-			g_comm_status = 0;
+            assert_param(IS_CLEARED(g_comm_status, COMM_STATUS_BUSY));
+			// g_comm_status = 0;
             I2C_STATUS_TRACK(0, dev_id, 0xC2);
 		}
 
@@ -599,23 +594,33 @@ void i2c_stop(void) {
         if (	g_cur_device->on_read_done!=0 &&
                 IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC) &&
                 g_tran_dev_pos>0) {
+            assert_param(g_cmd_count == g_processed_cmd_count);
             SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
             g_cmd_type = BUS_CMD_READ;
             g_cmd_count++;
         }
-	} else if (g_transmit==0 && IS_CLEARED(g_comm_status, COMM_STATUS_BUSY) && g_recv_total_pos >= sizeof(struct CommCommandHeader)) {
-        if(g_cmd_header.length!=g_recv_data_pos) {
-            SET_FLAGS(g_comm_status, COMM_STATUS_FAIL);
-        }
+	} else if (g_transmit==0 &&
+                IS_CLEARED(g_comm_status, COMM_STATUS_BUSY)) {
+        if (g_recv_total_pos >= sizeof(struct CommCommandHeader)) {
+            if(g_cmd_header.length!=g_recv_data_pos) {
+                SET_FLAGS(g_comm_status, COMM_STATUS_FAIL);
+            }
 
-        if (g_cmd_header.control_crc!=g_crc) {
-            SET_FLAGS(g_comm_status, COMM_STATUS_CRC);
-        }
+            if (g_cmd_header.control_crc!=g_crc) {
+                SET_FLAGS(g_comm_status, COMM_STATUS_CRC);
+            }
 
-        if (g_cur_device->on_command!=0 &&
-            IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC)) {
+            if (g_cur_device->on_command!=0 &&
+                IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC)) {
+                assert_param(g_cmd_count == g_processed_cmd_count);
+                SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
+                g_cmd_type = BUS_CMD_WRITE;
+                g_cmd_count++;
+            }
+        } else if (g_cur_device->on_sync!=0) {
+            assert_param(g_cmd_count == g_processed_cmd_count);
             SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
-            g_cmd_type = BUS_CMD_WRITE;
+            g_cmd_type = BUS_CMD_SYNC;
             g_cmd_count++;
         }
 	}
@@ -625,7 +630,6 @@ void i2c_stop(void) {
     // operation mode
     g_transmit = 0;
     g_recv_total_pos = 0;
-	g_i2c_busy = 0;
 
     // region I2C_TRACE #0xD5
     I2C_STATUS_TRACK(g_crc, g_last_byte, 0xD5);
@@ -730,7 +734,7 @@ MAKE_ISR(I2C_BUS_EV_ISR) {
     }
 
     // --------------------- RECEIVING DATA ---------------------
-    if (IS_SET(sr1, I2C_SR1_RXNE) /* && IS_SET(sr2, I2C_SR2_BUSY) */) {
+    if (IS_SET(sr1, I2C_SR1_RXNE)) {
         i2c_receive_byte();
     }
 

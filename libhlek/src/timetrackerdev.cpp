@@ -44,13 +44,14 @@ void TimeTrackerDev::send_command(int command) {
     BusLocker   blocker(bus, get_addr(), to);
 
     auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
-    do {
-        err = fw->get_status(hdr, false, to);
-    } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
+    err = fw->sync_vdev(hdr, false, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "sync_vdev() failed");
+    }
     assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
 
 
-     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
     if (err != EKIT_OK && err != EKIT_OVERFLOW) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
@@ -64,7 +65,7 @@ void TimeTrackerDev::send_command(int command) {
     if (command == TIMETRACKERDEV_RESET) {
         // Wait until buffer length becomes zero, do not read more than CommResponseHeader
         do {
-            err = fw->get_status(hdr, false, to);
+            err = fw->sync_vdev(hdr, false, to);
         } while ( (err!=EKIT_OK) || (hdr.comm_status & COMM_STATUS_BUSY) || (hdr.length == 0));
 
         if (hdr.comm_status & COMM_STATUS_FAIL) {
@@ -92,10 +93,10 @@ void TimeTrackerDev::get_priv(size_t count, EKitTimeout& to, bool& ovf) {
     CommResponseHeader hdr;
 
     auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
-
-    do {
-        err = fw->get_status(hdr, false, to);
-    } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
+    err = fw->sync_vdev(hdr, false, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "sync_vdev() failed");
+    }
     assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
 
     if (buffer_data_size > config->dev_buffer_len) {

@@ -50,7 +50,7 @@ bool EKitFirmware::check_address(int dev_id) {
 	return res;
 }
 
-EKIT_ERROR EKitFirmware::status_to_ext_error(uint8_t cs) {
+EKIT_ERROR EKitFirmware::process_comm_status(uint8_t cs) {
     EKIT_ERROR err_fail = EKIT_OK;
     EKIT_ERROR err_crc = EKIT_OK;
     EKIT_ERROR err_ovf = EKIT_OK;
@@ -183,13 +183,9 @@ EKIT_ERROR EKitFirmware::get_status(CommResponseHeader& hdr, bool wait_device, E
     assert(hdr.dummy == COMM_DUMMY_BYTE);
 
 	if (wait_device && (hdr.comm_status & COMM_STATUS_BUSY) != 0) {
-		// Device is busy, wait more
-	    do {
-	    	tools::sleep_ms(1);
-	    	err = bus->read(&hdr, sizeof(hdr), to);
-	    } while (err != EKIT_OK || (hdr.comm_status & COMM_STATUS_BUSY) != 0);
+        wait_vdev(hdr, false, to);
 	}
-	err = status_to_ext_error(hdr.comm_status);
+	err = process_comm_status(hdr.comm_status);
 
 	hdr.last_crc = last_op_crc;
 	
@@ -305,7 +301,7 @@ EKIT_ERROR EKitFirmware::read(void* ptr, size_t len, EKitTimeout& to){
     // Copy data back
     memcpy(ptr, pdata, len);
 
-    err = status_to_ext_error(phdr->comm_status);
+    err = process_comm_status(phdr->comm_status);
     if (err != EKIT_OK) {
         goto done;
     }
@@ -382,6 +378,41 @@ EKIT_ERROR EKitFirmware::unregister_vdev(int dev_id, EKitFirmwareCallbacks* vdev
     std::lock_guard<std::mutex> lock(data_lock);
     registered_devices.erase(dev_id);
     return EKIT_OK;
+}
+
+EKIT_ERROR EKitFirmware::wait_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to) {
+    EKIT_ERROR err;
+    bool do_again;
+
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+
+    do {
+        err = bus->read(&hdr, sizeof(hdr), to);
+        do_again = (err != EKIT_OK) || ((hdr.comm_status & COMM_STATUS_BUSY) != 0);
+        assert(hdr.dummy == COMM_DUMMY_BYTE);
+
+        if (yield && do_again) {
+            sched_yield();
+        }
+    } while (do_again);
+
+    return err;
+}
+
+EKIT_ERROR EKitFirmware::sync_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to) {
+    uint8_t dev_id = vdev_addr;
+    assert(dev_id >= 0 && dev_id <= COMM_MAX_DEV_ADDR);
+    size_t buf_len = sizeof(dev_id);
+    EKIT_ERROR err;
+
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
+
+    do {
+        err = bus->write(&dev_id, buf_len, to);
+    } while (err == EKIT_WRITE_FAILED);
+
+    err = wait_vdev(hdr, yield, to);
+    return err;
 }
 
 EKIT_ERROR EKitFirmware::on_status_ovf() {

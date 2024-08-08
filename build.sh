@@ -3,7 +3,28 @@
 # In order to build without LIBHLEK set NO_LIBHLEK variable like in the example below:
 # NO_LIBHLEK=1 ./build.sh <.....>
 
-source ./utils.sh
+function get_file_path() {
+  local FN="${1}"
+
+  while [ -L "${FN}" ]; do
+    # Resolve symbolic links
+    local RP=$(readlink "${FN}")
+    if [[ ${RP} == /* ]]; then
+      local FN=${RP}
+    else
+      local FN="$( dirname "${FN}" )/${RP}"
+    fi
+  done
+
+  local RP=$( cd -P "$( dirname "${FN}" )" >/dev/null 2>&1 && pwd )
+  RES=${RP}
+}
+get_file_path "$BASH_SOURCE"
+SCRIPT_DIR=${RES}
+
+
+
+source ${SCRIPT_DIR}/utils.sh
 
 set -e
 INITDIR="$(pwd)"
@@ -16,7 +37,7 @@ ROOTDIR=$(pwd)
 LOGFILE="${ROOTDIR}/build.log"
 FINISH_SUCCESS=0
 
-trap 'exit_handler ${FINISH_SUCCESS}' EXIT
+trap 'exit_handler ${FINISH_SUCCESS} ${PROGRESS_PART1_LEN}' EXIT
 
 
 ######## Detect if we are working in different directory. In this case we should use symlink to mirror project in current directory
@@ -25,7 +46,9 @@ PROJECTDIR=$(pwd)
 
 function exit_handler() {
 	success=${1}
+	PROGRESS_PART1_LEN=${2}
 	if [ ${FINISH_SUCCESS} == 0 ]; then
+		echo_progess_fail
 		echo_box "${RED}F A I L U R E${NORMAL}" 13; 
 	fi
 }

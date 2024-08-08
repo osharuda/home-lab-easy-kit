@@ -4,88 +4,99 @@
     "sys_tick": {
       "requires" : {"timer": "TIM1"}},
     "i2c_bus" : {
-      "clock_speed" : 100000,
+      "clock_speed" : 400000,
       "buffer_size" : 512,
       "address" : 19,
       "requires" :  {"i2c" : "I2C2"}}
     },
 
   "devices" : {
-
-    "SPWMCustomizer": {
-      "spwm" : {
-        "dev_id" : 7,
-        "prescaler" : 21,
-        "description" : {"L0" : {
-                           "type" : "GPIO_Mode_Out_PP",
-                           "gpio" : "PB_1",
-                           "default" : 1}},
-      "requires" :  {"timer" :  "TIM4"}}},
-
     "ADCDevCustomizer": {
-      "adc_dma" : {
-        "dev_id" : 6,
+      "adc0" : {
+        "dev_id" : 1,
         "buffer_size" : 256,
         "measurements_per_sample": 100,
         "use_dma" : 1,
         "sample_time" : {"default" : "ADC_SampleTime_7Cycles5",
-                         "override" :  {"input_0" : "ADC_SampleTime_28Cycles5" }},
+                         "override" :  {"in0" : "ADC_SampleTime_28Cycles5",
+                                        "in1" : "ADC_SampleTime_28Cycles5"}},
         "requires" :  { "ADC" : {"adc" : "ADC1"},
-                        "TIMER" : {"timer" :  "TIM3"},
-                        "input_0" : {"adc_input" : "ADC_Channel_0"},
-                        "input_vref" : {"adc_input" : "ADC_Channel_Vrefint"},
-                        "input_temp" : {"adc_input" : "ADC_Channel_TempSensor"}}}},
+                        "TIMER" : {"timer" :  "TIM2"},
+                        "in0" : {"adc_input" : "ADC_Channel_0"},
+                        "in1" : {"adc_input" : "ADC_Channel_1"}}}},
 
     "TimeTrackerDevCustomizer": {
-      "timetrackerdev_0" : {
+      "tt0" : {
         "dev_id" : 2,
         "buffer_size" : 64,
         "pull": "up",
         "trigger": "edge",
-        "requires" :  {"interrupt" : {"gpio" : "PA_3"},
-                       "near_full"  : {"gpio" : "PA_4"}}
+        "requires" :  {"interrupt" : {"gpio" : "PA_2"},
+                       "near_full"  : {"gpio" : "PA_3"}}
       }
     },
 
     "StepMotorDevCustomizer": {
-      "g0" : {
-        "dev_id" : 10,
+      "spinners" : {
+        "dev_id" : 3,
         "motors" : {
-          "monster" : {
-            "buffer_size" : 512,
-            "steps_per_revolution" : 96,
-            "default_speed" : 10000,
-            "drive_type" : "a4998",
-            "error_action" : "stop",
-            "step"  : {"gpio" :  "PB_13"},
-            "dir"   : {"gpio" :  "PB_12", "default" : "CW"},
-            "m1"   : {"gpio" :  "PA_10", "default" : 0},
-            "m2"   : {"gpio" :  "PA_9", "default" : 0},
-            "m3"   : {"gpio" :  "PA_8", "default" : 0},
-            "enable": {"gpio" :  "PA_11", "default" : "disable"},
-            "reset" : {"gpio" :  "PB_15"},
-            "sleep" : {"gpio" :  "PB_14", "default" : "wakeup"},
-            "cw_endstop" : {"position_limit" : "20000", "action": "ignore"},
-            "ccw_endstop" : {"position_limit" :  "-20000", "action": "ignore"}
-          },
-          "guide" : {
-            "buffer_size" : 512,
+          "m3" : {
+            "buffer_size" : 128,
             "steps_per_revolution" : 96,
             "default_speed" : 1000,
             "drive_type" : "drv8825",
-            "error_action" : "stop_all",
-            "step"  : {"gpio" :  "PB_5"},
-            "dir"   : {"gpio" :  "PB_4", "default" : "CW"},
-            "m1"   : {"default" : 1},
-            "m2"   : {"default" : 1},
-            "m3"   : {"default" : 1},
-            "enable": {"gpio" :  "PB_8", "default" : "disable"},
-            "fault" : {"gpio" :  "PA_12", "active_level" :  "low", "action": "stop_all"},
+            "error_action" : "stop",
+            "step"  : {"gpio" :  "PA_15"},
+            "dir"   : {"gpio" :  "PB_1", "default" : "CW"},
+            "m1"   : {"default" : 0},
+            "m2"   : {"default" : 0},
+            "m3"   : {"default" : 0},
+            "enable": {"gpio" :  "PA_9", "default" : "disable"},
+            "fault" : {"gpio" :  "PA_11", "active_level" :  "low", "action": "stop_all"},
+            "reset" : {"gpio" :  "PA_12"},
             "sleep" : {"default" : "wakeup"},
-            "cw_endstop" : {"gpio" :  "PB_6", "active_level" :  "low", "action": "stop_all"},
-            "ccw_endstop" : {"gpio" :  "PB_7", "active_level" :  "low", "action": "stop"}
-          }},
-        "requires" :  { "timer" : "TIM2"}}
-  }
+            "cw_endstop" : {"position_limit" : "20000", "action": "ignore"},
+            "ccw_endstop" : {"position_limit" :  "-20000", "action": "ignore"}
+          },
+
+          "m2" : {
+            "buffer_size" : 128,
+            "steps_per_revolution" : 96,
+            "default_speed" : 1000,
+            "drive_type" : "drv8825",
+            "error_action" : "stop",
+            "step"  : {"gpio" :  "PA_6"},
+            "dir"   : {"gpio" :  "PA_5", "default" : "CW"},
+            "m1"   : {"default" : 0},
+            "m2"   : {"default" : 0},
+            "m3"   : {"default" : 0},
+            "enable": {"gpio" :  "PB_0", "default" : "disable"},
+            "fault" : {"gpio" :  "PA_4", "active_level" :  "low", "action": "stop_all"},
+            "reset" : {"gpio" :  "PA_7"},
+            "sleep" : {"default" : "wakeup"},
+            "cw_endstop" : {"position_limit" : "20000", "action": "ignore"},
+            "ccw_endstop" : {"position_limit" :  "-20000", "action": "ignore"}
+          }}, "requires" :  { "timer" : "TIM3"}},
+
+          "guide" : {
+            "dev_id" : 4,
+            "motors" : {
+              "m1" : {
+                "buffer_size" : 512,
+                "steps_per_revolution" : 96,
+                "default_speed" : 1000,
+                "drive_type" : "a4998",
+                "error_action" : "stop_all",
+                "step"  : {"gpio" :  "PB_5"},
+                "dir"   : {"gpio" :  "PB_8", "default" : "CW"},
+                "m1"   : {"default" : 1},
+                "m2"   : {"default" : 1},
+                "m3"   : {"default" : 1},
+                "enable": {"gpio" :  "PB_3", "default" : "disable"},
+                "sleep" : {"default" : "wakeup"},
+                "cw_endstop" : {"gpio" :  "PB_13", "active_level" :  "low", "action": "stop"},
+                "ccw_endstop" : {"gpio" :  "PB_12", "active_level" :  "low", "action": "stop_all"}}},
+            "requires" :  { "timer" : "TIM4"}}
+    }
   }
 }

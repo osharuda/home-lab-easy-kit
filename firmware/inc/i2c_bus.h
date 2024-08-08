@@ -95,6 +95,15 @@ typedef uint8_t (*ON_COMMAND)(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 /// \return Updated device status (later synchronously copied to g_comm_status)
 typedef uint8_t (*ON_READDONE)(uint8_t device_id, uint16_t length);
 
+/// \typedef ON_SYNC
+/// \brief Defines command callback function virtual device which is called in the case when incomplete CommCommandHeader
+///        is transmitted. This may be used as additional type of request to the device.
+/// \param device_id - device id of the device whose data was read
+/// \param length - length of the read (transmitted) data. In this case it is total number of bytes, those which belong to
+///        incomplete CommCommandHeader. Obviously this value may not be >= then sizeof(CommCommandHeader).
+/// \return Updated device status (later synchronously copied to g_comm_status)
+typedef uint8_t (*ON_SYNC)(uint8_t device_id, uint16_t length);
+
 /// \typedef ON_POLLING
 /// \brief Defines command callback function that virtual device uses to get periodically notified.
 /// \param device_id - device id
@@ -117,6 +126,10 @@ struct __attribute__ ((aligned (8))) DeviceContext {
     ON_POLLING on_polling;              ///< This callback is specified by virtual device.
                                         ///< It is called by communication periodically when no communication happens.
                                         ///< Virtual device may use it to do some simple tasks. May be zero if not required.
+
+    ON_SYNC on_sync;                    ///< This callback is called in the case when incomplete CommCommandHeader is transmitted.
+                                        ///< This may be used as additional type of request to the device. Typically is used to synchronize
+                                        ///< virtual device data before read.
 
     uint8_t* buffer;                    ///< Device linear buffer. May be zero if linear buffer is not used. If set to non-zero #circ_buffer must be zero
 

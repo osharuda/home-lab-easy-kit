@@ -156,9 +156,15 @@ uint8_t StepMotorDev::status(std::vector<StepMotorStatus>& mstatus) {
     size_t bufsize = config->motor_count*sizeof(StepMotorStatus) + sizeof(StepMotorDevStatus);
     std::vector<uint8_t> data(bufsize);
     StepMotorDevStatus* pstatus = reinterpret_cast<StepMotorDevStatus*>(data.data());
+    CommResponseHeader hdr;
 
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
+
+    err = std::dynamic_pointer_cast<EKitFirmware>(bus)->sync_vdev(hdr, false, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "sync_vdev() failed");
+    }
 
     err = bus->read(data.data(), bufsize, to);
     if (err != EKIT_OK) {

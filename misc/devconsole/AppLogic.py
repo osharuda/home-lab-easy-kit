@@ -603,22 +603,6 @@ class AppLogic:
 
             message += f' [ OK ]{os.linesep}'
 
-            # Get local (geoip) timezone
-            message += pytools.normalize_string_length(f"Requesting geoip timezone __DOTS__{os.linesep}", self.log_len)
-            #command = """wget -O - -q http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/ p'"""
-            command = """wget -O - -q http://geoip.ubuntu.com/lookup"""
-            exit_code, timezone, stderr = pytools.ssh_run(self.ssh_client, command)
-            if exit_code != 0:
-                self.append_error_and_raise("Unable to get local time zone", message, timezone, stderr)
-            timezone, i = pytools.extract_between_markers(timezone, "<TimeZone>", "</TimeZone>")
-
-            # Asjust time zone
-            message += pytools.normalize_string_length(f"Adjusting time zone __DOTS__{os.linesep}", self.log_len)
-            command = f"""echo {timezone} | sudo tee /etc/timezone > /dev/null; sudo dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1; sudo timedatectl set-timezone {timezone}"""
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, command)
-            if exit_code != 0:
-                self.append_error_and_raise("Unable to adjust time zone", message, stdout, stderr)
-
             # apt update
             message += pytools.normalize_string_length(f"Updating repositories __DOTS__{os.linesep}", self.log_len)
             exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt-get update")
@@ -634,7 +618,24 @@ class AppLogic:
             # install packages
             package_list = ["libicu-dev", "binutils-arm-none-eabi", "gcc-arm-none-eabi", "gdb-multiarch", "openocd",
                             "stlink-tools", "i2c-tools", "doxygen", "libncurses-dev", "vim", "git", "mc", "nfs-kernel-server",
-                            "nfs-common", "autofs", "ninja-build", "cmake"]
+                            "nfs-common", "autofs", "ninja-build", "cmake", "jq"]
+
+            # Get local (geoip) timezone
+            message += pytools.normalize_string_length(f"Requesting geoip timezone __DOTS__{os.linesep}", self.log_len)
+            #command = """wget -O - -q http://geoip.ubuntu.com/lookup | sed -n -e 's/.*<TimeZone>\(.*\)<\/TimeZone>.*/\1/ p'"""
+            #command = """wget -O - -q http://geoip.ubuntu.com/lookup"""
+            command = """curl --silent ipinfo.io"""
+            exit_code, timezone, stderr = pytools.ssh_run(self.ssh_client, command)
+            if exit_code != 0:
+                self.append_error_and_raise("Unable to get local time zone", message, timezone, stderr)
+            timezone, i = pytools.extract_between_markers(timezone, 'timezone": "', '"')
+
+            # Asjust time zone
+            message += pytools.normalize_string_length(f"Adjusting time zone __DOTS__{os.linesep}", self.log_len)
+            command = f"""echo {timezone} | sudo tee /etc/timezone > /dev/null; sudo dpkg-reconfigure -f noninteractive tzdata >/dev/null 2>&1; sudo timedatectl set-timezone {timezone}"""
+            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, command)
+            if exit_code != 0:
+                self.append_error_and_raise("Unable to adjust time zone", message, stdout, stderr)
 
             for p in package_list:
                 message += pytools.normalize_string_length(f"Installing {p} __DOTS__{os.linesep}", log_len)
@@ -670,31 +671,31 @@ class AppLogic:
 
             # Check CMake version
             #                3.22.3
-            message += pytools.normalize_string_length(f"Verifying CMake version __DOTS__{os.linesep}", self.log_len)
-            exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "cmake --version")
-            if exit_code != 0:
-                self.append_error_and_raise("Can't check CMake version", message, stdout, stderr)
+            #message += pytools.normalize_string_length(f"Verifying CMake version __DOTS__{os.linesep}", self.log_len)
+            #exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "cmake --version")
+            #if exit_code != 0:
+            #    self.append_error_and_raise("Can't check CMake version", message, stdout, stderr)
 
-            cmake_version_re = re.compile(r'.*(\d)\.(\d+)\.(\d+).*')
-            if g := cmake_version_re.match(stdout):
-                ver_mj = g.group(1)
-                ver_mn = g.group(2)
-                ver_build = g.group(3)
-            else:
-                raise RuntimeError("Can't get CMake version")
+            #cmake_version_re = re.compile(r'.*(\d)\.(\d+)\.(\d+).*')
+            #if g := cmake_version_re.match(stdout):
+            #    ver_mj = g.group(1)
+            #    ver_mn = g.group(2)
+            #    ver_build = g.group(3)
+            #else:
+             #   raise RuntimeError("Can't get CMake version")
 
-            if ver_mj != self.min_cmake_version[0] or ver_mn != self.min_cmake_version[1]:
-                # Uninstall cmake from repo
-                message += pytools.normalize_string_length(f"Uninstalling CMake __DOTS__{os.linesep}", self.log_len)
-                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt -y purge cmake")
-                if exit_code != 0:
-                    self.append_error_and_raise("Can't uninstall cmake", message, stdout, stderr)
+            #if ver_mj != self.min_cmake_version[0] or ver_mn != self.min_cmake_version[1]:
+            #    # Uninstall cmake from repo
+            #    message += pytools.normalize_string_length(f"Uninstalling CMake __DOTS__{os.linesep}", self.log_len)
+            #    exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, "sudo apt -y purge cmake")
+            #    if exit_code != 0:
+            #        self.append_error_and_raise("Can't uninstall cmake", message, stdout, stderr)
 
-                # Install cmake from devconsole packages
-                message += pytools.normalize_string_length(f"Installing CMake from devconsole packages __DOTS__{os.linesep}", self.log_len)
-                exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f'sudo dpkg -i "{os.path.join(self.dir_hlek, self.cmake_install_package)}"')
-                if exit_code != 0:
-                    self.append_error_and_raise("Can't install cmake from devconsole", message, stdout, stderr)
+            #    # Install cmake from devconsole packages
+            #    message += pytools.normalize_string_length(f"Installing CMake from devconsole packages __DOTS__{os.linesep}", self.log_len)
+            #    exit_code, stdout, stderr = pytools.ssh_run(self.ssh_client, f'sudo dpkg -i "{os.path.join(self.dir_hlek, self.cmake_install_package)}"')
+            #    if exit_code != 0:
+            #        self.append_error_and_raise("Can't install cmake from devconsole", message, stdout, stderr)
 
             # Patch udev rules
             message += pytools.normalize_string_length(f"Patching udev rules __DOTS__{os.linesep}", self.log_len)

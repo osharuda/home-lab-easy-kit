@@ -36,12 +36,18 @@ CMake requires the following CMake options to be specified:
    | `"-DHLEK_CONFIG"`                  | Name of the directory created for particular json configuration (configuration json file name without extension) |
    | `"-DCMAKE_DEPENDS_USE_COMPILER"`   | FALSE
 
+
 Typical value of the `"CMake options"` value (single line):
 ```
--DCMAKE_BUILD_TYPE=Debug -DHLEK_ROOT="/mnt/SHARE/home-lab-easy-kit" -DHLEK_CONFIG="pacemakerdev" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_TOOLCHAIN_FILE:PATH="../firmware/toolchain.cmake"
+-DCMAKE_BUILD_TYPE=Debug -DHLEK_ROOT="/mnt/SHARE/home-lab-easy-kit" -DHLEK_CONFIG="step_motors" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_TOOLCHAIN_FILE:PATH="../firmware/toolchain.cmake"
 ```
 # 3. Regenerate CMake
 `File`->`Reload CMake Project`
 # 4. Select required configuration
 # 5. Build
 `Build`->`Rebuild Project`
+# 6. Using terminal (without CLion)
+Example of building Release fimware build from command line:
+```
+cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DHLEK_ROOT="/mnt/SHARE/home-lab-easy-kit" -DHLEK_CONFIG="step_motors" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_TOOLCHAIN_FILE:PATH="../firmware/toolchain.cmake"
+```

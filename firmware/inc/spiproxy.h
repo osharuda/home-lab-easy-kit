@@ -35,7 +35,7 @@
 /// \image latex under_construction.eps
 ///
 
-/// \struct SPIProxyStatus
+/// \struct SPIProxyPrivData
 /// \brief Structure that holds private SPIProxy state.
 struct __attribute__ ((aligned)) SPIProxyPrivData {
     struct SPIProxyStatus*   status;      ///< Pointer to the status header which is allocated before input_buffer. This

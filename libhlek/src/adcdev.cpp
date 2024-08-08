@@ -120,10 +120,15 @@ void ADCDev::configure(double delay_sec, size_t average_samples, std::map<size_t
 
 void ADCDev::send_command(uint8_t* ptr, size_t size, uint8_t command) {
     static const char* const func_name = "ADCDev::send_command";
+
     EKitTimeout to(get_timeout());
     BusLocker   blocker(bus, get_addr(), to);
 
-    EKIT_ERROR  err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
+    auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
+    CommResponseHeader hdr;
+    EKIT_ERROR err = fw->sync_vdev(hdr, false, to);
+
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, command, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "set_opt() failed");
     }
@@ -181,26 +186,17 @@ size_t ADCDev::status_priv(uint16_t* flags, EKitTimeout& to) {
     CommResponseHeader hdr;
 
     auto fw = std::dynamic_pointer_cast<EKitFirmware>(bus);
+    fw->sync_vdev(hdr, false, to);
 
+    /*
     do {
         err = fw->get_status(hdr, false, to);
     } while ( (err!=EKIT_OK) && (hdr.comm_status & COMM_STATUS_BUSY) );
     assert((hdr.comm_status & COMM_STATUS_BUSY)==0);
-/*
-    if (hdr.comm_status & COMM_STATUS_OVF) {
-        throw EKitException(func_name, EKIT_OVERFLOW, "Device buffer overflow.");
-    }
-
-    if (hdr.comm_status & COMM_STATUS_CRC) {
-        throw EKitException(func_name, EKIT_CRC_ERROR, "Communication CRC failure");
-    }
-
-    if (hdr.comm_status & COMM_STATUS_FAIL) {
-        throw EKitException(func_name, EKIT_COMMAND_FAILED, "Communication with firmware has failed.");
-    }
 */
+
     if (((hdr.length - sizeof(uint16_t)) % (config->input_count * sizeof(uint16_t)))!=0) {
-        throw EKitException(func_name, EKIT_UNALIGNED, "Device buffer seems to be unaligned.");
+        throw EKitException(func_name, EKIT_UNALIGNED, "Device buffer is unaligned.");
     }
 
     if (flags == nullptr) goto done;

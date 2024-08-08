@@ -44,23 +44,35 @@ struct TimeTrackerDevInstance g_timetrackerdev_devs[] = TIMETRACKERDEV_FW_DEV_DE
 
 /// @}
 
+#define TIMERTACKER_DISABLE_IRQ                                                          \
+    exti_mask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
+
+#define TIMERTACKER_ENABLE_IRQ \
+    if (dev->privdata.status.status==TIMETRACKERDEV_STATUS_STARTED) {                   \
+        exti_unmask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);   \
+    }
+
 //---------------------------- FORWARD DECLARATIONS ----------------------------
 static uint8_t timetrackerdev_stop(struct TimeTrackerDevInstance* dev, struct TimeTrackerDevPrivData* priv);
 static uint8_t timetrackerdev_start(struct TimeTrackerDevInstance* dev, struct TimeTrackerDevPrivData* priv);
 static uint8_t timetrackerdev_reset(struct TimeTrackerDevInstance* dev, struct TimeTrackerDevPrivData* priv);
+static uint8_t timetrackerdev_sync(uint8_t cmd_byte, uint16_t length);
 
-/* TEST CODE */
+#if SYSTICK_VERIFICATION!=0
 static volatile uint64_t g_systick_verify __attribute__ ((aligned)) = 0;
+#endif
 
 void timetrackerdev_exti_handler(uint64_t clock, volatile void* ctx) {
     uint8_t dev_index = (uint32_t)(ctx);
     struct TimeTrackerDevInstance* dev = g_timetrackerdev_devs + dev_index;
     struct CircBuffer* circbuf = (struct CircBuffer*)&dev->circ_buffer;
 
+#if SYSTICK_VERIFICATION!=0
     if (g_systick_verify >= clock) {
         assert_param(0);
     }
     g_systick_verify = clock;
+#endif
 
     volatile uint64_t* data = circbuf_reserve_block(circbuf);
     if (data) {
@@ -87,7 +99,7 @@ void timetrackerdev_init_vdev(struct TimeTrackerDevInstance* dev, uint16_t index
     devctx->dev_index    = index;
     devctx->on_command   = timetrackerdev_execute;
     devctx->on_read_done = timetrackerdev_read_done;
-
+    devctx->on_sync      = timetrackerdev_sync;
 
     IS_SIZE_ALIGNED(&dev->privdata.status.first_event_ts);
     IS_SIZE_ALIGNED(&dev->privdata.status.event_number);
@@ -105,7 +117,6 @@ void timetrackerdev_init_vdev(struct TimeTrackerDevInstance* dev, uint16_t index
 
     comm_register_device(devctx);
     uint32_t di = devctx->dev_index;
-
     START_PIN_DECLARATION;
     DECLARE_PIN(dev->near_full_line.port, dev->near_full_line.pin_mask, dev->near_full_line.type);
 
@@ -133,14 +144,16 @@ void timetrackerdev_init() {
 
 uint8_t timetrackerdev_start(struct TimeTrackerDevInstance* dev, struct TimeTrackerDevPrivData* priv) {
     /// Writes to bytes are always atomic
+    TIMERTACKER_DISABLE_IRQ
     priv->status.status = TIMETRACKERDEV_STATUS_STARTED;
-    exti_unmask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
+    TIMERTACKER_ENABLE_IRQ
     return COMM_STATUS_OK;
 }
 
 uint8_t timetrackerdev_stop(struct TimeTrackerDevInstance* dev, struct TimeTrackerDevPrivData* priv) {
-    exti_mask_callback(dev->interrup_line.port, dev->interrup_line.pin_number);
+    TIMERTACKER_DISABLE_IRQ
     priv->status.status = TIMETRACKERDEV_STATUS_STOPPED;
+    TIMERTACKER_ENABLE_IRQ; /// Note: this call is added for code clarity, it will not enable IRQ, since device is stopped.
     return COMM_STATUS_OK;
 }
 
@@ -150,8 +163,8 @@ uint8_t timetrackerdev_reset(struct TimeTrackerDevInstance* dev, struct TimeTrac
         return COMM_STATUS_FAIL;
     }
 
-    /// Note: timetrackerdev_reset() should always run when timetracker device is stopped, therefor we shouldn't disable interrupts
-    ///       to sync access to status.
+    /// Note: timetrackerdev_reset() should always run when timetracker device is stopped, so this is the only context
+    ///       accessing cicula buffer. I2C bus may not access it because device is busy during this call.
     circbuf_reset((volatile struct CircBuffer *) &dev->circ_buffer);
     dev->privdata.status.event_number = 0;
     dev->privdata.status.first_event_ts = UINT64_MAX;
@@ -204,6 +217,22 @@ uint8_t timetrackerdev_read_done(uint8_t device_id, uint16_t length) {
     GPIO_WriteBit(dev->near_full_line.port,
                   dev->near_full_line.pin_mask,
                   circbuf_get_wrn(circbuf));
+
+    return COMM_STATUS_OK;
+}
+
+uint8_t timetrackerdev_sync(uint8_t cmd_byte, uint16_t length) {
+    UNUSED(length);
+    struct DeviceContext* dev_ctx = comm_dev_context(cmd_byte);
+    struct TimeTrackerDevInstance* dev = (struct TimeTrackerDevInstance*)(g_timetrackerdev_devs + dev_ctx->dev_index);
+    struct TimeTrackerStatus* status = &dev->privdata.status;
+    struct TimeTrackerStatus* comm_status = &dev->privdata.comm_status;
+
+    TIMERTACKER_DISABLE_IRQ
+    /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
+    /// reads should fail because of this reason.
+    memcpy(comm_status, status, sizeof(struct TimeTrackerStatus));
+    TIMERTACKER_ENABLE_IRQ
 
     return COMM_STATUS_OK;
 }

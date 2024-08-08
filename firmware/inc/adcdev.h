@@ -67,6 +67,8 @@ struct __attribute__ ((aligned)) ADCDevFwPrivData {
 
     uint16_t status;                              ///< ADCDev status
 
+    uint16_t comm_status;                         ///< Copy of the status for synchronization with I2C communication.
+
     uint16_t measurement_per_sample;              ///< Number of measurements per sample
 
     uint16_t samples_left;                        ///< Amount of samples left to sample

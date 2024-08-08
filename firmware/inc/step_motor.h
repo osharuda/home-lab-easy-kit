@@ -131,7 +131,11 @@ struct StepMotorLine {
 /// \brief This structure is being used by firmware to store stepper motor device specific data (for all motors, but
 ///        for single device).
 struct __attribute__ ((aligned)) StepMotorDevPrivData {
-        volatile uint64_t last_event_timestamp __attribute__ ((aligned)); ///< Last stepper motor device timer timestamp
+    volatile __attribute__ ((aligned)) uint64_t last_event_timestamp; ///< Last stepper motor device timer timestamp
+
+    ///< Actual status used by device. It is being copyied to the dev->status by sync request from the software. If
+    ///< Corresponding request is not made, read data will be invalid.
+    struct StepMotorDevStatus* internal_status;
 };
 
 
@@ -357,6 +361,12 @@ uint8_t step_motor_handle_alarm(struct StepMotorDevice* dev, struct StepMotorSta
 /// \return Result of the operation as communication status.
 uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
+/// \brief #ON_SYNC callback for all stepper motor devices
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
+/// \param length - total length of the received data during the i2c transmittion.
+/// \return Result of the operation as communication status.
+uint8_t step_motor_dev_sync(uint8_t cmd_byte, uint16_t length);
+
 /// \brief Prepares motor for the movement
 /// \param dev_index - stepper motor device index
 /// \param mindex - stepper motor index
@@ -395,7 +405,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 ///        device status
 /// \param dev - pointer to #StepMotorDevice structure corresponding to selected stepper motor device
 /// \return pointer to #StepMotorDevStatus structure
-#define MOTOR_DEV_STATUS(dev)       ((struct StepMotorDevStatus*)((dev)->status))
+#define MOTOR_DEV_STATUS(dev)       ((struct StepMotorDevStatus*)((dev)->priv_data.internal_status))
 
 /// \def MOTOR_DEV_PRIV_DATA
 /// \brief This macro returns pointer to #StepMotorDevPrivData structure corresponding to selected stepper motor
@@ -417,7 +427,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 /// \param dev - pointer to #StepMotorDevice structure corresponding to selected stepper motor device
 /// \param mindex - motor index
 /// \return pointer to #StepMotorStatus structure
-#define MOTOR_STATUS(dev, mindex)   ((struct StepMotorStatus*)((dev)->status->mstatus + (mindex)))
+#define MOTOR_STATUS(dev, mindex)   ((struct StepMotorStatus*)((dev)->priv_data.internal_status->mstatus + (mindex)))
 
 /// \def MOTOR_CONTEXT
 /// \brief This macro returns pointer to #StepMotorContext structure corresponding to selected stepper motor context

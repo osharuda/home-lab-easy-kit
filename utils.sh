@@ -110,3 +110,26 @@ function echo_progess_ok() {
 function echo_progess_fail() {
 	echo "${RESULT_FAIL}"
 }
+
+# Param 1: relative path to the file or it's symbolic link
+# Result is written into RES global variable
+# Example:
+# get_file_path "$BASH_SOURCE"
+# echo ${RES}
+function get_file_path() {
+  local FN="${1}"
+
+  while [ -L "${FN}" ]; do
+    # Resolve symbolic links
+    local RP=$(readlink "${FN}")
+    if [[ ${RP} == /* ]]; then
+      local FN=${RP}
+    else
+      local FN="$( dirname "${FN}" )/${RP}"
+    fi
+  done
+
+  local RP=$( cd -P "$( dirname "${FN}" )" >/dev/null 2>&1 && pwd )
+  RES=${RP}
+}
+

@@ -108,6 +108,13 @@ uint8_t adc_configure(struct ADCDevFwInstance* dev,
 /// \param dev - device instance firmware configuration.
 void adc_init_channels(struct ADCDevFwInstance* dev);
 
+
+/// \brief Synchronizes ADC status before reading it by software
+/// \param device_id - device id of the device whose data was read
+/// \param length - length of the read (transmitted) data. In this case it is total number of bytes, those which belong to
+///        incomplete CommCommandHeader. Obviously this value may not be >= then sizeof(CommCommandHeader).
+uint8_t adc_sync(uint8_t cmd_byte, uint16_t length);
+
 //---------------------------- FORWARD DECLARATIONS (DMA MODE FUNCTIONS) ----------------------------
 
 /// \brief ADC DMA mode specific part for \ref adc_reset_peripherals.
@@ -167,8 +174,10 @@ ADCDEV_FW_TIMER_IRQ_HANDLERS
     NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);
 
 #define ADC_RESTORE_IRQs                                                    \
-    NVIC_RESTORE_IRQ(dev->scan_complete_irqn, scan_complete_state);         \
-    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);
+    if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {           \
+        NVIC_RESTORE_IRQ(dev->scan_complete_irqn, scan_complete_state);     \
+        NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);                     \
+    }
 
 static inline void adc_suspend(struct ADCDevFwInstance* dev) {
     // Special note: it seems like SR may not be set until conversion is stopped. ADC is configured in scan mode (group),
@@ -231,10 +240,12 @@ uint8_t adc_configure(struct ADCDevFwInstance* dev,
                       struct ADCDevConfig* cfgdata,
                    uint16_t cfgdata_size) {
     uint8_t result = COMM_STATUS_FAIL;
+    uint8_t adc_started = IS_SET(dev->privdata.status, (uint16_t)ADCDEV_STATUS_STARTED);
 
     if ( (cfgdata_size < sizeof(struct ADCDevConfig)) || (cfgdata_size > (sizeof(struct ADCDevConfig) + dev->input_count)) ||
          (cfgdata->measurements_per_sample > dev->max_measurement_per_sample) ||
-         (cfgdata->measurements_per_sample < 1)) {
+         (cfgdata->measurements_per_sample < 1) ||
+         adc_started) {
         goto done;
     }
 
@@ -316,7 +327,8 @@ uint8_t adc_read_done(uint8_t device_id, uint16_t length) {
 
 static inline uint8_t adc_reset_circ_buffer(struct ADCDevFwInstance* dev) {
     uint8_t result = COMM_STATUS_FAIL;
-    if (IS_SET(dev->privdata.status, (uint16_t)ADCDEV_STATUS_STARTED)) {
+    uint8_t adc_started = IS_SET(dev->privdata.status, (uint16_t)ADCDEV_STATUS_STARTED);
+    if (adc_started) {
         goto done;
     }
 
@@ -346,14 +358,15 @@ void adc_init() {
         dev->dev_ctx.dev_index = i;
         dev->dev_ctx.on_command = adc_dev_execute;
         dev->dev_ctx.on_read_done = adc_read_done;
+        dev->dev_ctx.on_sync = adc_sync;
         dev->dev_ctx.circ_buffer = (struct CircBuffer*)( &(dev->circ_buffer) );
 
         // Initialize circular buffer
         circbuf_init(dev->dev_ctx.circ_buffer, (uint8_t *)dev->buffer, dev->buffer_size);
         circbuf_init_block_mode(dev->dev_ctx.circ_buffer, dev->sample_block_size);
         circbuf_init_status(dev->dev_ctx.circ_buffer,
-                            (uint8_t*)&(dev->privdata.status),
-                            STRUCT_MEMBER_SIZE(struct ADCDevFwPrivData, status) );
+                            (uint8_t*)&(dev->privdata.comm_status),
+                            STRUCT_MEMBER_SIZE(struct ADCDevFwPrivData, comm_status) );
 
         // Initialize for the first time.
         // Note: ADC channels are not initialized, but gpio and sample_time_buffer are configured.
@@ -650,5 +663,21 @@ void adc_continue_int_sampling(volatile void* d, volatile void* p) {
     SET_FLAGS(dev->adc->CR1, (uint32_t)ADC_CR1_FLAG_SCAN);
     SET_FLAGS(dev->adc->CR2, (uint32_t)(ADC_CR2_FLAG_SWSTART | ADC_CR2_FLAG_EXT_TRIG | ADC_CR2_FLAG_CONT));
 }
+
+uint8_t adc_sync(uint8_t cmd_byte, uint16_t length) {
+    UNUSED(length);
+    struct DeviceContext* dev_ctx = comm_dev_context(cmd_byte);
+    struct ADCDevFwInstance* dev = (struct ADCDevFwInstance*)(g_adc_devs + dev_ctx->dev_index);
+    struct ADCDevFwPrivData* pdata = &dev->privdata;
+
+    ADC_DISABLE_IRQs
+    /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
+    /// reads should fail because of this reason.
+    dev->privdata.comm_status = dev->privdata.status;
+    ADC_RESTORE_IRQs
+
+    return COMM_STATUS_OK;
+}
+
 //endregion
 #endif

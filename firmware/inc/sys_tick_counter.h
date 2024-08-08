@@ -54,11 +54,9 @@ static inline void systick_get(volatile uint64_t* timestamp) {
     uint64_t tmp;
 
     do {
-        set_debug_pin_2();
         irq_cnt_1 = g_systick_irq_cnt;
         dr = SYS_TICK_PERIPH->CNT;
         irq_cnt_2 = g_systick_irq_cnt;
-        clear_debug_pin_2();
     } while (irq_cnt_1 != irq_cnt_2);
     tmp = irq_cnt_1;
     tmp = (tmp << (sizeof(uint16_t)*CHAR_BIT)) + dr;

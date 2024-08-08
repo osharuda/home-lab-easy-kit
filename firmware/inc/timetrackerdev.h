@@ -24,6 +24,8 @@
 
 #ifdef TIMETRACKERDEV_DEVICE_ENABLED
 
+#define SYSTICK_VERIFICATION 0
+
 /// \defgroup group_timetrackerdev TimeTrackerDev
 /// \brief TimeTrackerDev support
 /// @{
@@ -39,6 +41,7 @@
 /// \brief Structure that describes private TimeTrackerDev data
 struct TimeTrackerDevPrivData {
     struct TimeTrackerStatus status;
+    struct TimeTrackerStatus comm_status;
 };
 
 

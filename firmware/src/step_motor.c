@@ -580,6 +580,7 @@ void step_motor_init(void) {
         // initialize device
         dev_ctx->device_id = dev->dev_id;
         dev_ctx->on_command = step_motor_dev_execute;
+        dev_ctx->on_sync = step_motor_dev_sync;
         dev_ctx->buffer = (uint8_t*)(dev->status);
         dev_ctx->bytes_available = dev->status_size;
         dev_ctx->dev_index = dev_index;
@@ -870,6 +871,21 @@ uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length)
     }
 done:
     return protocol_status;
+}
+
+
+uint8_t step_motor_dev_sync(uint8_t cmd_byte, uint16_t length) {
+    UNUSED(length);
+    uint16_t dev_index = comm_dev_context(cmd_byte)->dev_index;
+    struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
+
+    // Copy data from internal buffer to external (used for read by i2c)
+    CRITICAL_SECTION_ENTER
+    /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
+    /// reads should fail because of this reason.
+    memcpy(dev->status, dev->priv_data.internal_status, dev->status_size);
+    CRITICAL_SECTION_LEAVE
+    return COMM_STATUS_OK;
 }
 
 #endif

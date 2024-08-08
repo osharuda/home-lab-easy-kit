@@ -67,10 +67,14 @@ class EKitFirmware final : public EKitBus,
     std::map<int, EKitFirmwareCallbacks*> registered_devices;
     tools::safe_mutex data_lock;
 
-	/// \brief Helper function that converts virtual device communication status to #EKIT_ERROR.
+	/// \brief Helper function that processes communication status by converting it to #EKIT_ERROR and calling corresponding
+	///        EKitFirmwareCallbacks callbacks from converts virtual device communication.
 	/// \param cs - virtual device communication status.
-    /// \return Corresponding EKIT_ERROR error code.
-    EKIT_ERROR status_to_ext_error(uint8_t cs);
+    /// \return Corresponding #EKIT_ERROR error code.
+    EKIT_ERROR process_comm_status(uint8_t cs);
+
+    /// \param yield - relinquish thread execution time in favour of other threads (may be useful in some situations)
+    EKIT_ERROR wait_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to);
 
 public:
 
@@ -120,6 +124,7 @@ public:
     EKIT_ERROR write_read(const uint8_t* wbuf, size_t wlen, uint8_t* rbuf, size_t rlen, EKitTimeout& to)  override;
 
     /// \brief Implementation of the EKitBus#open() virtual function.
+    /// \param to - timeout counting object.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR open(EKitTimeout& to) override;
 
@@ -128,10 +133,12 @@ public:
 	EKIT_ERROR close() override;
 
     /// \brief Implementation of the EKitBus#suspend() virtual function.
+    /// \param to - timeout counting object.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR suspend(EKitTimeout& to) override;
 
     /// \brief Implementation of the EKitBus#resume() virtual function.
+    /// \param to - timeout counting object.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR resume(EKitTimeout& to) override;
 
@@ -173,6 +180,14 @@ public:
 	/// \param wait_device - wait until virtual device will not reset #COMM_STATUS_BUSY.
     /// \return Corresponding EKIT_ERROR error code.
 	EKIT_ERROR get_status(CommResponseHeader& hdr, bool wait_device, EKitTimeout& to);
+
+    /// \brief Sync device data and status before reading
+    /// \param hdr - reference to command response header to be read
+    /// \param wait_device - wait until virtual device will not reset #COMM_STATUS_BUSY.
+    /// \return Corresponding EKIT_ERROR error code.
+    EKIT_ERROR sync_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to);
+
+
 
     /// \brief Registers virtual device
     EKIT_ERROR register_vdev(int dev_id, EKitFirmwareCallbacks* vdev);
