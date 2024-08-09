@@ -618,7 +618,7 @@ class AppLogic:
             # install packages
             package_list = ["libicu-dev", "binutils-arm-none-eabi", "gcc-arm-none-eabi", "gdb-multiarch", "openocd",
                             "stlink-tools", "i2c-tools", "doxygen", "libncurses-dev", "vim", "git", "mc", "nfs-kernel-server",
-                            "nfs-common", "autofs", "ninja-build", "cmake", "jq"]
+                            "nfs-common", "autofs", "ninja-build", "cmake", "jq", "cloc"]
 
             # Get local (geoip) timezone
             message += pytools.normalize_string_length(f"Requesting geoip timezone __DOTS__{os.linesep}", self.log_len)

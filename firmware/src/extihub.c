@@ -36,7 +36,7 @@
 const IRQn_Type g_extihub_line_to_irqn[] = EXTIHUB_LINE_TO_IRQN;
 
 /// \brief Array that represents EXTI handlers registered with EXTI HUB.
-ExtiHandlerDescr g_extihub_handlers[EXTIHUB_LINE_COUNT];
+struct ExtiHandlerDescr g_extihub_handlers[EXTIHUB_LINE_COUNT];
 
 /// \brief Common EXTI HUB IRQ handler.
 /// \details This function is called by EXTI interrupt handlers which are used by firmware. This function calls
@@ -48,7 +48,7 @@ void EXTIHUB_COMMON_IRQ_HANDLER(void) {
 	EXTI->PR |= events;
 
 	for (uint8_t exti_line = 0; exti_line<EXTIHUB_LINE_COUNT; exti_line++) {
-        PExtiHandlerDescr hndlr;
+        struct ExtiHandlerDescr* hndlr;
 	    if ((events & (1<<exti_line))==0)
 	        continue;
 
@@ -80,7 +80,7 @@ uint8_t exti_register_callback(GPIO_TypeDef * port,
 
     DEFINE_EXIT_PIN(exti_cr, pin_num, raise, fall, masked);
 
-    PExtiHandlerDescr hndlr = g_extihub_handlers + pin_num;
+    struct ExtiHandlerDescr* hndlr = g_extihub_handlers + pin_num;
     hndlr->exti_handler = fn;
     hndlr->context = ctx;
 
