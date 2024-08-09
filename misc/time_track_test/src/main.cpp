@@ -87,14 +87,14 @@ int main(int argc, char* argv[]) {
 
         // Print information about available devices
         auto ad9850_name = ad9850_info_dev->get_dev_name();
-        std::cout << "checking " << ad9850_name.c_str() << " ..." << std::endl;
+        //std::cout << "checking " << ad9850_name.c_str() << " ..." << std::endl;
         ad9850_info_dev->check();
-        std::cout << ad9850_name.c_str() << " connected successfully." << std::endl;
+        //std::cout << ad9850_name.c_str() << " connected successfully." << std::endl;
 
         auto timetrackdev_name = timetrackdev_info_dev->get_dev_name();
-        std::cout << "checking " << timetrackdev_name.c_str() << " ..." << std::endl;
+        //std::cout << "checking " << timetrackdev_name.c_str() << " ..." << std::endl;
         timetrackdev_info_dev->check();
-        std::cout << timetrackdev_name.c_str() << " connected successfully." << std::endl;
+        //std::cout << timetrackdev_name.c_str() << " connected successfully." << std::endl;
 
         // Set ad9850
         ad9850->reset();
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
 
         // Catch events using time tracker
         ttdev->stop();
-        ttdev->start(true);
+        ttdev->start();
         EKitTimeout to(10000);
         std::thread wt(wait_buffer, &ttdev_warn, &to);
 
@@ -126,16 +126,14 @@ int main(int argc, char* argv[]) {
 
         ttdev->read_all(ts, true);
         n=ts.size();
-        /*
         for(size_t i=1; i<n; i++) {
             std::cout << i << "," << ts[i] - ts[i-1] <<std::endl;
         }
-         */
 
         ad9850->reset();
         ttdev->stop();
 
-        std::cout << "OK " << ts.size() << " samples" <<std::endl;
+        // std::cout << "OK " << ts.size() << " samples" <<std::endl;
 
 
     } catch (EKitException e) {

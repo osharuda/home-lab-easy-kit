@@ -65,7 +65,6 @@ void ad9850dev_init_vdev(struct AD9850DevInstance* dev, uint16_t index) {
     devctx->device_id    = dev->dev_id;
     devctx->dev_index    = index;
     devctx->on_command   = ad9850dev_execute;
-    devctx->on_read_done = ad9850dev_read_done;
     devctx->buffer = (uint8_t*) &(dev->privdata.command);
     devctx->bytes_available = sizeof(struct AD9850DevPrivData);
 
@@ -197,12 +196,6 @@ uint8_t ad9850dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     status = COMM_STATUS_OK;
 done:
     return status;
-}
-
-uint8_t ad9850dev_read_done(uint8_t device_id, uint16_t length) {
-    UNUSED(device_id);
-    UNUSED(length);
-    return COMM_STATUS_OK;
 }
 
 #endif

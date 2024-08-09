@@ -7,7 +7,7 @@
       "clock_speed" : 400000,
       "buffer_size" : 512,
       "address" : 19,
-      "requires" :  {"i2c" : "I2C2"}}
+      "requires" :  {"i2c" : "I2C1"}}
     },
 
   "devices" : {

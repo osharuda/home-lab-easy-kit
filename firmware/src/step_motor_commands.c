@@ -303,7 +303,6 @@ uint8_t step_motor_set_cw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex,
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
         CRITICAL_SECTION_ENTER
-        /* PROBLEM */
         mstatus->cw_sft_limit = (int64_t)cmd->param;
         CRITICAL_SECTION_LEAVE
     }
@@ -325,7 +324,6 @@ uint8_t step_motor_set_ccw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
         CRITICAL_SECTION_ENTER
-        /* PROBLEM */
         mstatus->ccw_sft_limit = (int64_t)cmd->param;
         CRITICAL_SECTION_LEAVE
     }
@@ -363,7 +361,6 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
                 cmd->wait = step_motor_correct_timing(mcontext->step_wait, STEP_MOTOR_CORRECTION_FACTOR, mcontext);
 
                 CRITICAL_SECTION_ENTER
-                /* PROBLEM */
                 mstatus->pos += mcontext->pos_change_by_step;
                 CRITICAL_SECTION_LEAVE
 

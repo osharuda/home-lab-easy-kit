@@ -553,7 +553,6 @@ void i2c_update_transmit_cache(void) {
 
         case I2C_BUS_READ_LINEAR_BUFFER:
             g_i2c_transmit_cache = g_cur_device->buffer[g_tran_dev_pos];
-            assert_param(g_i2c_transmit_cache!=0);
             i2c_device_buffer_increment = 1;
 
             if (g_tran_dev_pos+1>=g_resp_header.length) {

@@ -30,5 +30,5 @@ FILECOUNT=$(LC_ALL=C find . -iname '*.STRIPPED' -type f -xtype f | wc -l)
 for f in $(find . -name "*.${STRIP_EXT}"); do rm $f; done
 rm ${EXCL_FILE}
 
-echo "Codebase size is ${CODESIZE} in ${FILECOUNT} files."
+echo "Codebase size (no comments and empty lines) is ${CODESIZE} in ${FILECOUNT} files."
 

@@ -572,11 +572,6 @@ void step_motor_init(void) {
         struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
         struct DeviceContext* dev_ctx = (struct DeviceContext*)&(dev->dev_ctx);
 
-        // initialize GPIO and EXTI
-        step_motor_init_gpio_and_exti(dev);
-
-        step_motor_dev_reset(dev, 1);
-
         // initialize device
         dev_ctx->device_id = dev->dev_id;
         dev_ctx->on_command = step_motor_dev_execute;
@@ -596,6 +591,10 @@ void step_motor_init(void) {
         }
 
         comm_register_device(dev_ctx);
+
+        // initialize GPIO and EXTI
+        step_motor_init_gpio_and_exti(dev);
+        step_motor_dev_reset(dev, 1);
     }
 }
 
@@ -760,7 +759,6 @@ void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
     timer_disable(dev->timer, dev->timer_irqn);
 
     CRITICAL_SECTION_ENTER
-    /* PROBLEM */
     dev_status->status = STEP_MOTOR_DEV_STATUS_IDLE;
 
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
@@ -785,8 +783,6 @@ void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
             CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_FAILURE | STEP_MOTOR_ERROR | STEP_MOTOR_DONE | STEP_MOTOR_SUSPENDING);
         }
 
-        CRITICAL_SECTION_LEAVE;
-
         step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext);
         mcontext->current_cmd.state = STEP_MOTOR_CMDSTATUS_DONE;
         mcontext->late_us = 0;
@@ -797,6 +793,7 @@ void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
         // Put motor GPIO into default state (this will also may affect motor status flags
         step_motor_set_default(dev, mindex);
     }
+    CRITICAL_SECTION_LEAVE;
 }
 
 
@@ -865,9 +862,6 @@ uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length)
         case STEP_MOTOR_STOP:
             step_motor_dev_stop(dev);
         break;
-
-        default:
-            protocol_status = COMM_STATUS_FAIL;
     }
 done:
     return protocol_status;

@@ -450,7 +450,7 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx);
 /// \param dev_index - device index
 /// \param mindex - motor index
 /// \return encoded 32 bit context
-#define STEP_MOTOR_EXTI_PARAM(dev_index, mindex) (volatile void*)((uint32_t)(((dev_index) << 8) | (mindex)))
+#define STEP_MOTOR_EXTI_PARAM(dev_index, mindex) (volatile void*)((((uint32_t)dev_index) << 8) | ((uint32_t)mindex))
 
 /// \def STEP_MOTOR_EXTI_DEV_INDEX
 /// \brief This macro returns device index from 32 bit value used as context in @ref group_exti_hub_group calls for stepper
