@@ -230,12 +230,22 @@ static inline void set_BASEPRI(uint32_t x)
     __ASM volatile ("MSR basepri, %0" : : "r" (x) );
 }
 
+static inline uint32_t get_BASEPRI(void)
+{
+    uint32_t res=0;
+    __ASM volatile ("MRS %0, basepri_max" : "=r" (res) );
+    return res;
+}
+
+
+
+
 #ifndef NDEBUG
 
 #define ASSERT_OUT_CRIT_SECTION assert_param(g_irq_disabled==0);
 #define ASSERT_IN_CRIT_SECTION assert_param(g_irq_disabled==1);
 
-/// \brief Enters critical section for synchronization purposes (disables virtual devices IRQs)
+/// \brief Enters critical section for synchronization purposes (disables all virtual devices IRQs)
 /// \note Interrupts above IRQ_PRIORITY_CRITICAL_SECTION are not disabled
 /// \warning Asserts if CRITICAL_SECTION_ENTER and CRITICAL_SECTION_LEAVE are not called in pairs correctly.
 #define CRITICAL_SECTION_ENTER                          \
@@ -253,7 +263,10 @@ static inline void set_BASEPRI(uint32_t x)
 
 #else
 
+/// \brief Debug statement to check if current instruction is ourside critical section.
 #define ASSERT_OUT_CRIT_SECTION (void)(0);
+
+/// \brief Debug statement to check if current instruction is ourside critical section.
 #define ASSERT_IN_CRIT_SECTION (void)(0);
 
 /// \brief Enters critical section for synchronization purposes (disables virtual devices IRQs)
@@ -261,54 +274,30 @@ static inline void set_BASEPRI(uint32_t x)
 
 /// \brief Leaves critical section for synchronization purposes (enables virtual devices IRQs)
 #define CRITICAL_SECTION_LEAVE  set_BASEPRI(0);
-
 #endif
+
+/// \brief Enters recursive critical section for synchronization purposes (disables virtual devices IRQs)
+/// \note Interrupts above IRQ_PRIORITY_CRITICAL_SECTION are not affected.
+#define RECURSIVE_CRITICAL_SECTION_ENTER                    \
+    {                                                       \
+        uint32_t prev_base_rpi = get_BASEPRI();             \
+        set_BASEPRI(IRQ_PRIORITY_CRITICAL_SECTION << 4);    \
+
+
+/// \brief Leaves recursive critical section for synchronization purposes (enables virtual devices IRQs)
+/// \note Interrupts above IRQ_PRIORITY_CRITICAL_SECTION are not affected.
+#define RECURSIVE_CRITICAL_SECTION_LEAVE                    \
+        set_BASEPRI(prev_base_rpi);                         \
+    }
 
 /// \brief Initializes miscellaneous checks made for debug builds.
 void debug_checks_init(void);
-
-
 
 #ifndef ENABLE_SYSTICK
 #error "ENABLE_SYSTICK macro is not defined. It should be defined by customizer in any case. Probably utools.h is included before fw.h"
 #endif
 
 void delay_loop(uint32_t n);
-
-#if ENABLE_SYSTICK!=0
-/*
-/// \brief Inittializes SysTick interrupt.
-/// \details Main purpose of SysTick interrupt is maintain 64 bit tick counter, which is intensively used by firmware.
-void systick_init(void);
-
-/// \brief Systick interrupt base delay for microsecond delays.
-/// \param us - delay in microsecond(s).
-/// \warning This function uses global #g_usTicks variable. It means it is not concurrently safe. This is why this function
-///          shouldn't be used in context of any IRQ handler.
-void delay_us(uint32_t us);
-
-/// \brief Systick interrupt base delay for millisecond delays.
-/// \param ms - delay in millisecond(s).
-/// \warning This function utilize SysTick interrupt to make a delay. This is why it can't be used in context.
-/// \warning of interrupt handlers.
-void delay_ms(uint32_t ms);
-
-/// \brief Returns number of microseconds passed from the last MCU Reset or Power on.
-/// \return number of microseconds passed  from the last MCU Reset or Power on.
-/// \warning No code should call this function in context of interrupt with priority higher than IRQ_PRIORITY_SYSTICK.
-///          Such call may return invalid data because #SysTick_Handler() may be in preempted by irq handler with higher
-///          priority.
-/// \warning This function disables interrupts with #DISABLE_IRQ macro. #DISABLE_IRQ may not be used recursively, thus don't
-///          use this function when interrupts are disabled.
-uint64_t get_us_clock(void);
-
-/// \brief Calculates time difference between to timestams expressed in microseconds.
-/// \param ev_1 - first event timestamp expressed in microseconds.
-/// \param ev_2 - second event timestamp expressed in microseconds.
-/// \return 64 bit value represent absolute (always positive) time offset between two events expressed in microseconds.
-uint64_t get_tick_diff_64(uint64_t ev_1, uint64_t ev_2);
-*/
-#endif
 
 /// \brief Initialize TIMER to generate single update event using prescaller and period values.
 /// \param timer - timer to be initialized.
@@ -376,7 +365,7 @@ void timer_disable_ex(TIM_TypeDef* timer);
 void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
 
 /// Define this macro to 1 if you need some help during debugging. It allows counted breaks and debug pins.
-#define EMERGENCY_DEBUG_TOOLS 1
+#define EMERGENCY_DEBUG_TOOLS 0
 
 #if EMERGENCY_DEBUG_TOOLS!=0
 /// \brief Implements breakpoint that triggers on N-th call.

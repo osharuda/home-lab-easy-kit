@@ -76,11 +76,11 @@ void step_motors_suspend_all(struct StepMotorDevice* dev) {
     struct StepMotorStatus* mst = MOTOR_STATUS(dev,0);
     struct StepMotorStatus* mst_end = MOTOR_STATUS(dev, dev->motor_count);
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     for (; mst!=mst_end; mst++) {
         SET_FLAGS(mst->motor_state, STEP_MOTOR_DONE | STEP_MOTOR_SUSPENDING);
     }
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 }
 
 uint8_t step_motor_handle_alarm(struct StepMotorDevice* dev,
@@ -94,9 +94,9 @@ uint8_t step_motor_handle_alarm(struct StepMotorDevice* dev,
         res = 1;
     } else if ((mstatus->motor_state & ignore_flag)==0) {
         // Stop just this one
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         SET_FLAGS(mstatus->motor_state, STEP_MOTOR_DONE | STEP_MOTOR_SUSPENDING);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
         res = 1;
     }
 
@@ -116,9 +116,9 @@ void step_motor_fault_handler(uint64_t clock, volatile void* ctx) {
     uint32_t inactive = (val << STEP_MOTOR_FAULT_ACTIVE_HIGH_OFFSET) ^ (mdescr->config_flags & STEP_MOTOR_FAULT_ACTIVE_HIGH);
 
     if (inactive==0) {
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         SET_FLAGS(mstatus->motor_state, STEP_MOTOR_FAILURE);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
 
         step_motor_handle_alarm(dev, mstatus, STEP_MOTOR_CONFIG_FAILURE_IGNORE, STEP_MOTOR_CONFIG_FAILURE_ALL);
     }
@@ -140,9 +140,9 @@ void step_motor_cw_end_stop_handler(uint64_t clock, volatile void* ctx) {
 
     if (direction==STEP_MOTOR_SET_DIR_CW && inactive==0) {
         // we are in the same direction, it is true endstop interrupt
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
 
         // Mask EXTI pin to avoid repeated interrupt generation. It could be that endstop stuck in semi on state
         MASK_EXTI_PIN(int_line->pin);
@@ -150,9 +150,9 @@ void step_motor_cw_end_stop_handler(uint64_t clock, volatile void* ctx) {
         step_motor_handle_alarm(dev, mstatus, STEP_MOTOR_CONFIG_CW_ENDSTOP_IGNORE, STEP_MOTOR_CONFIG_CW_ENDSTOP_ALL);
     } else if (direction==STEP_MOTOR_SET_DIR_CCW && inactive!=0) {
         // endstop released
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
     }
 }
 
@@ -171,9 +171,9 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
 
     if (direction==STEP_MOTOR_SET_DIR_CCW && inactive==0) {
         // we are in the same direction, it is true endstop interrupt
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
 
         // Mask EXTI pin to avoid repeated interrupt generation. It could be that endstop stuck in semi on state
         MASK_EXTI_PIN(int_line->pin);
@@ -181,9 +181,9 @@ void step_motor_ccw_end_stop_handler(uint64_t clock, volatile void* ctx) {
         step_motor_handle_alarm(dev, mstatus, STEP_MOTOR_CONFIG_CCW_ENDSTOP_IGNORE, STEP_MOTOR_CONFIG_CCW_ENDSTOP_ALL);
     } else if (direction==STEP_MOTOR_SET_DIR_CW && inactive!=0) {
         // endstop released
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
     }
 }
 
@@ -337,9 +337,9 @@ uint8_t step_motor_prepare_for_move(uint8_t dev_index, uint8_t mindex, struct St
         } else if (diff <= 0) {
             // it seems like we already have passed software limits
             assert_param(mstatus->pos<=mstatus->ccw_sft_limit || mstatus->pos>=mstatus->cw_sft_limit);
-            CRITICAL_SECTION_ENTER
+            RECURSIVE_CRITICAL_SECTION_ENTER
             SET_FLAGS(mstatus->motor_state, active_endstop);
-            CRITICAL_SECTION_LEAVE
+            RECURSIVE_CRITICAL_SECTION_LEAVE
             stop_command_exec = step_motor_handle_alarm(dev, mstatus, ignore_flag, for_all_flag);
         }
     }
@@ -365,9 +365,9 @@ void step_motor_suspend_motor(struct StepMotorDevice* dev,
         }
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_BIT_FIELD(mstatus->motor_state, mask, flags);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     // initialize GPIO : ENABLE (optional), default state: LOW
     if (mcfg & STEP_MOTOR_ENABLE_IN_USE) {
@@ -454,9 +454,9 @@ void step_motor_init_gpio_and_exti(struct StepMotorDevice* dev) {
                                            step_motor_fault_handler, dev->dev_ctx.dev_index, mindex);
 
             if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH)!=0) ) {
-                CRITICAL_SECTION_ENTER
+                RECURSIVE_CRITICAL_SECTION_ENTER
                 SET_FLAGS(mstatus->motor_state, STEP_MOTOR_FAILURE);
-                CRITICAL_SECTION_LEAVE
+                RECURSIVE_CRITICAL_SECTION_LEAVE
             }
         }
 
@@ -466,9 +466,9 @@ void step_motor_init_gpio_and_exti(struct StepMotorDevice* dev) {
                                            step_motor_cw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
 
             if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH)!=0) ) {
-                CRITICAL_SECTION_ENTER
+                RECURSIVE_CRITICAL_SECTION_ENTER
                 SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED);
-                CRITICAL_SECTION_LEAVE
+                RECURSIVE_CRITICAL_SECTION_LEAVE
             }
         }
 
@@ -478,9 +478,9 @@ void step_motor_init_gpio_and_exti(struct StepMotorDevice* dev) {
                                            step_motor_ccw_end_stop_handler, dev->dev_ctx.dev_index, mindex);
 
             if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH)!=0) ) {
-                CRITICAL_SECTION_ENTER
+                RECURSIVE_CRITICAL_SECTION_ENTER
                 SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-                CRITICAL_SECTION_LEAVE
+                RECURSIVE_CRITICAL_SECTION_LEAVE
             }
         }
     } // end of for
@@ -527,9 +527,9 @@ void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex) {
         pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_FAULT);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_FAULT_ACTIVE_HIGH)!=0) ) {
-            CRITICAL_SECTION_ENTER
+            RECURSIVE_CRITICAL_SECTION_ENTER
             SET_FLAGS(mstatus->motor_state, STEP_MOTOR_FAILURE);
-            CRITICAL_SECTION_LEAVE
+            RECURSIVE_CRITICAL_SECTION_LEAVE
         }
     }
 
@@ -538,9 +538,9 @@ void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex) {
         pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_CWENDSTOP);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CWENDSTOP_ACTIVE_HIGH)!=0) ) {
-            CRITICAL_SECTION_ENTER
+            RECURSIVE_CRITICAL_SECTION_ENTER
             SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED);
-            CRITICAL_SECTION_LEAVE
+            RECURSIVE_CRITICAL_SECTION_LEAVE
         }
     }
 
@@ -549,9 +549,9 @@ void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex) {
         pin_val = step_motor_mask_exti(mdescr, STEP_MOTOR_LINE_CCWENDSTOP);
 
         if ( (pin_val!=0) == ((mcfg & STEP_MOTOR_CCWENDSTOP_ACTIVE_HIGH)!=0) ) {
-            CRITICAL_SECTION_ENTER
+            RECURSIVE_CRITICAL_SECTION_ENTER
             SET_FLAGS(mstatus->motor_state, STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-            CRITICAL_SECTION_LEAVE
+            RECURSIVE_CRITICAL_SECTION_LEAVE
         }
     }
 }
@@ -561,9 +561,9 @@ void step_motor_set_default(struct StepMotorDevice* dev, uint8_t mindex) {
 void step_motor_set_dev_status(struct StepMotorDevice* dev, uint8_t mask, uint8_t flags) {
     assert_param((flags & mask)==flags);
     struct StepMotorDevStatus* dev_status = MOTOR_DEV_STATUS(dev);
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     dev_status->status = (dev_status->status & (~mask)) | flags;
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 }
 
 void step_motor_init(void) {
@@ -674,9 +674,9 @@ void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t i
                 // Check if new command should be read
                 if (cmd->state==STEP_MOTOR_CMDSTATUS_DONE) {
                     uint16_t bytes_remain = step_motor_fetch_cmd((struct CircBuffer*)&(mcontext->circ_buffer), cmd);
-                    CRITICAL_SECTION_ENTER
+                    RECURSIVE_CRITICAL_SECTION_ENTER
                     mstatus->bytes_remain = bytes_remain;
-                    CRITICAL_SECTION_LEAVE
+                    RECURSIVE_CRITICAL_SECTION_LEAVE
 
                     if (cmd->state==STEP_MOTOR_CMDSTATUS_DONE) {
                         // No commands read
@@ -758,7 +758,7 @@ void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
 
     timer_disable(dev->timer, dev->timer_irqn);
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     dev_status->status = STEP_MOTOR_DEV_STATUS_IDLE;
 
     for (uint8_t mindex=0; mindex<dev->motor_count; mindex++) {
@@ -793,7 +793,7 @@ void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
         // Put motor GPIO into default state (this will also may affect motor status flags
         step_motor_set_default(dev, mindex);
     }
-    CRITICAL_SECTION_LEAVE;
+    RECURSIVE_CRITICAL_SECTION_LEAVE;
 }
 
 
@@ -847,9 +847,9 @@ uint8_t step_motor_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length)
         circ = (struct CircBuffer*)&mcontext->circ_buffer;
         uint16_t bytes_remain = circbuf_len(circ);
 
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         mstatus->bytes_remain = bytes_remain;
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
     }
 
 
@@ -874,11 +874,11 @@ uint8_t step_motor_dev_sync(uint8_t cmd_byte, uint16_t length) {
     struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
 
     // Copy data from internal buffer to external (used for read by i2c)
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
     /// reads should fail because of this reason.
     memcpy(dev->status, dev->priv_data.internal_status, dev->status_size);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
     return COMM_STATUS_OK;
 }
 

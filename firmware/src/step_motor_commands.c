@@ -103,9 +103,9 @@ uint8_t step_motor_general_enable(struct StepMotorDevice* dev, uint8_t mindex, s
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_RESET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_DISABLE_DEFAULT);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -118,9 +118,9 @@ uint8_t step_motor_general_sleep(struct StepMotorDevice* dev, uint8_t mindex, st
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_RESET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_WAKEUP_DEFAULT);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
@@ -134,9 +134,9 @@ uint8_t step_motor_general_disable(struct StepMotorDevice* dev, uint8_t mindex, 
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_ENABLE, Bit_SET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_DISABLE_DEFAULT);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -149,9 +149,9 @@ uint8_t step_motor_general_wakeup(struct StepMotorDevice* dev, uint8_t mindex, s
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_SLEEP, Bit_SET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_WAKEUP_DEFAULT);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
@@ -198,9 +198,9 @@ uint8_t step_motor_general_wait(struct StepMotorDevice* dev, uint8_t mindex, str
 uint8_t step_motor_general_config(struct StepMotorDevice* dev, uint8_t mindex, struct StepMotorCmd* cmd) {
     struct StepMotorStatus* mstatus = MOTOR_STATUS(dev, mindex);
     uint32_t value = STEP_MOTOR_CONFIG_BYTE_TO_FLAGS(cmd->param);
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_BIT_FIELD(mstatus->motor_state, STEP_MOTOR_CONFIG_MASK, value);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
     cmd->state = STEP_MOTOR_CMDSTATUS_DONE;
     return STE_MOTOR_CMD_RESULT_OK;
 }
@@ -214,9 +214,9 @@ uint8_t step_motor_set_dir_cw(struct StepMotorDevice* dev, uint8_t mindex, struc
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_SET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_FLAGS(mstatus->motor_state, STEP_MOTOR_DIRECTION_CW);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext);
 
@@ -232,9 +232,9 @@ uint8_t step_motor_set_dir_ccw(struct StepMotorDevice* dev, uint8_t mindex, stru
         step_motor_set_line(mdescr, STEP_MOTOR_LINE_DIR, Bit_RESET);
     }
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_DIRECTION_CW);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext);
 
@@ -254,9 +254,9 @@ uint8_t step_motor_set_microstep(struct StepMotorDevice* dev, uint8_t mindex, st
 
     uint32_t flag = (m1 << STEP_MOTOR_M1_DEFAULT_OFFSET) | (m2 << STEP_MOTOR_M2_DEFAULT_OFFSET) | (m3 << STEP_MOTOR_M3_DEFAULT_OFFSET);
 
-    CRITICAL_SECTION_ENTER
+    RECURSIVE_CRITICAL_SECTION_ENTER
     SET_BIT_FIELD(mstatus->motor_state, STEP_MOTOR_M1_DEFAULT | STEP_MOTOR_M2_DEFAULT | STEP_MOTOR_M3_DEFAULT, flag);
-    CRITICAL_SECTION_LEAVE
+    RECURSIVE_CRITICAL_SECTION_LEAVE
 
     if (step_motor_update_pos_change_by_step(mdescr, mstatus, mcontext)) {
         result = STE_MOTOR_CMD_RESULT_FAIL;
@@ -302,9 +302,9 @@ uint8_t step_motor_set_cw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex,
         // cw software limit may not be less or equal than ccw limit
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         mstatus->cw_sft_limit = (int64_t)cmd->param;
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
     }
 
 
@@ -323,9 +323,9 @@ uint8_t step_motor_set_ccw_sft_limit(struct StepMotorDevice* dev, uint8_t mindex
         // ccw software limit may not greater or equal than cw limit
         result = STE_MOTOR_CMD_RESULT_FAIL;
     } else {
-        CRITICAL_SECTION_ENTER
+        RECURSIVE_CRITICAL_SECTION_ENTER
         mstatus->ccw_sft_limit = (int64_t)cmd->param;
-        CRITICAL_SECTION_LEAVE
+        RECURSIVE_CRITICAL_SECTION_LEAVE
     }
 
     cmd->wait = 0;
@@ -344,9 +344,9 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
         switch (cmd->state) {
             case STEP_MOTOR_CMDSTATUS_INIT: {
                 // Clear all endstops
-                CRITICAL_SECTION_ENTER
+                RECURSIVE_CRITICAL_SECTION_ENTER
                 CLEAR_FLAGS(mstatus->motor_state, STEP_MOTOR_CW_ENDSTOP_TRIGGERED | STEP_MOTOR_CCW_ENDSTOP_TRIGGERED);
-                CRITICAL_SECTION_LEAVE
+                RECURSIVE_CRITICAL_SECTION_LEAVE
 
                 // Mask/unmask endstops (this call must also set active endstop if required)
                 uint8_t stop = step_motor_prepare_for_move(dev->dev_ctx.dev_index, mindex, cmd);
@@ -360,9 +360,9 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
 
                 cmd->wait = step_motor_correct_timing(mcontext->step_wait, STEP_MOTOR_CORRECTION_FACTOR, mcontext);
 
-                CRITICAL_SECTION_ENTER
+                RECURSIVE_CRITICAL_SECTION_ENTER
                 mstatus->pos += mcontext->pos_change_by_step;
-                CRITICAL_SECTION_LEAVE
+                RECURSIVE_CRITICAL_SECTION_LEAVE
 
                 cmd->state = STEP_MOTOR_CMDSTATUS_STEPWAIT;
             }
@@ -377,9 +377,9 @@ uint8_t step_motor_move(struct StepMotorDevice* dev, uint8_t mindex, struct Step
                         // This move must be finished by software limit
                         assert_param(mstatus->pos<=mstatus->ccw_sft_limit || mstatus->pos>=mstatus->cw_sft_limit);
 
-                        CRITICAL_SECTION_ENTER
+                        RECURSIVE_CRITICAL_SECTION_ENTER
                         SET_FLAGS(mstatus->motor_state, mcontext->move_sw_endstop_flag);
-                        CRITICAL_SECTION_LEAVE
+                        RECURSIVE_CRITICAL_SECTION_LEAVE
 
                         uint8_t suspended = step_motor_handle_alarm(dev, mstatus, STEP_MOTOR_IGNORE_ENDSTOP_FLAG(direction), STEP_MOTOR_ALL_ENDSTOP_FLAG(direction));
                         if (suspended==0) {
