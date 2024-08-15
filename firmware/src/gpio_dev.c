@@ -72,12 +72,6 @@ uint8_t gpio_dev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     return COMM_STATUS_OK;
 }
 
-uint8_t gpio_read_done(uint8_t device_id, uint16_t length) {
-	UNUSED(device_id);
-	UNUSED(length);
-    return COMM_STATUS_OK;
-}
-
 
 void gpio_init() {
 	START_PIN_DECLARATION;
@@ -115,7 +109,6 @@ void gpio_init() {
 	gpio_ctx.buffer = gpio_buffer;
 	gpio_ctx.bytes_available = GPIO_BUFFER_SIZE;
 	gpio_ctx.on_command = gpio_dev_execute;
-	gpio_ctx.on_read_done = gpio_read_done;
     comm_register_device(&gpio_ctx);
 
 }

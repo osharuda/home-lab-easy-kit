@@ -50,6 +50,7 @@ struct DeviceContext irrc_ctx __attribute__ ((aligned));
 
 void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx);
 
+static inline
 void irrc_recv_init() {
     irrc_data.state = IRRC_NEC_NO_SIGNAL;
     irrc_data.bitcounter = 0;
@@ -61,11 +62,12 @@ void irrc_init() {
     memset((void*)&irrc_data, 0, sizeof(struct IRRCPrivData));
     circbuf_init(&irrc_data.circ,irrc_data.buffer,IRRC_BUF_LEN);
 
+    circbuf_init_block_mode(&irrc_data.circ, sizeof(uint16_t));
+
 	memset((void*)&irrc_ctx, 0, sizeof(struct DeviceContext));
 	irrc_ctx.device_id = IRRC_ADDR;
 	irrc_ctx.buffer = 0;
 	irrc_ctx.circ_buffer = &(irrc_data.circ);
-	irrc_ctx.on_command = irrc_command;
 	irrc_ctx.on_read_done = irrc_readdone;
 
     comm_register_device(&irrc_ctx);
@@ -82,13 +84,6 @@ void irrc_init() {
 
     irrc_data.signal_start = get_us_clock()-IRRC_NEC_REPEAT_MAX;
     irrc_recv_init();
-}
-
-uint8_t irrc_command(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
-	UNUSED(data);
-	UNUSED(length);
-	UNUSED(cmd_byte);
-    return COMM_STATUS_OK;
 }
 
 uint8_t irrc_readdone(uint8_t device_id, uint16_t length) {
@@ -119,8 +114,12 @@ void IRRC_EXTI_HANDLER(uint64_t now, volatile void* ctx) {
 			irrc_data.state = IRRC_NEC_DATA;
 			irrc_data.last_bit_start = now;
 		} else if (diff>=(IRRC_NEC_LEAD_PULSE_MIN + IRRC_NEC_LEAD_RPT_SPACE_MIN) && diff<=(IRRC_NEC_LEAD_PULSE_MAX + IRRC_NEC_LEAD_RPT_SPACE_MAX) && irrc_data.last_actual!=0) {
-			circbuf_put_byte(&irrc_data.circ, irrc_data.last_ir_address);
-			circbuf_put_byte(&irrc_data.circ, irrc_data.last_ir_command);
+            volatile uint8_t* data = circbuf_reserve_block(&irrc_data.circ);
+            if (data) {
+                data[0] = irrc_data.last_ir_address;
+                data[1] = irrc_data.last_ir_command;
+                circbuf_commit_block(&irrc_data.circ);
+            }
 			irrc_recv_init();
 		} else {
 			irrc_recv_init();	// something wrong, may be noise ?

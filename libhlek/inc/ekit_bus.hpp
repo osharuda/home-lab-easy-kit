@@ -162,7 +162,7 @@ public:
     /// \brief Read all the data available on a bus.
     /// \param buffer - Reference to a vector that will receive data from a bus.
     /// \return Corresponding EKIT_ERROR error code.
-    /// \note Note every bus may support it. In this case EKIT_NOT_SUPPORTED must be returned.
+    /// \note Not every bus may support it. In this case EKIT_NOT_SUPPORTED must be returned.
     virtual EKIT_ERROR read_all(std::vector<uint8_t> &buffer, EKitTimeout& to) = 0;
 
     /// \brief Does write and read by single operation, the first write with subsequent read.

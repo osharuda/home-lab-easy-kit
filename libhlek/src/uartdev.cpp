@@ -96,5 +96,12 @@ EKIT_ERROR UARTProxyDev::write_read(const uint8_t* wbuf, size_t wlen, uint8_t* r
 }
 
 EKIT_ERROR UARTProxyDev::lock(EKitTimeout& to) {
+    bus_lock.lock();
     return std::dynamic_pointer_cast<EKitFirmware>(bus)->lock(get_addr(), to);
+}
+
+EKIT_ERROR UARTProxyDev::unlock() {
+    EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->unlock();
+    bus_lock.unlock();
+    return err;
 }

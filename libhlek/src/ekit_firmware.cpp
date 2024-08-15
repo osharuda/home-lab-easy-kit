@@ -331,6 +331,7 @@ done:
 EKIT_ERROR EKitFirmware::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to){
 	EKIT_ERROR err;
 	CommResponseHeader hdr;
+    size_t data_len;
 
 	CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
@@ -339,10 +340,15 @@ EKIT_ERROR EKitFirmware::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to)
         goto done;
     }
 
-    buffer.resize(hdr.length);
-    err = bus->read(buffer.data(), hdr.length, to);
+    data_len = hdr.length+sizeof(CommResponseHeader);
+    buffer.resize(data_len);
+    err = bus->read(buffer.data(), data_len, to);
 
-done:    
+    // Move data to remove CommResponseHeader header
+    memmove(buffer.data(), buffer.data() + sizeof(CommResponseHeader), hdr.length);
+    buffer.resize(hdr.length);
+
+done:
     return err;	
 }
 

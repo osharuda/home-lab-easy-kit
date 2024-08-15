@@ -543,23 +543,36 @@ void i2c_update_transmit_cache(void) {
             break;
 
         case I2C_BUS_READ_CIRC_BUFFER:
+            if (g_tran_dev_pos>=g_resp_header.length) {
+                i2c_bus_finite_state_macnine = I2C_BUS_READ_BAD_BYTE;
+                goto i2c_bad_byte_state;
+            }
+
             circbuf_get_byte(g_cur_device->circ_buffer, &g_i2c_transmit_cache);
             i2c_device_buffer_increment = 1;
-
+/*
             if (g_tran_dev_pos+1>=g_resp_header.length) {
                 i2c_bus_finite_state_macnine = I2C_BUS_READ_BAD_BYTE;
             }
+            */
             break;
 
         case I2C_BUS_READ_LINEAR_BUFFER:
+            if (g_tran_dev_pos>=g_resp_header.length) {
+                i2c_bus_finite_state_macnine = I2C_BUS_READ_BAD_BYTE;
+                goto i2c_bad_byte_state;
+            }
+
             g_i2c_transmit_cache = g_cur_device->buffer[g_tran_dev_pos];
             i2c_device_buffer_increment = 1;
-
+/*
             if (g_tran_dev_pos+1>=g_resp_header.length) {
                 i2c_bus_finite_state_macnine = I2C_BUS_READ_BAD_BYTE;
             }
+            */
             break;
 
+        i2c_bad_byte_state:
         case I2C_BUS_READ_BAD_BYTE:
             g_i2c_transmit_cache = COMM_BAD_BYTE;
             i2c_device_buffer_increment = 0;

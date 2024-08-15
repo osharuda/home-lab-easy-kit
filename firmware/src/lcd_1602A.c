@@ -43,6 +43,10 @@ volatile uint8_t         g_lcd_light_on = 0;
 
 /// \brief Specifies if blinking mode is currently used
 volatile uint8_t         g_lcd_blink = 0;
+
+/// \brief Dummy LCD buffer
+uint8_t g_lcd_dummy_buffer = 0;
+
 /// @}
 
 void lcd_init()
@@ -74,7 +78,8 @@ void lcd_init()
     memset((void*)&g_lcd_ctx, 0, sizeof(g_lcd_ctx));
 
     g_lcd_ctx.device_id = LCD1602a_ADDR;
-    g_lcd_ctx.buffer = 0;	// No buffer available
+    g_lcd_ctx.buffer = &g_lcd_dummy_buffer;	// No buffer available
+    g_lcd_ctx.bytes_available = sizeof(g_lcd_dummy_buffer);
 	g_lcd_ctx.on_command = lcd_dev_execute;
     g_lcd_ctx.on_read_done = 0;
     g_lcd_ctx.on_polling = lcd_polling;

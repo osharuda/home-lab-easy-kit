@@ -616,6 +616,7 @@ void UartDevRead::handle(const std::vector<std::string>& args) {
 
     std::vector<uint8_t> data;
     EKitTimeout to(EKIT_STD_TIMEOUT);
+    BusLocker blocker(dynamic_cast<EKitBus*>(uart), to);
     uart->read_all(data, to);
 
     std::string s = tools::format_buffer(16, data.data(), data.size(), " ", " | ");
@@ -623,7 +624,7 @@ void UartDevRead::handle(const std::vector<std::string>& args) {
 }
 
 //----------------------------------------------------------------------------------------------//
-//                                    UartDevWrite                                               //
+//                                    UartDevWrite                                              //
 //----------------------------------------------------------------------------------------------//
 DEFINE_HANDLER_DEFAULT_IMPL(UartDevWrite,"uart::", "::write")
 std::string UartDevWrite::help() const {
@@ -638,7 +639,7 @@ void UartDevWrite::handle(const std::vector<std::string>& args) {
     std::vector<uint8_t> data(in.begin(), in.end());
 
     // figure out if text entered is sequance of bytes by regular expression
-    std::unique_ptr<RegexPattern> re = tools::g_unicode_ts.regex_pattern("^([0-9,a-f,A-F]{2})(\\\\s[0-9,a-f,A-F]{2})*$", 0);
+    std::unique_ptr<RegexPattern> re = tools::g_unicode_ts.regex_pattern("^([0-9,a-f,A-F]{2})*$", 0);
     bool hex_buffer = tools::g_unicode_ts.regex_match(*re, in);
 
     if (hex_buffer) {
@@ -646,6 +647,7 @@ void UartDevWrite::handle(const std::vector<std::string>& args) {
     }
 
     EKitTimeout to(EKIT_STD_TIMEOUT);
+    BusLocker blocker(dynamic_cast<EKitBus*>(uart), to);
     uart->write(data.data(), data.size(), to);
 }
 

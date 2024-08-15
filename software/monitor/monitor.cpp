@@ -284,12 +284,15 @@ int main(int argc, char* argv[])
 #ifdef UART_PROXY_DEVICE_ENABLED
     for (size_t i = 0; i<uart_proxy_configs_number; i++) {
         const UARTProxyConfig* config = uart_proxy_configs + i;
+        std::shared_ptr<UARTProxyDev> uart_dev(new UARTProxyDev(firmware, config));
         bool add_uart_dev = true;
 
-        if (info_dev->config[config->dev_id].devices[i].hint == INFO_DEV_HINT_GSM_MODEM) {
+
+        if (info_dev->config->devices[config->dev_id].hint == INFO_DEV_HINT_GSM_MODEM) {
             // attempt to add GSM modem
             try {
-                std::shared_ptr<GSMModem> modem(new GSMModem(firmware, config));
+                std::shared_ptr<EKitBus> uart_bus = std::dynamic_pointer_cast<EKitBus>(uart_dev);
+                std::shared_ptr<GSMModem> modem(new GSMModem(uart_bus, config));
                 modem->set_timeout(30000);
 
                 std::shared_ptr<CommandHandler> at_handler(dynamic_cast<CommandHandler*>(new ATHandler(std::dynamic_pointer_cast<EKitDeviceBase>(modem), ui)));
@@ -316,7 +319,6 @@ int main(int argc, char* argv[])
         }
 
         if (add_uart_dev) {
-            std::shared_ptr<UARTProxyDev> uart_dev(new UARTProxyDev(firmware, config));
             std::shared_ptr<CommandHandler> uart_info_handler(dynamic_cast<CommandHandler*>(new UartDevInfo(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_read_handler(dynamic_cast<CommandHandler*>(new UartDevRead(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));
             std::shared_ptr<CommandHandler> uart_write_handler(dynamic_cast<CommandHandler*>(new UartDevWrite(std::dynamic_pointer_cast<EKitDeviceBase>(uart_dev), ui)));

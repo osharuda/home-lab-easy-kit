@@ -78,6 +78,11 @@ public:
     /// \note This function is overridden to pass correct address into EKitFirmware
     EKIT_ERROR lock(EKitTimeout& to) override;
 
+    /// \brief Implementation of the EKitBus#lock() virtual function.
+    /// \return Corresponding EKIT_ERROR error code.
+    /// \note This function is overridden to pass correct address into EKitFirmware
+    EKIT_ERROR unlock() override;
+
     /// \brief Read data from a bus.
     /// \param ptr - pointer to the memory block.
     /// \param len - length of the memory block.

@@ -56,7 +56,7 @@ void timer_start_ex(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IR
 
     timer->DIER = TIM_IT_Update;                  // Setup interrupt
     NVIC_SetPriority(irqn, priority);
-    NVIC_DisableIRQ(irqn);                    // Disable IRQ
+    NVIC_DisableIRQ(irqn);                        // Disable IRQ
 
     timer->CR1 = TIM_CR1_CEN;                     // Enable timer
     timer->PSC = prescaller;                      // Set prescaller
@@ -64,8 +64,8 @@ void timer_start_ex(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IR
     timer->EGR = TIM_PSCReloadMode_Immediate;     // Generate update event (IRQ will not be fired because it is disabled via NVIC (see above)
 
     if (force_first_call==0) {
-        timer->SR = 0;                                // Clear status register
-        NVIC_ClearPendingIRQ(irqn);              // Clear pending interrupt (to avoid immediate IRQ handler call)
+        timer->SR = 0;                            // Clear status register
+        NVIC_ClearPendingIRQ(irqn);               // Clear pending interrupt (to avoid immediate IRQ handler call)
     }
 
     // Enable IRQ
