@@ -26,13 +26,14 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.mcu_hw = mcu_hw
         self.dev_configs = dev_configs
         self.device_name = "BASE_DEVICE"
-        self.config_name = common_config['firmware']['device_name'] #<!CHECKIT!> device name should become config name
+        self.config_name = common_config[FW_FIRMWARE][FW_DEVICE_NAME]
+        self.i2c_buffer_size = int(common_config[FW_FIRMWARE][FW_I2C][FW_BUFFER_SIZE])
 
         self.toolchain_name = "toolchain.cmake"
-        self.fw_templ = os.path.join(self.template_dir, "firmware");
+        self.fw_templ = os.path.join(self.template_dir, FW_FIRMWARE);
         self.fw_src_templ = os.path.join(self.template_dir, "firmware/src")
-        self.fw_inc_dest = common_config['firmware']['firmware_inc_path']
-        self.fw_dest = common_config['firmware']['firmware_path']
+        self.fw_inc_dest = common_config[FW_FIRMWARE]['firmware_inc_path']
+        self.fw_dest = common_config[FW_FIRMWARE]['firmware_path']
 
         self.sw_templ = os.path.join(self.template_dir, "monitor")
         self.sw_example_templ = os.path.join(self.template_dir, "example")
@@ -48,9 +49,9 @@ class BaseDeviceCustomizer(BaseCustomizer):
         #self.sw_src_dest = os.path.join(self.project_dir, "software/src")
         self.sw_testtool_templ = os.path.join(self.template_dir, "software/testtool")
 
-        self.sw_lib_path = common_config['firmware']['libconfig_path']
-        self.sw_lib_inc_dest = common_config['firmware']['libconfig_inc_path']
-        self.sw_lib_src_dest = common_config['firmware']['libconfig_src_path']
+        self.sw_lib_path = common_config[FW_FIRMWARE]['libconfig_path']
+        self.sw_lib_inc_dest = common_config[FW_FIRMWARE]['libconfig_inc_path']
+        self.sw_lib_src_dest = common_config[FW_FIRMWARE]['libconfig_src_path']
 
         self.sw_lib_templ_path = os.path.join(self.template_dir, "libconfig")
         self.sw_lib_inc_templ_path = os.path.join(self.sw_lib_templ_path, "inc")
@@ -66,7 +67,7 @@ class BaseDeviceCustomizer(BaseCustomizer):
         self.file_copy_list = dict()
         self.tab = "    "
         self.newline = "\n"
-        self.project_name = common_config['firmware']['device_name']
+        self.project_name = common_config[FW_FIRMWARE]['device_name']
 
         self.check_mcu_support()
 

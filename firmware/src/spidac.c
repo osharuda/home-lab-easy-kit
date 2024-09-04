@@ -27,7 +27,6 @@
 #include "utools.h"
 #include "i2c_bus.h"
 #include "spidac.h"
-#include "spidac_conf.h"
 #include <stm32f10x.h>
 
 /// \addtogroup group_spidac
@@ -38,26 +37,26 @@
 #define SPIDAC_FRAME_SIZE(dev)             (((dev)->frame_size)+1)
 
 //---------------------------- FORWARD AND INLINE DECLARATIONS ----------------------------
-/// \brief Prepares SPIDAC device to using sample buffer.
-/// \param priv_data - private data for the device
-/// \param sampling - pointer to the SPIDACSampling structure with sampling information
-/// \param continuous - non-zero specifies to generate signal indefinitely, until explicitly stopped by software;
-///                     zero specifies to generate single period of the signal.
-static inline void spidac_set_sampling_buffer(  struct SPIDACPrivData* priv_data, 
-                                                struct SPIDACSampling* sampling, 
-                                                uint8_t continuous);
 
-/// \brief Prepares SPIDAC device to using default sample.
-/// \param priv_data - private data for the device
-/// \param data - pointer to the first sample to be used. If NULL default sample from internal device buffer is used;
-///               If non-null sample is copied to the internal device buffer and used.
-static inline void spidac_set_default_sample(   struct SPIDACPrivData* priv_data, 
-                                                uint8_t* data);
+/// \brief Prepares channel data for sampling.
+/// \param dev - Device instance to start.
+/// \param priv_data - private data for the device.
+/// \param start_info - sampling start information structure. It may be ether software side received structure or default
+///        sample pre-initialized structure.
+/// \param overflow_status - Status to be set when sample buffer is completely sampled.
+/// \note If no samples are uploaded for some channel, default sample will be used.
+static inline void spidac_init_channels_data(struct SPIDACInstance* dev,
+                                             struct SPIDACPrivData* priv_data,
+                                             struct SPIDACStartInfo* start_info,
+                                             SPIDAC_STATUS overflow_status);
+
 
 /// \brief Initializes generation and sends the very first sample.
 /// \param dev - Device instance to start.
 /// \note All other samples and status changes are made inside timer and DMA (TC) IRQs.
-static inline void spidac_send_first_sample(struct SPIDACInstance* dev);
+static inline void spidac_sample_first(struct SPIDACInstance* dev, struct SPIDACPrivData* priv_data);
+static inline void spidac_sample_next(struct SPIDACInstance* dev, struct SPIDACPrivData* priv_data);
+
 
 SPIDAC_FW_DEFAULT_VALUES
 SPIDAC_FW_BUFFERS
@@ -65,20 +64,88 @@ SPIDAC_FW_BUFFERS
 /// \brief Global array that stores all virtual SPIDAC devices configurations.
 struct SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 
+#ifndef NDEBUG
+uint8_t dac_irq_disabled = 0;
+#define DAC_CHECK_IRQ_ENTER assert(dac_irq_disabled==0); \
+                            dac_irq_disabled = 1;
+
+#define DAC_CHECK_IRQ_LEAVE assert(dac_irq_disabled==1); \
+                            dac_irq_disabled = 0;
+#else
+#define DAC_CHECK_IRQ_ENTER (void)(0);
+#define DAC_CHECK_IRQ_LEAVE (void)(0);
+#endif
+
 /// \define DAC_DISABLE_IRQs
 /// \brief Saves current DACDev NVIC IRQ state, and temporary disables specified IRQ
 #define DAC_DISABLE_IRQs                                                    \
     uint32_t timer_state = NVIC_IRQ_STATE(dev->timer_irqn);                 \
     uint32_t tx_dma_state = NVIC_IRQ_STATE(dev->tx_dma_complete_irqn);      \
     NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);                         \
-    NVIC_DISABLE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);
+    NVIC_DISABLE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);              \
+    DAC_CHECK_IRQ_ENTER
 
 
 /// \define DAC_RESTORE_IRQs
 /// \brief Restores DAC IRQs state
 #define DAC_RESTORE_IRQs                                                    \
+    DAC_CHECK_IRQ_LEAVE                                                     \
     NVIC_RESTORE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);              \
-    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);
+    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);                         \
+
+
+static inline void spidac_sample_first(
+        struct SPIDACInstance* dev,
+        struct SPIDACPrivData* priv_data) {
+    assert_param(priv_data->current_channel_data == priv_data->channel_data);     // First channel must be selected
+    assert_param(priv_data->current_channel_data->first_sample_ptr != NULL);
+    assert_param(priv_data->current_channel_data->end_sample_ptr != NULL);
+    assert_param(priv_data->current_channel_data->current_sample_ptr != NULL);
+
+    DAC_DISABLE_IRQs
+    assert_param(priv_data->status->status == STOPPED ||
+                 priv_data->status->status == STOPPED_ABNORMAL ||
+                 priv_data->status->status == WAITING);
+    priv_data->status->status = SAMPLING;
+    DAC_RESTORE_IRQs
+
+    priv_data->dma_tx_preinit.DMA_MemoryBaseAddr = (uint32_t)priv_data->current_channel_data->current_sample_ptr;
+
+    // Enable DMA channel
+    DMA_Init(dev->tx_dma_channel, (DMA_InitTypeDef*)&(priv_data->dma_tx_preinit));
+
+    // Enable DMA interrupt
+    DMA_ITConfig(dev->tx_dma_channel, DMA_IT_TC, ENABLE);
+
+    // Enable DMA mode in SPI
+    SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
+
+    // Optimization: cache spi->CR1 register, we will use it in STARTED state to optimize timer interrupt
+    priv_data->spi_cr1_disabled = dev->spi->CR1;
+
+    // Start
+    SPI_Cmd(dev->spi, ENABLE);
+
+    // Optimization: cache spi->CR1 register, we will use it in STARTED state to optimize timer interrupt
+    priv_data->spi_cr1_enabled = dev->spi->CR1;
+    priv_data->dma_ccr_disabled = dev->tx_dma_channel->CCR;
+
+    DMA_Cmd(dev->tx_dma_channel, ENABLE);
+    priv_data->dma_ccr_enabled = dev->tx_dma_channel->CCR;
+}
+
+static inline void spidac_sample_next(
+        struct SPIDACInstance* dev,
+        struct SPIDACPrivData* priv_data) {
+    // Enable SPI
+    dev->spi->CR1 = priv_data->spi_cr1_enabled;
+
+    // Restart DMA
+    dev->tx_dma_channel->CCR   = priv_data->dma_ccr_disabled;
+    dev->tx_dma_channel->CMAR  = (uint32_t)priv_data->current_channel_data->current_sample_ptr;
+    dev->tx_dma_channel->CNDTR = (uint32_t)dev->transaction_size;
+    dev->tx_dma_channel->CCR   = priv_data->dma_ccr_enabled;
+}
 
 
 /// \brief Common TX DMA IRQ handler
@@ -88,12 +155,9 @@ struct SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 ///        from the private device data from here.
 void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIDAC_DEVICE_COUNT);
+    uint8_t new_status = WAITING;
 
     struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs+index;
-
-    // Enable timer update interrupt generation.
-    // BO: CLEAR_FLAGS(dev->timer->CR1, TIM_CR1_UDIS);
-    dev->timer->CR1 = TIM_CR1_CEN;
 
     // Clear TX DMA interrupt pending bit (otherwise it will be called again once handler is returned)
     dev->dma->IFCR = dev->dma_tx_it;
@@ -102,14 +166,14 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     SPI_TypeDef* spi = dev->spi;
 
     // Increment sample pointer
-    priv_data->sample_ptr += priv_data->status->sampling.phase_increment;
+    priv_data->current_channel_data->current_sample_ptr += priv_data->current_channel_data->phase_increment;
 
     // Check for sample pointer overflow
-    if (priv_data->sample_ptr >= priv_data->sample_ptr_end) {
+    if (priv_data->current_channel_data->current_sample_ptr >= priv_data->current_channel_data->end_sample_ptr) {
         // It must be equal, otherwise either buffer or phase_increment are not aligned.
-        assert_param(priv_data->sample_ptr==priv_data->sample_ptr_end);
-        priv_data->sample_ptr = priv_data->sample_ptr_start;
-        priv_data->status->status = priv_data->phase_overflow_status;
+        assert_param(priv_data->current_channel_data->current_sample_ptr==priv_data->current_channel_data->end_sample_ptr);
+        priv_data->current_channel_data->current_sample_ptr = priv_data->current_channel_data->first_sample_ptr;
+        new_status = priv_data->current_channel_data->phase_overflow_status;
     }
 
     // Wait SPI to complete transaction.
@@ -122,11 +186,38 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     // Disable SPI
     spi->CR1 = priv_data->spi_cr1_disabled;
 
+#if SPIDAC_MULTI_CHANNEL
+    // Switch to the next channel and start new transaction immediately.
+    priv_data->current_channel_data++;
+    if (priv_data->current_channel_data < priv_data->end_channel_data) {
+        spidac_sample_next(dev, priv_data); // Sample next channel
+        return;
+    } else {
+        priv_data->current_channel_data = priv_data->channel_data; // Switch to the first channel
+    }
+#endif
+
+#if SPIDAC_NEED_LD
     // LD pulse
     *(priv_data->ld_port_BSRR) = dev->ld_bit_mask;
     *(priv_data->ld_port_BRR) = dev->ld_bit_mask;
+#endif
+
+    priv_data->status->status = new_status;
+
 }
 SPIDAC_FW_TX_DMA_IRQ_HANDLERS
+
+
+static inline void spidac_wait(struct SPIDACInstance* dev, struct SPIDACPrivData* priv_data) {
+    assert_param(IN_INTERRUPT == 0);// Must not be called from ISR
+    uint8_t last_status;
+    do {
+        DAC_DISABLE_IRQs
+        last_status = priv_data->status->status;
+        DAC_RESTORE_IRQs
+    } while (last_status != STOPPED);
+}
 
 /// \brief Common TIMER IRQ handler
 /// \param index - index of the virtual device
@@ -135,63 +226,33 @@ void SPIDAC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct SPIDACInstance* dev       = (struct SPIDACInstance*)g_spidac_devs+index;
     struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
 
-    // Restart timer, but do not enable interrupt yet (will be enabled in DMA complete IRQ handler)
-    dev->timer->SR  = (uint16_t)~TIM_IT_Update;
-    dev->timer->CR1 = TIM_CR1_CEN | TIM_CR1_UDIS; // DISABLE UPDATE INTERRUPT GENERATION BECAUSE OF setting EGR->UG
-    dev->timer->ARR = priv_data->status->sampling.period; // Note, no need to change prescaler value.
-    dev->timer->CNT = 0;
-    dev->timer->EGR = TIM_PSCReloadMode_Immediate;
+    if (dev->timer->SR & TIM_IT_Update) {
+        TIM_ClearITPendingBit(dev->timer, TIM_IT_Update);
 
-    if (priv_data->status->status == STARTED) {
-        // Enable SPI
-        dev->spi->CR1 = priv_data->spi_cr1_enabled;
+        if (priv_data->status->status == WAITING) {
+            priv_data->status->status = SAMPLING;
 
-        // Restart DMA
-        dev->tx_dma_channel->CCR   = priv_data->dma_ccr_disabled;
-        dev->tx_dma_channel->CMAR  = (uint32_t)priv_data->sample_ptr;
-        dev->tx_dma_channel->CNDTR = (uint32_t)dev->frames_per_sample;
-        dev->tx_dma_channel->CCR   = priv_data->dma_ccr_enabled;
-    } else {
-        switch (priv_data->status->status) {
-            case STARTING:
-                priv_data->status->status = STARTED;
-                spidac_send_first_sample(dev);
-                break;
+            /// Note, it is legal to start sampling with spidac_sample_next() because spidac_sample_first() was already called
+            /// during virtual device initialization!
+            spidac_sample_next(dev, priv_data);
 
-            case STOPPING:
-                priv_data->status->status = RESETTING;
-                spidac_set_default_sample(priv_data, NULL);
-
-                // Setup timer to trigger as soon as possible (interrupt is already disabled above)
-                dev->timer->SR = (uint16_t)~TIM_IT_Update; // WHY???
-                dev->timer->PSC = 0;
-                dev->timer->ARR = 1;
-                dev->timer->CNT=0;
-                dev->timer->EGR = TIM_PSCReloadMode_Immediate;
-
-                // Enable SPI
-                dev->spi->CR1 |= (uint16_t)0x0040;
-
-                // Start DMA
-                dev->tx_dma_channel->CCR &= (~DMA_CCR1_EN);
-                dev->tx_dma_channel->CMAR = (uint32_t)priv_data->sample_ptr;
-                dev->tx_dma_channel->CNDTR = (uint32_t)dev->frames_per_sample;
-                dev->tx_dma_channel->CCR |= DMA_CCR1_EN;
-                break;
-
-            case RESETTING:
-                // We disabled timer update generation above, re-enable it.
-                CLEAR_FLAGS(dev->timer->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
-
-                // Disable timer
-                timer_disable(dev->timer, dev->timer_irqn);
-
-                // Initialize the last default transaction
-                spidac_shutdown(dev);
-                break;
-            default:
-                assert_param(0);
+            return;
         }
+
+        uint8_t final_status = priv_data->status->status == STOPPED ? STOPPED : STOPPED_ABNORMAL;
+        spidac_shutdown(dev, STOPPED);
+
+        // set default value
+        spidac_init_channels_data(
+                dev,
+                &dev->priv_data,
+                dev->default_start_info,
+                STOPPED);
+
+        spidac_sample_first(dev, priv_data);
+        spidac_wait(dev, priv_data);
+
+        spidac_shutdown(dev, final_status);
     }
 }
 SPIDAC_FW_TIMER_IRQ_HANDLERS
@@ -207,18 +268,16 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
 
     // There should be at least one sample
     assert_param(dev->buffer_size >= sizeof(struct SPIDACStatus) + dev->frames_per_sample * SPIDAC_FRAME_SIZE(dev));
-    priv_data->sample_size = (dev->frame_size+1) * dev->frames_per_sample;
-    priv_data->max_sample_buffer_size = dev->buffer_size - sizeof(struct SPIDACStatus) - priv_data->sample_size;
     priv_data->sample_buffer_size = 0;
     priv_data->status             = (struct SPIDACStatus*)dev->buffer;
-    priv_data->status->status     = SHUTDOWN;
+    priv_data->status->status     = STOPPED;
     priv_data->status->repeat_count = 0;
 
-    priv_data->default_sample_base = dev->buffer + sizeof(struct SPIDACStatus);
-    memcpy((void*)priv_data->default_sample_base, (void*)dev->default_values, priv_data->sample_size);
-    priv_data->sample_buffer_base = dev->buffer + sizeof(struct SPIDACStatus) + priv_data->sample_size;
-    priv_data->sample_ptr = NULL; // Must be set immediately before operation
-    priv_data->sample_ptr_end = NULL; // Must be set immediately before operation
+    memcpy((void*)dev->default_sample_base, (void*)dev->default_values, dev->sample_size);
+    memset(priv_data->channel_data, 0, sizeof(struct SSPIDACChannelData) * dev->channel_count);
+    dev->default_start_info->period = 0;
+    dev->default_start_info->prescaler = 0;
+
 
     if (dev->ld_port != NULL) {
         if (dev->ld_rise) {
@@ -230,8 +289,8 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
             priv_data->ld_port_BRR = &(dev->ld_port->BSRR);
         }
     } else {
-        priv_data->ld_port_BSRR = &(priv_data->dummy_register);
-        priv_data->ld_port_BRR = &(priv_data->dummy_register);
+        priv_data->ld_port_BSRR = &g_dummy_reg32;
+        priv_data->ld_port_BRR = &g_dummy_reg32;
     }
 
     memset((void*)devctx, 0, sizeof(struct DeviceContext));
@@ -301,14 +360,14 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
 
     // Stop spi ----------------------------------------------------------------------------
-    spidac_stop(dev);
+    /* spidac_stop(dev); */
 
     // Pre-initialize SPI TX DMA ----------------------------------------------------------------------------
     DMA_DeInit(dev->tx_dma_channel);
     priv_data->dma_tx_preinit.DMA_PeripheralBaseAddr = (uint32_t) &(dev->spi->DR);
-    priv_data->dma_tx_preinit.DMA_MemoryBaseAddr = (uint32_t) priv_data->sample_buffer_base;
+    priv_data->dma_tx_preinit.DMA_MemoryBaseAddr = (uint32_t) dev->sample_buffer_base;
     priv_data->dma_tx_preinit.DMA_DIR = DMA_DIR_PeripheralDST;
-    priv_data->dma_tx_preinit.DMA_BufferSize = dev->frames_per_sample;
+    priv_data->dma_tx_preinit.DMA_BufferSize = dev->transaction_size;
     priv_data->dma_tx_preinit.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
     priv_data->dma_tx_preinit.DMA_MemoryInc = DMA_MemoryInc_Enable;
     priv_data->dma_tx_preinit.DMA_PeripheralDataSize = (SPIDAC_FRAME_SIZE(dev) == 1) ? DMA_PeripheralDataSize_Byte
@@ -328,33 +387,40 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
 void spidac_init() {
     for (uint16_t i=0; i<SPIDAC_DEVICE_COUNT; i++) {
         struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs+i;
-        struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
+        struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&dev->priv_data;
         spidac_init_vdev(dev, i);
 
         // set default value
-        spidac_set_default_sample(priv_data, NULL);
-        spidac_start(dev);
+        spidac_init_channels_data(
+                dev,
+                &dev->priv_data,
+                dev->default_start_info,
+                STOPPED);
+
+        spidac_sample_first(dev, priv_data);
+        spidac_wait(dev, priv_data);
+        spidac_shutdown(dev, STOPPED);
     }
 }
 
 uint8_t spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     struct DeviceContext* devctx = comm_dev_context(cmd_byte);
     struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs + devctx->dev_index;
-    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
+    uint16_t sampling_len = sizeof(struct SPIDACStartInfo) + dev->channel_count * sizeof(struct SPIDACChannelSamplingInfo);
     uint8_t res = COMM_STATUS_OK;
     SPIDAC_COMMAND command = cmd_byte & COMM_CMDBYTE_DEV_SPECIFIC_MASK;
 
-    if (command==START && length == sizeof(struct SPIDACSampling)) {
-        spidac_set_sampling_buffer(priv_data, (struct SPIDACSampling*)data, 1);
-        res = spidac_start(dev);
-    } else if (command==START_PERIOD && length == sizeof(struct SPIDACSampling)) {
-        spidac_set_sampling_buffer(priv_data, (struct SPIDACSampling*)data, 0);
-        res = spidac_start(dev);
-    } else if (command==SETDEFAULT && length == priv_data->sample_size) {
-        spidac_set_default_sample(priv_data, data);
-        res = spidac_start(dev);
-    } else if (command==DATA && length <= priv_data->max_sample_buffer_size) {
-        res = spidac_data(dev, data, length);
+    if (command==START && length == sampling_len) {
+        res = spidac_start(dev, (struct SPIDACStartInfo*)data, 1);
+    } else if (command==START_PERIOD && length == sampling_len) {
+        res = spidac_start(dev, (struct SPIDACStartInfo*)data, 0);
+    } else if (command==SETDEFAULT && length == dev->sample_size) {
+        memcpy(dev->default_sample_base, data, length);
+        spidac_stop(dev);
+    } else if (command==DATA_START) {
+        res = spidac_data(dev, data, length, 1);
+    } else if (command==DATA) {
+        res = spidac_data(dev, data, length, 0);
     } else if (command==STOP) {
         res = spidac_stop(dev);
     } else {
@@ -375,70 +441,129 @@ uint8_t spidac_read_done(uint8_t device_id, uint16_t length) {
 }
 
 uint8_t spidac_stop(struct SPIDACInstance* dev) {
-    uint8_t res = COMM_STATUS_FAIL;
-
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&dev->priv_data;
 
     DAC_DISABLE_IRQs
-    if (dev->priv_data.status->status == STARTED) {
-        dev->priv_data.status->status = STOPPING;
-        res = COMM_STATUS_OK;
-    }
+        spidac_shutdown(dev, STOPPED);
     DAC_RESTORE_IRQs
 
-    return res;
-}
+    spidac_init_channels_data(
+            dev,
+            priv_data,
+            dev->default_start_info,
+            STOPPED);
 
-uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length) {
-    struct SPIDACPrivData* priv_data = &(dev->priv_data);
-
-    if (priv_data->status->status != SHUTDOWN) {
-        return COMM_STATUS_FAIL;
-    }
-
-    if (length % priv_data->sample_size != 0) {
-        return COMM_STATUS_FAIL; // Unaligned buffer
-    }
-
-    assert_param(COMM_BUFFER_LENGTH >= priv_data->max_sample_buffer_size); // Make sure we have configured it right. Check it in python. <!CHECKIT!>
-    memcpy((void*)(priv_data->sample_buffer_base), data, length);
-    priv_data->sample_buffer_size = length;
+    spidac_sample_first(dev, priv_data);
+    spidac_wait(dev, priv_data);
+    spidac_shutdown(dev, STOPPED);
 
     return COMM_STATUS_OK;
 }
 
-uint8_t spidac_start(struct SPIDACInstance* dev) {
-    uint8_t res = COMM_STATUS_FAIL;
-    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
-    struct SPIDACStatus* status = (struct SPIDACStatus*)&(priv_data->status);
-
-    if (priv_data->sample_ptr==priv_data->sample_ptr_end) {
-        goto done;  // no data
+uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length, uint8_t first_portion) {
+    struct SPIDACPrivData* priv_data = &(dev->priv_data);
+    uint16_t next_portion = !first_portion;
+    uint16_t new_sample_buffer_size = next_portion*priv_data->sample_buffer_size + length;
+    if (priv_data->status->status != STOPPED &&
+        priv_data->status->status != STOPPED_ABNORMAL) {
+        return COMM_STATUS_FAIL;
     }
 
+    if (length % dev->transaction_size != 0) {
+        return COMM_STATUS_FAIL; // Unaligned buffer
+    }
+
+    if (new_sample_buffer_size > dev->max_sample_buffer_size) {
+        return COMM_STATUS_FAIL; // Buffer size limit is exceeded.
+    }
+
+    memcpy((void*)(dev->sample_buffer_base+next_portion*priv_data->sample_buffer_size), data, length);
+    priv_data->sample_buffer_size = new_sample_buffer_size;
+
+    return COMM_STATUS_OK;
+}
+
+static inline void spidac_init_channels_data(struct SPIDACInstance* dev,
+                                             struct SPIDACPrivData* priv_data,
+                                             struct SPIDACStartInfo* start_info,
+                                             SPIDAC_STATUS overflow_status) {
+
+    uint16_t channel_offset = 0;
+    uint8_t force_default = (start_info==dev->default_start_info);
+
+    for (uint16_t ch = 0; ch < dev->channel_count; ch++) {
+        // If no sample data available we are using default sample
+        struct SSPIDACChannelData* ch_info = priv_data->channel_data + ch;
+        struct SPIDACChannelSamplingInfo* src_ch_smpl_info = start_info->channel_info + ch;
+        struct SPIDACChannelSamplingInfo* dst_ch_smpl_info = priv_data->status->start_info.channel_info + ch;
+        memcpy(dst_ch_smpl_info, src_ch_smpl_info, sizeof(struct SPIDACChannelSamplingInfo));
+
+        if (force_default | (!src_ch_smpl_info->loaded_samples_number) ) {
+            /// Default sample
+            ch_info->first_sample_ptr = dev->default_sample_base + ch * dev->transaction_size;
+            ch_info->end_sample_ptr = ch_info->first_sample_ptr + dev->transaction_size;
+            ch_info->phase_increment = dev->transaction_size;
+            ch_info->current_sample_ptr = ch_info->first_sample_ptr;
+        } else {
+            /// Uploaded samples
+            ch_info->first_sample_ptr = dev->sample_buffer_base + channel_offset * dev->transaction_size;
+            ch_info->end_sample_ptr = ch_info->first_sample_ptr + src_ch_smpl_info->loaded_samples_number * dev->transaction_size;
+            ch_info->phase_increment = src_ch_smpl_info->phase_increment * dev->transaction_size;
+            ch_info->current_sample_ptr = ch_info->first_sample_ptr + src_ch_smpl_info->start_phase * dev->transaction_size;
+        }
+
+        ch_info->phase_overflow_status = overflow_status;
+        channel_offset += src_ch_smpl_info->loaded_samples_number;
+    }
+
+    priv_data->current_channel_data = priv_data->channel_data;
+    priv_data->status->start_info.period = start_info->period;
+    priv_data->status->start_info.prescaler = start_info->prescaler;
+
+}
+
+
+uint8_t spidac_start(struct SPIDACInstance* dev, struct SPIDACStartInfo* start_info, uint8_t continuous) {
+    uint8_t res = COMM_STATUS_FAIL;
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
+    struct SPIDACStatus* status = (struct SPIDACStatus*)(priv_data->status);
+
     DAC_DISABLE_IRQs
-    if (status->status == SHUTDOWN) {
-        status->status = STARTING;
+    if (status->status == STOPPED || status->status == STOPPED_ABNORMAL) {
+        status->status = WAITING;
         DAC_RESTORE_IRQs
 
-        timer_start(dev->timer,
-                    0,  // Minimal prescaller is used
-                    1,    // Minimal period is used
-                    dev->timer_irqn,
-                    IRQ_PRIORITY_DAC_TIMER);
+        // Prepare for sampling
+        spidac_init_channels_data(
+                dev,
+                priv_data,
+                start_info,
+                continuous != 0 ? WAITING : STOPPED);
+
+        timer_start_periodic_ex(dev->timer,
+                                start_info->prescaler,
+                                start_info->period,
+                                dev->timer_irqn,
+                                IRQ_PRIORITY_DAC_TIMER,
+                                0);
+
+        spidac_sample_first(dev, priv_data);
 
         res = COMM_STATUS_OK;
     } else {
         DAC_RESTORE_IRQs
     }
 
-done:
     return res;
 }
 
-void spidac_shutdown(struct SPIDACInstance* dev) {
+void spidac_shutdown(struct SPIDACInstance* dev, uint8_t status) {
     struct SPIDACPrivData* priv_data = &(dev->priv_data);
+    assert_param(status==STOPPED || status==STOPPED_ABNORMAL);
 
-    DAC_DISABLE_IRQs
+    // Disable timer
+    timer_disable(dev->timer, dev->timer_irqn);
+
     // Disable DMA
     DMA_DeInit(dev->tx_dma_channel);
 
@@ -448,68 +573,9 @@ void spidac_shutdown(struct SPIDACInstance* dev) {
     SPI_Cmd(dev->spi, DISABLE);
 
     // Handle statuses
-    priv_data->status->status = SHUTDOWN;
-    priv_data->sample_ptr = NULL;
-    priv_data->sample_ptr_end = NULL;
-    DAC_RESTORE_IRQs
+    priv_data->status->status = status;
 }
 
-static inline void spidac_set_sampling_buffer(  struct SPIDACPrivData* priv_data,
-                                                struct SPIDACSampling* sampling,
-                                                uint8_t continuous) {
-    priv_data->sample_ptr_start = priv_data->sample_buffer_base;
-    priv_data->sample_ptr = priv_data->sample_ptr_start;
-    priv_data->sample_ptr_end = priv_data->sample_ptr_start + priv_data->sample_buffer_size;
-    priv_data->phase_overflow_status = continuous!=0 ? STARTED : STOPPING;
-    priv_data->status->sampling.period = sampling->period;
-    priv_data->status->sampling.prescaler = sampling->prescaler;
-    priv_data->status->sampling.phase_increment = sampling->phase_increment;
-}
 
-static inline void spidac_set_default_sample(   struct SPIDACPrivData* priv_data,
-                                                uint8_t* data) {
-    priv_data->sample_ptr_start = priv_data->default_sample_base;
-    priv_data->sample_ptr = priv_data->sample_ptr_start;
-    priv_data->sample_ptr_end = priv_data->sample_ptr_start + priv_data->sample_size;
-    priv_data->phase_overflow_status = RESETTING;
-    priv_data->status->sampling.period = 1;
-    priv_data->status->sampling.prescaler = 0;
-    priv_data->status->sampling.phase_increment = priv_data->sample_size;
-    if (data != NULL) {
-        memcpy((void *) priv_data->sample_ptr_start, data, priv_data->sample_size);
-    }
-}
-
-static inline void spidac_send_first_sample(struct SPIDACInstance* dev) {
-    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
-
-    assert_param(priv_data->sample_ptr_start != NULL);
-    assert_param(priv_data->sample_ptr != NULL);
-    assert_param(priv_data->sample_ptr_end != NULL);
-
-    priv_data->dma_tx_preinit.DMA_MemoryBaseAddr = (uint32_t)priv_data->sample_ptr;
-
-    // Enable DMA channel
-    DMA_Init(dev->tx_dma_channel, (DMA_InitTypeDef*)&(priv_data->dma_tx_preinit));
-
-    // Enable DMA interrupt
-    DMA_ITConfig(dev->tx_dma_channel, DMA_IT_TC, ENABLE);
-
-    // Enable DMA mode in SPI
-    SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
-
-    // Optimization: cache spi->CR1 register, we will use it in STARTED state to optimize timer interrupt
-    priv_data->spi_cr1_disabled = dev->spi->CR1;
-
-    // Start
-    SPI_Cmd(dev->spi, ENABLE);
-
-    // Optimization: cache spi->CR1 register, we will use it in STARTED state to optimize timer interrupt
-    priv_data->spi_cr1_enabled = dev->spi->CR1;
-
-    priv_data->dma_ccr_disabled = dev->tx_dma_channel->CCR;
-    DMA_Cmd(dev->tx_dma_channel, ENABLE);
-    priv_data->dma_ccr_enabled = dev->tx_dma_channel->CCR;
-}
 
 #endif

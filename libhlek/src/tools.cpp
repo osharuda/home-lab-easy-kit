@@ -378,4 +378,29 @@ done:
     return result;
 }
 
+uint8_t tools::reverse_bits(uint8_t b) {
+    b = (b >> 4) | (b << 4);
+    b = ((b & 0b11001100) >> 2) | ((b & 0b00110011) << 2);
+    return ((b & 0b10101010) >> 1) | ((b & 0b01010101) << 1);
+}
+
+double tools::normalize_value(double value, double min_value, double max_value) {
+    assert(min_value < max_value);
+    assert(min_value <= value);
+    assert(value <= max_value);
+    value = (value - min_value) / (max_value - min_value);
+    assert(value>=0.0L && value<=1.0L);
+    return value;
+}
+
+double tools::denormalize_value(double value, double min_value, double max_value) {
+    assert(min_value < max_value);
+    assert(min_value <= value);
+    assert(value <= max_value);
+    assert(value>=0.0L && value<=1.0L);
+    value = min_value + (max_value - min_value)*value;
+    return value;
+}
+
+
 

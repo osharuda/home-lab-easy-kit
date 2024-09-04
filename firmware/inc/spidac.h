@@ -23,7 +23,7 @@
 #pragma once
 
 #ifdef SPIDAC_DEVICE_ENABLED
-
+#include "spidac_conf.h"
 /// \defgroup group_spidac SPIDAC
 /// \brief SPIDAC support
 /// @{
@@ -36,6 +36,41 @@
 ///
 
 
+/// \struct SSPIDACChannelData
+/// \brief Describes channel information
+struct SSPIDACChannelData {
+    ///< Pointer to the currently sampled sample
+    const uint8_t*                 current_sample_ptr;
+
+    ///< Pointer to the firt sample to be sampled and to be used for rotating sample pointer.
+    const uint8_t*                 first_sample_ptr;
+
+    ///< Pointer to the end (the one beyond the last one) sample to be used as guard for rotating sample pointer.
+    const uint8_t*                 end_sample_ptr;
+
+    /*
+    ///< If samples are uploaded, specifies pointer to the first sample. 0 if no samples available.
+    const uint8_t*                 sample_buffer_start;
+
+    ///< If samples are uploaded, specifies pointer to the end (the one beyond the last one) sample.
+    ///< 0 if no samples available.
+    const uint8_t*                 sample_buffer_end;
+*/
+    ///< Pointer to the default sample
+    uint8_t*                 default_sample;
+
+    ///< Phase increment for this channel (in bytes)
+    uint16_t                 phase_increment;
+
+    /*
+    ///< Channel address
+    uint8_t                  channel_address;
+     */
+
+    ///< Phase overflow status (applied to all channels if this channel phase reached the end of the channel)
+    uint8_t                  phase_overflow_status;
+};
+
 /// \struct SPIDACPrivData
 /// \brief Structure that describes private SPIDAC data
 /// \note The whole device buffer consist of the three parts:
@@ -46,26 +81,23 @@
 ///                     maxiumum sample buffer size is SPIDACPrivData::max_sample_buffer_size)
 ///
 /// \note When default sample and sample buffer are accessed (for signal generation) SPIDACPrivData::sample_ptr,
-///       SPIDACPrivData::sample_ptr_start and SPIDACPrivData::sample_ptr_end members must be used.
+///       SPIDACPrivData::sample_buffer_start and SPIDACPrivData::sample_ptr_end members must be used.
 struct SPIDACPrivData {
     DMA_InitTypeDef   dma_tx_preinit;
     struct SPIDACStatus*     status;
-    volatile uint32_t*       ld_port_BSRR;          ///< Optimization for ld pin access from IRQ handler
-    volatile uint32_t*       ld_port_BRR;           ///< Optimization for ld pin access from IRQ handler
-    uint8_t*                 default_sample_base;    ///< Default sample (value) buffer base
-    uint8_t*                 sample_buffer_base;     ///< Sample buffer base
-    uint8_t*                 sample_ptr;             ///< Current sample pointer
-    uint8_t*                 sample_ptr_start;       ///< Sample buffer or default sample buffer end
-    uint8_t*                 sample_ptr_end;         ///< Sample buffer or default sample buffer end
-    uint32_t                 dummy_register;         ///< Optimization for ld pin access from IRQ handler
-    uint32_t                 dma_ccr_enabled;        ///< Cached value of the DMAChannel->CCR register when enabled (for optimization)
-    uint32_t                 dma_ccr_disabled;       ///< Cached value of the DMAChannel->CCR register when disabled (for optimization)
-    uint16_t                 max_sample_buffer_size; ///< Maximum sample buffer size
-    uint16_t                 sample_buffer_size;     ///< Current sample buffer size (actual samples)
-    uint16_t                 spi_cr1_enabled;        ///< Cached value of the SPI->CR1 register when enabled (for optimization)
-    uint16_t                 spi_cr1_disabled;       ///< Cached value of the SPI->CR1 register when disabled (for optimization)
-    uint16_t                 sample_size;            ///< Sample size in bytes
-    uint8_t                  phase_overflow_status;  ///< The status that will be applied once phase is overflown
+/* CONST */    volatile uint32_t*       ld_port_BSRR;           ///< Optimization for ld pin access from IRQ handler
+/* CONST */    volatile uint32_t*       ld_port_BRR;            ///< Optimization for ld pin access from IRQ handler
+               struct SSPIDACChannelData* channel_data;         ///< Per channel sampling data buffer.
+               struct SSPIDACChannelData* end_channel_data;     ///< The end (the one beyond last) element of the channel_data.
+               struct SSPIDACChannelData* current_channel_data; ///< Current channel sampling data
+/* CONST */    uint32_t                 dma_ccr_enabled;        ///< Cached value of the DMAChannel->CCR register when enabled (for optimization)
+/* CONST */    uint32_t                 dma_ccr_disabled;       ///< Cached value of the DMAChannel->CCR register when disabled (for optimization)
+/* CONST */    uint16_t                 sample_buffer_size;     ///< Current sample buffer size (actual samples)
+/* CONST */    uint16_t                 spi_cr1_enabled;        ///< Cached value of the SPI->CR1 register when enabled (for optimization)
+/* CONST */    uint16_t                 spi_cr1_disabled;       ///< Cached value of the SPI->CR1 register when disabled (for optimization)
+               uint16_t prescaler;
+               uint16_t period;
+               uint8_t                  phase_overflow_status;  ///< The status that will be applied once phase is overflown
 };
 
 
@@ -76,9 +108,15 @@ struct __attribute__ ((aligned)) SPIDACInstance {
 
     struct SPIDACPrivData      priv_data;                  ///< Private data used by this SPIProxy device
 
-    uint8_t*                   buffer;                    ///< Buffer
+    struct SPIDACStartInfo*    default_start_info;         ///< Default start information
 
-    uint8_t*                   default_values;            ///< Default values to be put after reset
+    const uint8_t*                   buffer;                    ///< Buffer
+
+    const uint8_t*                   default_values;            ///< Default values to be put after reset
+
+    uint8_t*                         default_sample_base;       ///< Default sample (value) buffer base
+
+    const uint8_t*                   sample_buffer_base;        ///< Sample buffer base
 
     SPI_TypeDef*               spi;                       ///< SPI peripheral device.
 
@@ -101,6 +139,12 @@ struct __attribute__ ((aligned)) SPIDACInstance {
     uint32_t                   ld_bit_mask;              ///< Mask of the LD pin
 
     uint16_t                   buffer_size;              ///< Buffer size (for samples and for status)
+
+    uint16_t                   max_sample_buffer_size;   ///< Maximum sample buffer size
+
+    uint16_t                   sample_size;              ///< Sample (data for all channels) size in bytes
+
+    uint16_t                   transaction_size;         ///< SPI Transaction size (size of the sample data for single channel)
 
     IRQn_Type                  tx_dma_complete_irqn;     ///< DMA TX transfer complete irqn
 
@@ -126,6 +170,8 @@ struct __attribute__ ((aligned)) SPIDACInstance {
 
     uint8_t                    frames_per_sample;       ///< Amount of frames per sample
 
+    uint8_t                    channel_count;           ///< Number of channels
+
     uint8_t                    dev_id;                  ///< Device ID for SPIProxy virtual device
 };
 
@@ -148,10 +194,15 @@ uint8_t spidac_read_done(uint8_t device_id, uint16_t length);
 
 /// \brief Switches device to \ref STARTING mode and initializes timer, which actually starts sampling.
 /// \param dev - device instance.
+/// \param start_info - Pointer to the software spicified start infomation structure. If zero is specified default sample
+///        is used.
+/// \param continuous - non-zero if continious operation is requested. If zero is specified, sampling will stop when
+///        the first channel phase becomes zero (first sample is used).
 /// \return communication status.
-uint8_t spidac_start(struct SPIDACInstance* dev);
+/// \note If no samples are uploaded for some channel, default sample will be used.
+uint8_t spidac_start(struct SPIDACInstance* dev, struct SPIDACStartInfo* start_info, uint8_t continuous);
 
-/// \brief Switches device to \ref STOPPING state informing it to stop processing.
+/// \brief Executes stop device command.
 /// \param dev - device instance.
 /// \return communication status.
 uint8_t spidac_stop(struct SPIDACInstance* dev);
@@ -160,12 +211,14 @@ uint8_t spidac_stop(struct SPIDACInstance* dev);
 /// \param dev - device instance.
 /// \param data - pointer to the data.
 /// \param length - length of the data in bytes.
+/// \param first_portion - non-zero, if first portion of samples is being passed, otherwise zero.
 /// \return communication status.
-uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length);
+uint8_t spidac_data(struct SPIDACInstance* dev, uint8_t* data, uint16_t length, uint8_t first_portion);
 
 /// \brief Shutdowns sampling process by disabling peripherals and sets device to \ref SHUTDOWN state.
 /// \param dev - device instance.
-void spidac_shutdown(struct SPIDACInstance* dev);
+/// \param status - status to be set after shutdown, must be either STOPPED or STOPPED_ABNORMAL
+void spidac_shutdown(struct SPIDACInstance* dev, uint8_t status);
 
 /// @}
 #endif

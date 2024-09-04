@@ -36,6 +36,7 @@
 /// \struct SPIDACChannelDescriptor
 /// \brief Describes SPIDAC channel
 struct SPIDACChannelDescriptor {{
+    uint32_t         address;
     const char*     name;           ///< Name of the channel
     double          min_value;      ///< Minimum value
     double          max_value;      ///< Maximum value
@@ -49,12 +50,14 @@ struct SPIDACConfig {{
     size_t          dev_buffer_len;     ///< Length of the SPIDAC internal buffer
     size_t          frames_per_sample;  ///< Amount of sample per frame
     size_t          frame_size;         ///< Size of the SPI frame, in bytes
+    size_t          max_bytes_per_transaction; ///< Maximum number of bytes sent per i2c transaction. Must be multiple sample size.
     uint8_t         dev_id;             ///< Device ID for SPIDAC virtual device
     SPIDAC_FRAME_FORMAT frame_format;   ///< Frame format
     size_t          channel_count;      ///< Number of the channels
-    size_t          max_sample_count;   ///< Maximum number of samples per channel
+    size_t          max_sample_count;   ///< Maximum total capacity of the internal device buffer in samples.
     size_t          bits_per_sample;    ///< Number of bits per one sample
     uint32_t        timer_freq;         ///< Timer clock frequency
+    SPIDAC_SAMPLE_FORMATS sample_format;///< Sample format
     const SPIDACChannelDescriptor* channels;  ///< Channels description
 }};
 

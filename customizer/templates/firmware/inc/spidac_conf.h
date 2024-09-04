@@ -65,6 +65,10 @@
 /// \brief Defines SPIDAC TIMER irq handlers
 #define SPIDAC_FW_TIMER_IRQ_HANDLERS {__SPIDAC_FW_TIMER_IRQ_HANDLERS__}
 
+#define SPIDAC_NEED_LD {__SPIDAC_NEED_LD__}
+
+#define SPIDAC_MULTI_CHANNEL {__SPIDAC_MULTI_CHANNEL__}
+
 /// @}}
 
 

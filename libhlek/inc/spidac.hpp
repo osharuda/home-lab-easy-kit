@@ -23,6 +23,7 @@
 #pragma once
 
 #include <map>
+#include <functional>
 #include "ekit_device.hpp"
 #include "spidac_common.hpp"
 
@@ -46,10 +47,46 @@
 /// 2. Call SPIDACDev#do_something() method to do something.
 ///
 
-using SPIDAC_SAMPLE_VECT = std::vector<double>;
-using SPIDAC_CHANNELS = std::vector<SPIDAC_SAMPLE_VECT>;
-using SPIDAC_VALUE_RANGE = std::pair<double, double>; // first is minimum, second is maximum
-using SPIDAC_CHANNELS_VALUE_RANGE = std::vector<SPIDAC_VALUE_RANGE>;
+struct SPIDACChannelConfig {
+    std::string name;
+    std::vector<double> samples;
+    uint32_t address;
+    double min_value;
+    double max_value;
+    double default_value;
+};
+
+// Key - address
+// Value - configuration
+using SPIDAC_CHANNELS_CONFIG=std::map<uint32_t , struct SPIDACChannelConfig>;
+
+/// \brief Appends SPI frame for the sample as sequence of bytes
+/// \param value - value
+/// \param min_value - minimal value for the channel
+/// \param max_value - maximum value for the channel
+/// \param address - address
+/// \param buffer - buffer to be appended
+using APPEND_SPI_SAMPLE_FUNC=std::function<void(double, double, double, uint32_t, std::vector<uint8_t>&)>;
+
+struct SPIDACWaveformParam {
+    double amplitude;
+    double offset;
+    double start_x;
+    double stop_x;
+    double sigma;
+};
+
+extern struct SPIDACWaveformParam spidac_default_sin_cos_param;
+std::vector<double> spidac_waveform_sin(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_sin_cos_param);
+std::vector<double> spidac_waveform_cos(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_sin_cos_param);
+
+extern struct SPIDACWaveformParam spidac_default_saw_triangle_param;
+std::vector<double> spidac_waveform_pos_saw(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_saw_triangle_param);
+std::vector<double> spidac_waveform_neg_saw(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_saw_triangle_param);
+std::vector<double> spidac_waveform_triangle(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_saw_triangle_param);
+
+extern struct SPIDACWaveformParam spidac_default_gauss_param;
+std::vector<double> spidac_waveform_gauss(size_t n_samples, struct SPIDACWaveformParam* wf_param = &spidac_default_gauss_param);
 
 /// \class SPIDACDev
 /// \brief SPIDACDev implementation. Use this class in order to control SPIDACDev virtual devices.
@@ -58,6 +95,9 @@ class SPIDACDev final : public EKitVirtualDevice {
     /// \typedef super
     /// \brief Defines parent class
 	typedef EKitVirtualDevice super;
+
+    /// Function to form SPI frames
+    APPEND_SPI_SAMPLE_FUNC append_spi_sample_func;
 
 	public:
 
@@ -81,32 +121,6 @@ class SPIDACDev final : public EKitVirtualDevice {
     /// \brief Destructor (virtual)
 	~SPIDACDev() override;
 
-    /// \brief Starts continuous sampling
-    /// \param freq - rate of the signal
-    /// \param phase_inc - phase increment (in samples)
-    /// \param continuous - true to repeat signal indefinitely, false generate single period.
-    void start_signal(double freq, size_t phase_inc, bool continuous);
-
-    /// \brief Stops signal generation and sets default value.
-    void stop();
-
-    /// \brief Set output value range
-    /// \param values_range - minimum and maximum values for the channels.
-    /// \param default_values - default values for all channels
-    void set_value_range(const SPIDAC_CHANNELS_VALUE_RANGE& values_range, const SPIDAC_SAMPLE_VECT& default_values);
-
-    /// \brief Get output value range
-    /// \return Value range per channels
-    SPIDAC_CHANNELS_VALUE_RANGE get_value_range();
-
-    /// \brief Upload prepared waveform into internal buffer
-    /// \param data - two-dimensional array with data to be uploaded.
-    /// \param def_vals - true if default values are set (just single value per channel is acceptable),
-    ///                   false if signal samples are passed.
-    void upload(const SPIDAC_CHANNELS data, bool def_vals);
-
-    size_t get_max_samples_per_channel();
-
     /// \brief Returns configured number of bits per sample.
     /// \return Number of bits per sample
     size_t get_bits_per_sample() const;
@@ -115,40 +129,80 @@ class SPIDACDev final : public EKitVirtualDevice {
     /// \return Number of channels.
     size_t get_channels_count() const;
 
-    /// \brief Returns the number of frames per sample (for all channels)
-    /// \return Number of frames per sample.
-    size_t get_frames_per_sample() const;
+    double get_default_value(uint32_t address) const;
 
-    /// \brief Returns default value (for all channels) to be set when signal generation is stopped.
-    /// \return Default value.
-    SPIDAC_SAMPLE_VECT get_default_value() const;
+    void set_default_value(uint32_t address, double value);
 
-    /// \brief Set default values (for all channels) to be set when signal generation is stopped.
-    /// \param values - Reference to default values.
-    void set_default_values(const SPIDAC_SAMPLE_VECT& values);
+    double get_min_value(uint32_t address) const;
+
+    void set_min_value(uint32_t address, double value);
+
+    double get_max_value(uint32_t address) const;
+
+    void set_max_value(uint32_t address, double value);
+
+    std::string get_channel_name(uint32_t address) const;
+
+    std::vector<uint32_t> get_channels_list() const;
+
+    void set_samples(uint32_t address, const std::vector<double>& samples);
+
+    void clear_samples(uint32_t address);
+
+    /// \brief Returns total (for all channels) internal device buffer length in samples.
+    size_t get_buffer_len();
+
+    /// \brief Upload prepared waveforms (samples) into device internal buffer
+    /// \param default_vals - true of default values were uploaded and must be set to device (in this case another,
+    ///        default sample buffer is used by device, it has capacity for single sample per each channel).
+    void upload(bool default_vals);
+
+    /// \brief Stops signal generation and sets default value.
+    void stop();
+
+    /// \brief Starts continuous sampling
+    /// \param freq - rate of the signal
+    /// \param start_phase - start phase (in samples)
+    /// \param phase_inc - phase increment (in samples)
+    /// \param continuous - true to repeat signal indefinitely, false generate single period.
+    void start_signal(double freq, size_t start_phase, size_t phase_inc, bool continuous);
+
 
     /// \brief Returns information regarding current SPIDAC device status
-    /// \return true - device is running (generating signal), false device is not running
-    bool is_running();
+    SPIDAC_STATUS get_status();
 
     private:
-        SPIDAC_SAMPLE_VECT default_value;
-        SPIDAC_CHANNELS_VALUE_RANGE value_range;
-        bool little_endian;
 
-    /// \brief Appends frame with sample to the buffer
+    void reset_config();
+
+    SPIDAC_CHANNELS_CONFIG channels;
+    bool little_endian;
+/*
+    /// \brief Appends frame with DAC7611 sample to the buffer
     /// \param value - sample value
     /// \param channel_index - channel index
     /// \param buffer - buffer to be appended with the frame
     /// \warning This method is reflection of the SPIDACCustomizer::get_frame_for_channel() from customizer part.
     ///          Implementation of these methods should match!
-    void append_frame_with_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
+    void append_dac7611_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
+
+    /// \brief Appends frame with DAC8550 sample to the buffer
+    /// \param value - sample value
+    /// \param channel_index - channel index
+    /// \param buffer - buffer to be appended with the frame
+    /// \warning This method is reflection of the SPIDACCustomizer::get_frame_for_channel() from customizer part.
+    ///          Implementation of these methods should match!
+    void append_dac8550_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
+*/
+
 
     /// \brief Uploads prepared buffer to the DAC device
     /// \param buffer - buffer to be uploaded.
-    /// \param def_vals - true if default values are set (just single value per channel is acceptable),
-    ///                   false if signal samples are passed.
-    void upload_raw(const std::vector<uint8_t>& buffer, bool def_vals);
+    void upload_data(const std::vector<uint8_t>& buffer);
+
+    /// \brief Uploads default sample to the DAC device
+    /// \param buffer - buffer to be uploaded.
+    void upload_default_sample(const std::vector<uint8_t>& buffer);
 
     /// \brief Transforms frame to confirm DAC requirements
     /// \param frame - pointer to the frame to be transformed.
@@ -157,49 +211,20 @@ class SPIDACDev final : public EKitVirtualDevice {
     /// \note Transformation is made in place therefore \ref frame parameter is returned.
     uint8_t* re_align_frame(uint8_t* frame, size_t frame_size);
 
-    /// \brief Checks the size of the container to confirm the number of channels configured.
-    /// \param c - container to be checked
-    template <class CONTAINER>
-    void validate_channel_count(const CONTAINER& c) {
-        const char* func_name = "SPIDACDev::validate_channel_count(template)";
-        if (c.size()!=config->channel_count) {
-            throw EKitException(func_name, EKIT_BAD_PARAM, "Argument doesn't match to the configured number of channels");
-        }
-    }
+    void validate_values_are_in_range(uint32_t address) {
+        const char* func_name = "SPIDACDev::validate_values_are_in_range";
+        const struct SPIDACChannelConfig& ch_config = channels.at(address);
+        const size_t sample_num = ch_config.samples.size();
 
-    void validate_equal_sample_count(const SPIDAC_CHANNELS& c) {
-        const char* func_name = "SPIDACDev::validate_equal_sample_count";
-        validate_channel_count(c);
-        size_t sample_count = c.at(0).size();
-        for (size_t i=1; i<config->channel_count; i++) {
-            if (c.at(i).size() != sample_count) {
-                throw EKitException(func_name, EKIT_BAD_PARAM, "Channels has different number of samples");
+
+        for (size_t i = 0; i<sample_num; i++) {
+            double v = ch_config.samples[i];
+            if (v < ch_config.min_value) {
+                throw EKitException(func_name, EKIT_BAD_PARAM, "Value is less then the minimal possible value.");
             }
-        }
-    }
 
-    template<class CONTAINER, class RANGE>
-    void validate_values_are_in_range(const CONTAINER& channels, const RANGE& r) {
-        const char* func_name = "SPIDACDev::validate_values_are_in_range(template)";
-        validate_channel_count(channels);
-        validate_channel_count(r);
-        validate_equal_sample_count(channels);
-
-        for (size_t ch = 0; ch<config->channel_count; ch++) {
-            double min_val = r.at(ch).first;
-            double max_val = r.at(ch).second;
-            SPIDAC_SAMPLE_VECT samples = channels.at(ch);
-            size_t sample_count = samples.size();
-
-            for (size_t i=0; i<sample_count; i++) {
-                double v = samples[i];
-                if (v < min_val) {
-                    throw EKitException(func_name, EKIT_BAD_PARAM, "Value is less then the minimal possible value.");
-                }
-
-                if (v > max_val) {
-                    throw EKitException(func_name, EKIT_BAD_PARAM, "Value is higher then the maximum possible value.");
-                }
+            if (v > ch_config.max_value) {
+                throw EKitException(func_name, EKIT_BAD_PARAM, "Value is higher then the maximum possible value.");
             }
         }
     }
@@ -213,15 +238,6 @@ class SPIDACDev final : public EKitVirtualDevice {
         if (freq >= 800000.0L) {
             throw EKitException(func_name, EKIT_BAD_PARAM, "Sampling frequency is too high.");
         }
-    }
-
-    SPIDAC_CHANNELS values_to_channels(const SPIDAC_SAMPLE_VECT& values) {
-        assert(values.size()==config->channel_count);
-        SPIDAC_CHANNELS channels(config->channel_count);
-        for (size_t i=0; i<config->channel_count; i++) {
-            channels.at(i).push_back(values.at(i));
-        }
-        return channels;
     }
 };
 

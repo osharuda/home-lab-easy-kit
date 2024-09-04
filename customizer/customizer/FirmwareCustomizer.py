@@ -96,6 +96,7 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
         extender_requires = self.dev_config[FW_I2C][KW_REQUIRES]
         i2c_periph = self.get_i2c(extender_requires)
+
         self.mcu_hw.check_i2c_clock_speed(i2c_periph, clock_speed)
 
         # Update requirements for I2C
@@ -105,7 +106,8 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
         ev_isr = self.get_isr(extender_requires[KW_EV_IRQ_HLR])
         er_isr = self.get_isr(extender_requires[KW_ER_IRQ_HLR])
 
-
+        # Get real I2C periph name without remap
+        i2c_periph, remap = self.mcu_hw.is_remaped(i2c_periph)
 
         timer_requires = self.dev_config[FW_SYS_TICK][KW_REQUIRES]
         systick_timer_periph = self.get_timer(timer_requires)
@@ -119,10 +121,13 @@ class FirmwareCustomizer(BaseDeviceCustomizer):
 
         self.vocabulary = self.vocabulary | {
                       "__I2C_BUS_PERIPH__": i2c_periph,
+                      "__I2C_BUS_PINS_REMAP__": int(remap),
                       "__I2C_BUS_CLOCK_SPEED__": clock_speed,
                       "__I2C_BUS_SDA_PORT__": self.mcu_hw.GPIO_to_port(sda),
+                      "__I2C_BUS_SDA_PIN__": self.mcu_hw.GPIO_to_pin_number(sda),
                       "__I2C_BUS_SDA_PIN_MASK__": self.mcu_hw.GPIO_to_pin_mask(sda),
                       "__I2C_BUS_SCL_PORT__": self.mcu_hw.GPIO_to_port(scl),
+                      "__I2C_BUS_SCL_PIN__": self.mcu_hw.GPIO_to_pin_number(scl),
                       "__I2C_BUS_SCL_PIN_MASK__": self.mcu_hw.GPIO_to_pin_mask(scl),
                       "__I2C_BUS_EV_ISR__": ev_isr,
                       "__I2C_BUS_EV_IRQ__": self.mcu_hw.ISRHandler_to_IRQn(ev_isr),

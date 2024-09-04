@@ -40,6 +40,8 @@ RT_SPI          = "spi"
 FW_FIRMWARE     = "firmware"
 FW_I2C          = "i2c_bus"
 FW_SYS_TICK     = "sys_tick"
+FW_BUFFER_SIZE  = "buffer_size"
+FW_DEVICE_NAME  = 'device_name'
 
 # HLEKIO Json keys
 KW_BOARD        = "board"
@@ -93,7 +95,39 @@ FILE_UTOOLS_BUF_SRC = "utools.c"
 
 KW_FEATURE_DEFINES = "feature_defines"
 
+# SPI
+KW_SPI_CLOCK_PHASE = 'clock_phase'
+KW_SPI_CLOCK_PHASE_FIRST = 'first'
+KW_SPI_CLOCK_PHASE_SECOND = 'second'
 
+KW_SPI_CLOCK_POLARITY = 'clock_polarity'
+KW_SPI_CLOCK_POLARITY_IDLE_HIGH = 'idle_high'
+KW_SPI_CLOCK_POLARITY_IDLE_LOW = 'idle_low'
+
+KW_SPI_CLOCK_SPEED = 'clock_speed'
+KW_SPI_FRAME_FORMAT = 'frame_format'
+KW_SPI_FRAME_FORMAT_MSB = 'msb'
+KW_SPI_FRAME_FORMAT_LSB = 'lsb'
+
+KW_SPI_FRAME_SIZE = 'frame_size'
+
+# SPIDAC
+KW_SPIDAC_FRAMES_PER_SAMPLE = 'frames_per_sample'
+
+KW_SPIDAC_LD_MODE = 'ld_mode'
+KW_SPIDAC_LD_MODE_RISE = 'rise'
+KW_SPIDAC_LD_MODE_FALL = 'fall'
+
+KW_SPIDAC_BITS_PER_SAMPLE = 'bits_per_sample'
+
+KW_SPIDAC_SAMPLE_FORMAT = 'sample_format'
+KW_MAX_CHANNELS = 'max_channels'
+
+KW_SPIDAC_PART_NUMBER = 'part_number'
+KW_SPIDAC_SAMPLE_NUMBER = 'samples_number'
+KW_SPIDAC_CHANNELS = 'channels'
+
+KW_SPIDAC_LOAD = 'ld'
 
 
 

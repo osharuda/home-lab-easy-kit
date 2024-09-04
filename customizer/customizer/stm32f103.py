@@ -350,6 +350,12 @@ mcu_available_resources += f"""
                                             "{KW_SDA_LINE}" : {{"{RT_GPIO}" : "PB_7"}}, 
                                             "{KW_SCL_LINE}" : {{"{RT_GPIO}" : "PB_6"}}}},
                 "{KW_BUS}" : "RCC_APB1Periph_I2C1", "{KW_CLOCK_SPEED}": ["100000", "400000"]}},
+                
+    "I2C1_REMAP" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"{KW_EV_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C1_EV_IRQHandler"}}, 
+                                            "{KW_ER_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C1_ER_IRQHandler"}}, 
+                                            "{KW_SDA_LINE}" : {{"{RT_GPIO}" : "PB_9"}}, 
+                                            "{KW_SCL_LINE}" : {{"{RT_GPIO}" : "PB_8"}}}},
+                "{KW_BUS}" : "RCC_APB1Periph_I2C1", "{KW_CLOCK_SPEED}": ["100000", "400000"]}},
                                             
     "I2C2" : {{"type" : "{RT_I2C}", "{KW_REQUIRES}" : {{"{KW_EV_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C2_EV_IRQHandler"}}, 
                                             "{KW_ER_IRQ_HLR}" : {{"{RT_IRQ_HANDLER}" : "I2C2_ER_IRQHandler"}},
@@ -796,11 +802,13 @@ def ENABLE_CLOCK_on_APB(res: list) -> str:
     return concat_lines(lines)[:-1]
 
 def check_errata(config):
-    i2c1_re = re.compile(r'.*\"i2c\"\s*\:\s*\"I2C1\".*', re.DOTALL)
+    i2c1_re = re.compile(r'.*\"i2c\"\s*\:\s*\"I2C1(_REMAP)?\".*', re.DOTALL)
     spi1_remap_re = re.compile(r'.*SPI_MOSI\S*\"\s*\:\s*\"PB_5\".*', re.DOTALL)
 
     errata = 'I2C1 with SPI1 remapped and used in master mode'
-    if i2c1_re.match(config) and spi1_remap_re.match(config):
+    i2c1_used = i2c1_re.match(config)
+    spi1_remap_used = spi1_remap_re.match(config)
+    if i2c1_used and spi1_remap_used:
         raise RuntimeError(f"ERRATA detected: {errata}")
 
 def generate_init_gpio_bus_function(func_name: str, port_type: str, pins : dict) -> str:
@@ -926,15 +934,15 @@ def spi_get_baud_rate_control(spi: str, value : str):
     return brc, freq // (1 << ((brc >> 3) + 1))
 
 def spi_get_clock_phase(value: str):
-    val_map = {"first" : 0, "second": 1}
+    val_map = {KW_SPI_CLOCK_PHASE_FIRST: 0, KW_SPI_CLOCK_PHASE_SECOND: 1}
     return val_map.get(str(value).lower())
 
 def spi_get_clock_polarity(value: str):
-    val_map = {"idle_low": 0, "idle_high": 1}
+    val_map = {KW_SPI_CLOCK_POLARITY_IDLE_LOW: 0, KW_SPI_CLOCK_POLARITY_IDLE_HIGH: 1}
     return val_map.get(str(value).lower())
 
 def spi_get_frame_format(value: str):
-    val_map = {"msb": 1, "lsb": 0}
+    val_map = {KW_SPI_FRAME_FORMAT_MSB: 1, KW_SPI_FRAME_FORMAT_LSB: 0}
     return val_map.get(str(value).lower())
 
 def spi_get_frame_size(value: str):

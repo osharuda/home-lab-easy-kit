@@ -14,37 +14,37 @@
       "spidac_0" : {
         "dev_id" : 1,
         "part_number"  : "DAC8564",
-        "samples_number" : 100,
+        "clock_speed": "36MHz",
+        "samples_number" : 400,
         "channels" : {
             "ch0" : {
               "address" : 0,
               "min_value" : 0.0,
-              "max_value" : 2.5,
+              "max_value" : 4.0,
               "default_value" : 0.0
-            }, 
+            },
             "ch1" : {
               "address" : 1,
               "min_value" : 0.0,
-              "max_value" : 2.5,
+              "max_value" : 4.0,
               "default_value" : 0.0
-            }, 
+            },
             "ch2" : {
               "address" : 2,
               "min_value" : 0.0,
-              "max_value" : 2.5,
+              "max_value" : 4.0,
               "default_value" : 0.0
-            }, 
+            },
             "ch3" : {
               "address" : 3,
               "min_value" : 0.0,
-              "max_value" : 2.5,
+              "max_value" : 4.0,
               "default_value" : 0.0
             }
         },
-        "requires" :  {"spi": "SPI2",
+        "requires" :  {"spi": "SPI1_REMAP",
                        "timer": "TIM1",
-                       "ld" : {"gpio" : "PA_12"},
-                       "address_gpio": [{"gpio": "PA_0"}, {"gpio": "PA_1"}]}
+                       "ld" : {"gpio" : "PA_12"}}
         }
       }
   }

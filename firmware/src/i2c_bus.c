@@ -207,6 +207,11 @@ void i2c_bus_init_peripherals(void) {
     IS_SIZE_ALIGNED(&g_recv_total_pos);
     IS_SIZE_ALIGNED(&i2c_device_buffer_increment);
 
+    // Remap i2c if required
+    if (I2C_BUS_PINS_REMAP) {
+        REMAP_GPIO_PIN(I2C_BUS_SDA_PORT, I2C_BUS_SDA_PIN_MASK);
+    }
+
     // Change GPIO as required
     gpio.GPIO_Pin = I2C_BUS_SDA_PIN_MASK;
     gpio.GPIO_Mode = GPIO_Mode_AF_OD;

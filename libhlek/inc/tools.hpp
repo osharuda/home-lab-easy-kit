@@ -393,6 +393,19 @@ namespace tools {
     /// \brief Deletes pid file. Must be called on process exit.
     void delete_pid_file();
 
+    uint8_t reverse_bits(uint8_t b);
+
+    /// \brief Normalizes value to 1.0L, where maximum value is 1.0, minimum value is 0.0
+    /// \param value - Value to be normalized.
+    /// \param min_value - Minimum value used for normalization
+    /// \param max_value - Maximum value used for normalization
+    double normalize_value(double value, double min_value, double max_value);
+
+    /// \brief Denormalizes value specified in range [0.0L ... 1.0L] to specified range between minimum and maximum specified.
+    /// \param value - Value to be de-normalized. Must be in range [0.0L ... 1.0L]
+    /// \param min_value - Minimum value used for de-normalization
+    /// \param max_value - Maximum value used for de-normalization
+    double denormalize_value(double value, double min_value, double max_value);
 
 }
 

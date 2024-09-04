@@ -601,8 +601,11 @@ int main(int argc, char* argv[])
         std::shared_ptr<CommandHandler> spidac_stop_handler;
         std::shared_ptr<CommandHandler> spidac_is_running_handler;
         std::shared_ptr<CommandHandler> spidac_sin_handler;
-        std::shared_ptr<CommandHandler> spidac_saw_handler;
+        std::shared_ptr<CommandHandler> spidac_pos_saw_handler;
+        std::shared_ptr<CommandHandler> spidac_neg_saw_handler;
+        std::shared_ptr<CommandHandler> spidac_gauss_handler;
         std::shared_ptr<CommandHandler> spidac_triangle_handler;
+        std::shared_ptr<CommandHandler> spidac_const_handler;
     };
 
     std::vector<SPIDACCommandHandlers> spidac_handlers(spidac_configs_number);
@@ -616,10 +619,14 @@ int main(int argc, char* argv[])
         h.spidac_start_period_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStartPeriodHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_set_default_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACSetDefaultHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_stop_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.spidac_is_running_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACIsRunningHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_is_running_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_sin_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadSinWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.spidac_saw_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadSawWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_pos_saw_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadPosSawWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_neg_saw_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadNegSawWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_gauss_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadGaussWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_triangle_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadTriangleWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_const_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUploadConstWaveform(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+
 
         ui->add_command(cmd_index++, h.spidac_start_cont_handler);
         ui->add_command(cmd_index++, h.spidac_start_period_handler);
@@ -627,8 +634,11 @@ int main(int argc, char* argv[])
         ui->add_command(cmd_index++, h.spidac_stop_handler);
         ui->add_command(cmd_index++, h.spidac_is_running_handler);
         ui->add_command(cmd_index++, h.spidac_sin_handler);
-        ui->add_command(cmd_index++, h.spidac_saw_handler);
+        ui->add_command(cmd_index++, h.spidac_pos_saw_handler);
+        ui->add_command(cmd_index++, h.spidac_neg_saw_handler);
+        ui->add_command(cmd_index++, h.spidac_gauss_handler);
         ui->add_command(cmd_index++, h.spidac_triangle_handler);
+        ui->add_command(cmd_index++, h.spidac_const_handler);
     }
 #endif  
 // -> ADD_DEVICE | HASH: 18812534EC04D74C570D3CB18C756C595E8A3613

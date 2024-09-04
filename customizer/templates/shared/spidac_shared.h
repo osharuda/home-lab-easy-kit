@@ -21,19 +21,25 @@
 /// @{{
 
 typedef enum {{
+    SPIDAC_SAMPLE_FORMAT_DAC7611 = 1,
+    SPIDAC_SAMPLE_FORMAT_DAC8550 = 2,
+    SPIDAC_SAMPLE_FORMAT_DAC8564 = 3
+}} SPIDAC_SAMPLE_FORMATS;
+
+typedef enum {{
     START = 0x10,
     START_PERIOD = 0x20,
     STOP = 0x30,
-    DATA = 0x40,
-    SETDEFAULT = 0x50
+    DATA_START = 0x40,
+    DATA = 0x50,
+    SETDEFAULT = 0x60
 }} SPIDAC_COMMAND;
 
 typedef enum {{
-    STARTED = 0,
-    STARTING = 1,
-    STOPPING = 2,
-    RESETTING = 3,
-    SHUTDOWN = 4
+    SAMPLING = 1,   // SPI is sending data to DACs
+    WAITING  = 2,   // Waiting for a timer to sampling DACs
+    STOPPED  = 3,    // Fully stopped,
+    STOPPED_ABNORMAL  = 4 // Fully and abnormally stopped (sampling rate is too fast)
 }} SPIDAC_STATUS;
 
 typedef enum {{
@@ -42,21 +48,29 @@ typedef enum {{
 }} SPIDAC_FRAME_FORMAT;
 
 #pragma pack(push, 1)
-/// \struct SPIDACSampling
-/// \brief Structure that describes sampling of the SPIDAC device
-struct SPIDACSampling {{
-    uint16_t prescaler;
-    uint16_t period;
-    uint16_t phase_increment;   // Sample increment in bytes (number of frames per sample * frame size)
+
+/// \struct SPIDACChannelSamplingInfo
+/// \brief Structure that describes per channel sampling.
+struct SPIDACChannelSamplingInfo {{
+    uint16_t phase_increment;       /// Sample increment in numbers
+    uint16_t start_phase;           /// Start phase in samples numbers
+    uint16_t loaded_samples_number; /// Number of samples loaded
 }};
 
+/// \struct SPIDACStartInfo
+/// \brief Structure to be passed in order to start SPIDAC device
+struct SPIDACStartInfo {{
+    uint16_t prescaler;            /// Timer prescaler
+    uint16_t period;                /// Timer period
+    struct SPIDACChannelSamplingInfo channel_info[]; /// Sampling information for each channel
+}};
 
 /// \struct SPIDACStatus
 /// \brief Structure that describes status of the SPIDAC device
 struct SPIDACStatus {{
-    uint8_t status;             /// Describes status of the device.
+    volatile uint8_t status;             /// Describes status of the device.
     uint8_t repeat_count;
-    struct SPIDACSampling sampling;
+    struct SPIDACStartInfo start_info;
 }};
 #pragma pack(pop)
 

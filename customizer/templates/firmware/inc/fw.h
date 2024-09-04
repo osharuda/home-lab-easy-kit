@@ -69,12 +69,15 @@
 
 
 #define I2C_BUS_PERIPH                {__I2C_BUS_PERIPH__}
+#define I2C_BUS_PINS_REMAP            {__I2C_BUS_PINS_REMAP__}
 #define I2C_BUS_CLOCK_SPEED           {__I2C_BUS_CLOCK_SPEED__}
 
 #define I2C_BUS_SDA_PORT              {__I2C_BUS_SDA_PORT__}
+#define I2C_BUS_SDA_PIN               {__I2C_BUS_SDA_PIN__}
 #define I2C_BUS_SDA_PIN_MASK          {__I2C_BUS_SDA_PIN_MASK__}
 
 #define I2C_BUS_SCL_PORT              {__I2C_BUS_SCL_PORT__}
+#define I2C_BUS_SCL_PIN               {__I2C_BUS_SCL_PIN__}
 #define I2C_BUS_SCL_PIN_MASK          {__I2C_BUS_SCL_PIN_MASK__}
 
 #define I2C_BUS_EV_ISR                {__I2C_BUS_EV_ISR__}

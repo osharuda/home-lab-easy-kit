@@ -47,8 +47,6 @@ int main()
 {
     std::cout << "------------------  T E S T    T O O L  ------------------" << std::endl;
 
-
-
     /// Multithreading tests
     test_seq_lock_multithread();
     test_safe_mutex();
@@ -75,7 +73,6 @@ int main()
     /// Text tests
     test_icu_regex_group();
     test_check_prefix();
-    test_append_vector();
     test_split_and_trim();
     test_trim_string();
     test_buffer_to_hex();
@@ -86,6 +83,10 @@ int main()
     test_stm32_timer_params_integer();
     test_stm32_timer_params();
     test_StopWatch();
+
+    /// Miscellaneous tests
+    test_reverse_bits();
+    test_append_vector();
 
     std::cout << std::endl << "[    S U C C E S S    ]" << std::endl;
     return 0;

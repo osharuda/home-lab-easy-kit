@@ -31,7 +31,20 @@
 /// @{
 
 GPIO_TypeDef g_null_port;
-volatile uint32_t g_no_var;
+
+/// \brief Dummy 32-bit register which may be referenced to avoid if statements when some device need to write peripheral
+///        register, while another device of the same kind shouldn't update peripheral register. In this case, device stores
+///        pointer to required register. The first device initializes it to actual peripheral register pointer, the last
+///        device initializes it to this dummy register.
+uint32_t g_dummy_reg32;
+
+/// \brief Dummy 16-bit register which may be referenced to avoid if statements when some device need to write peripheral
+///        register, while another device of the same kind shouldn't update peripheral register. In this case, device stores
+///        pointer to required register. The first device initializes it to actual peripheral register pointer, the last
+///        device initializes it to this dummy register.
+uint16_t g_dummy_reg16;
+
+
 
 #ifndef NDEBUG
 volatile uint8_t g_irq_disabled = 0;
@@ -43,6 +56,7 @@ void debug_checks_init(void) {
 #endif
 }
 
+volatile uint32_t g_no_var;
 void delay_loop(uint32_t n) {
     for (uint32_t i=0; i<n; i++) {
         g_no_var = n;
@@ -116,6 +130,35 @@ void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t peri
     TIM_Cmd(timer, ENABLE);
     TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
 }
+
+
+void timer_start_periodic_ex(TIM_TypeDef* timer, uint16_t prescaler, uint16_t period, IRQn_Type irqn, uint32_t priority, uint8_t force_first_call) {
+    TIM_TimeBaseInitTypeDef init_struct;
+    TIM_Cmd(timer, DISABLE);
+
+    // Prepare timer
+    init_struct.TIM_CounterMode       = TIM_CounterMode_Up;
+    init_struct.TIM_Prescaler         = prescaler;
+    init_struct.TIM_Period            = period;
+    init_struct.TIM_ClockDivision     = TIM_CKD_DIV1;
+    init_struct.TIM_RepetitionCounter = 0;
+
+    // Setup interrupt and enable timer
+    NVIC_SetPriority(irqn, priority);
+    TIM_TimeBaseInit(timer, &init_struct);
+    TIM_ARRPreloadConfig(timer, ENABLE);
+    TIM_ITConfig(timer, TIM_IT_Update, ENABLE);
+
+    if (force_first_call==0) {
+        timer->SR = 0;                            // Clear status register
+        NVIC_ClearPendingIRQ(irqn);               // Clear pending interrupt (to avoid immediate IRQ handler call)
+    }
+
+    NVIC_EnableIRQ(irqn);
+    TIM_Cmd(timer, ENABLE);
+}
+
+
 
 void timer_start_us(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority) {
     TIM_TimeBaseInitTypeDef init_struct;

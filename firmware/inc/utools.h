@@ -72,6 +72,9 @@ struct GPIO_descr {
 
 extern GPIO_TypeDef g_null_port;
 
+extern uint32_t g_dummy_reg32;
+extern uint16_t g_dummy_reg16;
+
 /// \brief Allow to get member of the structure size.
 /// \param T - structure name
 /// \param M - member name (from the structure T)
@@ -94,6 +97,8 @@ extern GPIO_TypeDef g_null_port;
                                     DBGMCU_CR_DBG_TIM15_STOP | \
                                     DBGMCU_CR_DBG_TIM16_STOP | \
                                     DBGMCU_CR_DBG_TIM17_STOP)
+
+#define DBGMCU_CR_DBG_I2C_ALL_STOP ( DBGMCU_CR_DBG_I2C1_SMBUS_TIMEOUT | DBGMCU_CR_DBG_I2C2_SMBUS_TIMEOUT )
 
 #ifndef NDEBUG
 /// \brief This variable is used in order to check if #DISABLE_IRQ and #ENABLE_IRQ macro were used correctly.
@@ -195,6 +200,11 @@ extern volatile uint8_t g_irq_disabled;
          ((port)==GPIOA && (pin)==(1<<15)) ) {                          \
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
         GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);        \
+    }                                                                   \
+    if ( ((port)==GPIOB && (pin)==(1<<8)) ||                            \
+         ((port)==GPIOB && (pin)==(1<<9))) {                            \
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
+        GPIO_PinRemapConfig(GPIO_Remap_I2C1, ENABLE);                   \
     }
 
 
@@ -329,6 +339,15 @@ void timer_start_ex(TIM_TypeDef* timer,
 /// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
 /// \param priority of the interrup.
 void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
+
+/// \brief Initialize TIMER to generate repeatitive update event using prescaller and period values.
+/// \param timer - timer to be initialized.
+/// \param prescaler - prescaller value.
+/// \param period - period value.
+/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
+/// \param priority of the interrup.
+/// \param force_first_call specify non-zero if you need timer to trigger immidiately.
+void timer_start_periodic_ex(TIM_TypeDef* timer, uint16_t prescaler, uint16_t period, IRQn_Type irqn, uint32_t priority, uint8_t force_first_call);
 
 /// \brief Initialize TIMER update event using time period in microseconds.
 /// \param timer - timer to be initialized.
@@ -465,6 +484,7 @@ extern "C" {
 /// \param state - IRQn state returned by NVIC_IRQ_STATE macro
 #define NVIC_RESTORE_IRQ(irqn, state)   NVIC->ISER[((uint32_t)(irqn) >> 5)] = (state)
 
+#define IN_INTERRUPT (SCB->ICSR & SCB_ICSR_VECTACTIVE_Pos)
 /// \brief This function is used to calculate optimal prescaller and period values to schedule timer.
 /// \param us - input number of microseconds, must not be greater than #MCU_MAXIMUM_TIMER_US.
 /// \param prescaller - pointer to the output value of prescaller.

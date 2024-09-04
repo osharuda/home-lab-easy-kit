@@ -43,6 +43,9 @@ def get_leaf_values(d) -> list:
         if isinstance(v, dict):
             # this is dict iterate through recursively
             res.extend(get_leaf_values(v))
+        elif isinstance(v, list):
+            for vv in v:
+                res.extend(get_leaf_values(vv))
         else:
             res.append(v)
 
@@ -407,4 +410,51 @@ Possible values are: {', '.join(translate_map)}
         return translate_map[val]
 
     return val
+
+
+def get_value_from_dict_list(dict_list: list[dict], k: str, dev_name: str, throw_exc=True):
+    suffix = '.'
+    if dev_name:
+        suffix = f' for device "{dev_name}".'
+
+    for d in dict_list:
+        v = d.get(k, None)
+        if v is not None:
+            break
+
+    if v is None and throw_exc:
+        raise RuntimeError(f'Value {k} is not found{suffix}')
+
+    return v
+
+#endregion
+
+#region MISC TOOLS
+def normalize_value(value: float,
+                    min_value: float,
+                    max_value: float):
+    if min_value >= max_value:
+        raise RuntimeError(f"min_value ({min_value}) must be less than max_value ({max_value})")
+
+    if min_value > value:
+        raise RuntimeError(f"value ({value}) must be greater or equal than min_value ({min_value})")
+
+    if value > max_value:
+        raise RuntimeError(f"value ({value}) must be less or equal than max_value ({max_value})")
+
+    return (value - min_value) / (max_value - min_value)
+
+
+def denormalize_value(value: float, min_value: float, max_value: float):
+    if min_value >= max_value:
+        raise RuntimeError(f"min_value ({min_value}) must be less than max_value ({max_value})")
+
+    if value < 0.0:
+        raise RuntimeError(f"value ({value}) must be greater or equal than 0.0")
+
+    if value > 1.0:
+        raise RuntimeError(f"value ({value}) must be less or equal than 1.0")
+
+    return min_value + (max_value - min_value)*value;
+
 #endregion
