@@ -36,39 +36,26 @@
 ///
 
 
-/// \struct SSPIDACChannelData
+/// \struct SPIDACChannelData
 /// \brief Describes channel information
-struct SSPIDACChannelData {
+struct __attribute__ ((aligned)) SPIDACChannelData {
     ///< Pointer to the currently sampled sample
-    const uint8_t*                 current_sample_ptr;
+    const uint8_t* current_sample_ptr __attribute__ ((aligned));
 
     ///< Pointer to the firt sample to be sampled and to be used for rotating sample pointer.
-    const uint8_t*                 first_sample_ptr;
+    const uint8_t* first_sample_ptr __attribute__ ((aligned));
 
     ///< Pointer to the end (the one beyond the last one) sample to be used as guard for rotating sample pointer.
-    const uint8_t*                 end_sample_ptr;
+    const uint8_t* end_sample_ptr __attribute__ ((aligned));
 
-    /*
-    ///< If samples are uploaded, specifies pointer to the first sample. 0 if no samples available.
-    const uint8_t*                 sample_buffer_start;
-
-    ///< If samples are uploaded, specifies pointer to the end (the one beyond the last one) sample.
-    ///< 0 if no samples available.
-    const uint8_t*                 sample_buffer_end;
-*/
-    ///< Pointer to the default sample
-    uint8_t*                 default_sample;
+    ///< Length of the particular channel samples length in bytes.
+    uint32_t       samples_len __attribute__ ((aligned));
 
     ///< Phase increment for this channel (in bytes)
-    uint16_t                 phase_increment;
-
-    /*
-    ///< Channel address
-    uint8_t                  channel_address;
-     */
+    uint16_t       phase_increment;
 
     ///< Phase overflow status (applied to all channels if this channel phase reached the end of the channel)
-    uint8_t                  phase_overflow_status;
+    uint8_t        phase_overflow_status;
 };
 
 /// \struct SPIDACPrivData
@@ -87,9 +74,9 @@ struct SPIDACPrivData {
     struct SPIDACStatus*     status;
 /* CONST */    volatile uint32_t*       ld_port_BSRR;           ///< Optimization for ld pin access from IRQ handler
 /* CONST */    volatile uint32_t*       ld_port_BRR;            ///< Optimization for ld pin access from IRQ handler
-               struct SSPIDACChannelData* channel_data;         ///< Per channel sampling data buffer.
-               struct SSPIDACChannelData* end_channel_data;     ///< The end (the one beyond last) element of the channel_data.
-               struct SSPIDACChannelData* current_channel_data; ///< Current channel sampling data
+               struct SPIDACChannelData* channel_data;         ///< Per channel sampling data buffer.
+               struct SPIDACChannelData* end_channel_data;     ///< The end (the one beyond last) element of the channel_data.
+               struct SPIDACChannelData* current_channel_data; ///< Current channel sampling data
 /* CONST */    uint32_t                 dma_ccr_enabled;        ///< Cached value of the DMAChannel->CCR register when enabled (for optimization)
 /* CONST */    uint32_t                 dma_ccr_disabled;       ///< Cached value of the DMAChannel->CCR register when disabled (for optimization)
 /* CONST */    uint16_t                 sample_buffer_size;     ///< Current sample buffer size (actual samples)
@@ -194,13 +181,17 @@ uint8_t spidac_read_done(uint8_t device_id, uint16_t length);
 
 /// \brief Switches device to \ref STARTING mode and initializes timer, which actually starts sampling.
 /// \param dev - device instance.
-/// \param start_info - Pointer to the software spicified start infomation structure. If zero is specified default sample
-///        is used.
+/// \param start_info - Pointer to the software spicified start infomation structure.
 /// \param continuous - non-zero if continious operation is requested. If zero is specified, sampling will stop when
 ///        the first channel phase becomes zero (first sample is used).
 /// \return communication status.
 /// \note If no samples are uploaded for some channel, default sample will be used.
 uint8_t spidac_start(struct SPIDACInstance* dev, struct SPIDACStartInfo* start_info, uint8_t continuous);
+
+/// \brief Update generated signal phase information
+/// \param dev - device instance.
+/// \param phase_info - Pointer to the software spicified phase infomation structure.
+uint8_t spidac_update_phase(struct SPIDACInstance* dev, struct SPIDACChannelPhaseInfo* phase_info);
 
 /// \brief Executes stop device command.
 /// \param dev - device instance.

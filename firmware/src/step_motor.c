@@ -642,7 +642,7 @@ static inline uint16_t step_motor_fetch_cmd(struct CircBuffer* circ, struct Step
     return bytes_remain;
 }
 
-// <CHECKIT> Inline this function
+// <TODO> Inline this function
 void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t is_irq_handler) {
     uint32_t w = MCU_MAXIMUM_TIMER_US;
     struct StepMotorDevPrivData* priv_data = MOTOR_DEV_PRIV_DATA(dev);
@@ -714,7 +714,7 @@ void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t i
     if (all_done==0) {
         priv_data->last_event_timestamp = now;
 
-        //<CHECKIT> - it is very likely it is possible to avoid this if statement
+        //<TODO> - it is very likely it is possible to avoid this if statement
         if (is_irq_handler) {
             timer_reschedule_us(dev->timer, w);
         } else {

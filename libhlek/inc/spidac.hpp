@@ -51,6 +51,8 @@ struct SPIDACChannelConfig {
     std::string name;
     std::vector<double> samples;
     uint32_t address;
+    size_t phase_increment;
+    int phase;
     double min_value;
     double max_value;
     double default_value;
@@ -141,6 +143,34 @@ class SPIDACDev final : public EKitVirtualDevice {
 
     void set_max_value(uint32_t address, double value);
 
+    /// \brief Get phase value for the channel
+    /// \param address - address of the channel
+    /// \return Channel phase.
+    /// \note Returned value doesn't represen phase of the currently generated signal by device. It is value used by
+    ///       start() and update_phase() calls to start signal generation or update it's phase properties.
+    int get_phase(uint32_t address) const;
+
+    /// \brief Set phase value for the channel
+    /// \param address - address of the channel
+    /// \return Channel phase.
+    /// \note This call doesn't update phase of the currently generated signal by device. start() and update_phase()
+    ///       should be used to actually apply these signal properties.
+    void set_phase(uint32_t address, int value);
+
+    /// \brief Get phase increment value for the channel.
+    /// \param address - address of the channel
+    /// \return Channel phase increment.
+    /// \note Returned value doesn't represen phase increment of the currently generated signal by device. It is value used by
+    ///       start() and update_phase() calls to start signal generation or update it's phase properties.
+    size_t get_phase_increment(uint32_t address) const;
+
+    /// \brief Set phase increment value for the channel
+    /// \param address - address of the channel
+    /// \return Channel phase increment.
+    /// \note This call doesn't update phase of the currently generated signal by device. start() and update_phase()
+    ///       should be used to actually apply these signal properties.
+    void set_phase_increment(uint32_t address, size_t value);
+
     std::string get_channel_name(uint32_t address) const;
 
     std::vector<uint32_t> get_channels_list() const;
@@ -160,12 +190,13 @@ class SPIDACDev final : public EKitVirtualDevice {
     /// \brief Stops signal generation and sets default value.
     void stop();
 
-    /// \brief Starts continuous sampling
+    /// \brief Starts continuous sampling with the same phase settings per each channel
     /// \param freq - rate of the signal
-    /// \param start_phase - start phase (in samples)
-    /// \param phase_inc - phase increment (in samples)
     /// \param continuous - true to repeat signal indefinitely, false generate single period.
-    void start_signal(double freq, size_t start_phase, size_t phase_inc, bool continuous);
+    void start(double freq, bool continuous);
+
+    /// \brief Updates phase and phase increment values for currently generated signal
+    void update_phase();
 
 
     /// \brief Returns information regarding current SPIDAC device status
@@ -195,6 +226,17 @@ class SPIDACDev final : public EKitVirtualDevice {
     void append_dac8550_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
 */
 
+    /// \brief Normalizes phase to be in range [0 ... n)
+    /// \param phase - input phase
+    /// \param n - maximum phase
+    /// \note This is required to make phase changes non-negative, otherwise phase calculation will be implementation
+    ///       specific on the firmware side:
+    ///       Quote from: ISO/IEC 14882:2003(E), 5.6.(4)
+    ///       "The binary % operator yields the remainder from the division of the first expression by the second. If the
+    ///       second operand of / or % is zero the behavior is undefined; otherwise (a/b)*b + a%b is equal to a. If both
+    ///       operands are nonnegative then the remainder is nonnegative; if not, the sign of the remainder is
+    ///       implementation-defined."
+    static int16_t normalize_phase(int16_t phase, size_t n);
 
     /// \brief Uploads prepared buffer to the DAC device
     /// \param buffer - buffer to be uploaded.

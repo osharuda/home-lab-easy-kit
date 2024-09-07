@@ -456,7 +456,7 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             fw_channel_data_name = "g_spidac_{0}_channel_data".format(str(index))
             fw_device_buffers.append(
-                f"struct SSPIDACChannelData {fw_channel_data_name}[{channels_count}] __attribute__ ((aligned));\\")
+                f"struct SPIDACChannelData {fw_channel_data_name}[{channels_count}] __attribute__ ((aligned));\\")
 
             fw_default_start_info_name = "g_spidac_{0}_default_start_info".format(str(index))
             fw_device_buffers.append(

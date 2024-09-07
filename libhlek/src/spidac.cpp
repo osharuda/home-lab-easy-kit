@@ -234,12 +234,31 @@ void SPIDACDev::clear_samples(uint32_t address) {
     channels[address].samples.clear();
 }
 
+int SPIDACDev::get_phase(uint32_t address) const {
+    return channels.at(address).phase;
+}
+
+void SPIDACDev::set_phase(uint32_t address, int value) {
+    channels.at(address).phase = value;
+}
+
+size_t SPIDACDev::get_phase_increment(uint32_t address) const {
+    return channels.at(address).phase_increment;
+}
+
+void SPIDACDev::set_phase_increment(uint32_t address, size_t value) {
+    channels.at(address).phase_increment = value;
+}
+
 SPIDAC_STATUS SPIDACDev::get_status() {
     const char* func_name = "SPIDACDev::get_status";
     EKIT_ERROR err = EKIT_OK;
     SPIDACStatus status;
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
+
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
 
     err = bus->read(&status, sizeof(SPIDACStatus), to);
     if (err != EKIT_OK) {
@@ -248,7 +267,7 @@ SPIDAC_STATUS SPIDACDev::get_status() {
     return (SPIDAC_STATUS)status.status;
 }
 
-void SPIDACDev::start_signal(double freq, size_t start_phase, size_t phase_inc, bool continuous) {
+void SPIDACDev::start(double freq, bool continuous) {
     static const char* const func_name = "SPIDACDev::start";
     EKIT_ERROR err = EKIT_OK;
     validate_sampling_frequency(freq);
@@ -267,20 +286,26 @@ void SPIDACDev::start_signal(double freq, size_t start_phase, size_t phase_inc, 
         uint32_t address = c.first;
         struct SPIDACChannelConfig& ch_config = c.second;
 
-        if (phase_inc > USHRT_MAX && phase_inc > channel_info->loaded_samples_number) {
-            throw EKitException(func_name, EKIT_BAD_PARAM, "phase_inc is out of limits");
+        channel_info->phase.phase_increment = ch_config.phase_increment % channel_info->loaded_samples_number;
+        channel_info->loaded_samples_number = ch_config.samples.size();
+        channel_info->phase.phase = ch_config.phase;
+
+        if (channel_info->loaded_samples_number == 0) {
+            throw EKitException(func_name, EKIT_BAD_PARAM, "no samples are loaded into the channel");
         }
 
-        channel_info->phase_increment = phase_inc;
-        channel_info->loaded_samples_number = ch_config.samples.size();
-        channel_info->start_phase = start_phase;
-        channel_info->start_phase = channel_info->start_phase % channel_info->loaded_samples_number;
+        if (channel_info->phase.phase_increment > channel_info->loaded_samples_number) {
+            throw EKitException(func_name, EKIT_BAD_PARAM, "phase_inc is out of limits");
+        }
 
         channel_info++; // next channel
     }
 
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
+
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
 
     // Start
     SPIDAC_COMMAND cmd = continuous ? SPIDAC_COMMAND::START : SPIDAC_COMMAND::START_PERIOD;
@@ -290,6 +315,56 @@ void SPIDACDev::start_signal(double freq, size_t start_phase, size_t phase_inc, 
     }
 
     err = bus->write(start_info, start_info_len, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "write() failed");
+    }
+}
+
+int16_t SPIDACDev::normalize_phase(int16_t phase, size_t n) {
+    static const char* const func_name = "SPIDACDev::normalize_phase";
+    int t = phase / n;
+    int result = ((int)phase + n * (abs(t) + 1)) % n;
+    assert(result>=0);
+    if (result > INT16_MAX) {
+        throw EKitException(func_name, EKIT_OVERFLOW, "Resulting phase overflow");
+    }
+    return result;
+}
+
+void SPIDACDev::update_phase() {
+    static const char* const func_name = "SPIDACDev::update_phase";
+    EKIT_ERROR err = EKIT_OK;
+
+    size_t phase_update_info_len = sizeof(SPIDACChannelPhaseInfo)*config->channel_count;
+    std::vector<uint8_t> phase_info_buffer(phase_update_info_len);
+    struct SPIDACChannelPhaseInfo* phase_info = reinterpret_cast<struct SPIDACChannelPhaseInfo*>(phase_info_buffer.data());
+
+    // Prepare channels sampling information
+    for (auto c : channels) {
+        uint32_t address = c.first;
+        struct SPIDACChannelConfig& ch_config = c.second;
+        size_t samples_count = ch_config.samples.size();
+
+        phase_info->phase_increment = ch_config.phase_increment % samples_count;
+        phase_info->phase = normalize_phase(ch_config.phase, samples_count);
+
+        phase_info++; // next channel
+    }
+
+    EKitTimeout to(get_timeout());
+    BusLocker blocker(bus, get_addr(), to);
+
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
+
+    // Start
+    SPIDAC_COMMAND cmd = SPIDAC_COMMAND::UPD_PHASE;
+    err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "set_opt() failed");
+    }
+
+    err = bus->write(phase_info_buffer.data(), phase_update_info_len, to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "write() failed");
     }
@@ -333,6 +408,9 @@ void SPIDACDev::stop() {
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
 
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
+
     // Stop
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, SPIDAC_COMMAND::STOP, to);
     if (err != EKIT_OK) {
@@ -360,6 +438,10 @@ void SPIDACDev::upload_default_sample(const std::vector<uint8_t>& buffer) {
 
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
+
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
+
     SPIDAC_COMMAND cmd = SPIDAC_COMMAND::SETDEFAULT;
     err = bus->set_opt(EKitFirmware::FIRMWARE_OPT_FLAGS, cmd, to);
     if (err != EKIT_OK) {
@@ -386,6 +468,10 @@ void SPIDACDev::upload_data(const std::vector<uint8_t>& buffer) {
 
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
+
+    CommResponseHeader resp;
+    std::dynamic_pointer_cast<EKitFirmware>(bus)->wait_vdev(resp, true, to);
+
     SPIDAC_COMMAND cmd = SPIDAC_COMMAND::DATA_START;
     size_t bytes_sent = 0;
     do {

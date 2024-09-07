@@ -34,7 +34,7 @@
 /// \section sect_spi_flash_01 Work with SPIFlash
 ///
 /// Documentation to be written
-/// <CHECKIT> complete documentation ...
+/// <TODO> complete documentation ...
 ///
 
 struct SPIFLASHDescriptor {

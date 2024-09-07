@@ -36,7 +36,7 @@
 /// \section sect_hmc5883l_01 Work with HMC5883L
 ///
 /// Documentation to be written
-/// <CHECKIT> complete documentation ...
+/// <TODO> complete documentation ...
 ///
 
 /// \class HMC5883L

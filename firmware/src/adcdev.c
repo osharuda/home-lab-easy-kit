@@ -453,7 +453,7 @@ void adc_reset_peripherals(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData
     SET_FLAGS(dev->adc->CR2, (uint32_t)ADC_CR2_FLAG_ADON); // Enable ADC
 
     // ADC calibration:
-    delay_loop(12);    // <CHECKIT> - Make sure it is long enough, it should 12 CPU clocks.
+    delay_loop(12);    // <TODO> - Make sure it is long enough, it should 12 CPU clocks.
 
     ADC_ResetCalibration(dev->adc);
     while(ADC_GetResetCalibrationStatus(dev->adc));
@@ -602,7 +602,7 @@ void adc_continue_dma_sampling(volatile void* d, volatile void* p) {
     SET_FLAGS(dev->dma_channel->CCR, (uint32_t)DMA_CCR1_EN);
 
     // Start ADC
-    while (dev->adc->SR) dev->adc->SR = 0;  // Wait when hardware cleans all flags. <CHECKIT> Do we need it?
+    while (dev->adc->SR) dev->adc->SR = 0;  // Wait when hardware cleans all flags. <TODO> Verify if we actually need it?
     SET_FLAGS(dev->adc->CR1, (uint32_t)ADC_CR1_FLAG_SCAN);
     SET_FLAGS(dev->adc->CR2, (uint32_t)(ADC_CR2_FLAG_SWSTART | ADC_CR2_FLAG_EXT_TRIG | ADC_CR2_FLAG_DMA | ADC_CR2_FLAG_CONT));
 }
@@ -659,7 +659,7 @@ void adc_continue_int_sampling(volatile void* d, volatile void* p) {
     UNUSED(p);
 
     // Start ADC
-    while (dev->adc->SR) dev->adc->SR = 0;  // Wait when hardware cleans all flags. <CHECKIT> Do we need it?
+    while (dev->adc->SR) dev->adc->SR = 0;  // Wait when hardware cleans all flags. <TODO> Verify if we actually need it?
     SET_FLAGS(dev->adc->CR1, (uint32_t)ADC_CR1_FLAG_SCAN);
     SET_FLAGS(dev->adc->CR2, (uint32_t)(ADC_CR2_FLAG_SWSTART | ADC_CR2_FLAG_EXT_TRIG | ADC_CR2_FLAG_CONT));
 }

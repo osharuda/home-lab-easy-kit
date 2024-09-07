@@ -155,7 +155,7 @@ void SPWMDev::clear_prev_data() {
 
 void SPWMDev::set_pwm_freq(double freq) {
     static const char* const func_name = "SPWMDev::set_pwm_freq";
-    double f_cnt = 72000000.0 / static_cast<double>(config->prescaller + 1); // <CHECKIT> Remove constants here and everywhere
+    double f_cnt = 72000000.0 / static_cast<double>(config->prescaller + 1);
     uint16_t  mp;
 
     if (freq*65536.0<f_cnt) {

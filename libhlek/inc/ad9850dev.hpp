@@ -80,7 +80,7 @@ class AD9850Dev final : public EKitVirtualDevice {
     /// \brief Update frequency and phase
     /// \param frequency - frequency in hertz
     /// \param phase - phase in radians
-    /// \note phase will be rounded to N*Pi/16 <CHECKIT> Make sure phase is actually rounded, not tail or ceil
+    /// \note phase will be rounded to N*Pi/16 <TODO> Make sure phase is actually rounded, not tail or ceil
     void update(double frequency, double phase);
 };
 

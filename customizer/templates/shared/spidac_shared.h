@@ -32,7 +32,8 @@ typedef enum {{
     STOP = 0x30,
     DATA_START = 0x40,
     DATA = 0x50,
-    SETDEFAULT = 0x60
+    SETDEFAULT = 0x60,
+    UPD_PHASE = 0x70
 }} SPIDAC_COMMAND;
 
 typedef enum {{
@@ -49,12 +50,18 @@ typedef enum {{
 
 #pragma pack(push, 1)
 
+/// \struct SPIDACChannelPhaseInfo
+/// \brief Structure with channel phase information.
+struct SPIDACChannelPhaseInfo {{
+    uint16_t phase_increment; /// Sample increment in numbers
+    int16_t phase;            /// Start phase in samples numbers
+}};
+
 /// \struct SPIDACChannelSamplingInfo
 /// \brief Structure that describes per channel sampling.
 struct SPIDACChannelSamplingInfo {{
-    uint16_t phase_increment;       /// Sample increment in numbers
-    uint16_t start_phase;           /// Start phase in samples numbers
-    uint16_t loaded_samples_number; /// Number of samples loaded
+    struct SPIDACChannelPhaseInfo phase; /// Phase information
+    uint16_t loaded_samples_number;      /// Number of samples loaded
 }};
 
 /// \struct SPIDACStartInfo

@@ -127,7 +127,7 @@ EKIT_ERROR EKitFirmware::lock(int vdev, EKitTimeout& to){
 	buf.resize(buf_len);
 	buf[0]=vdev;
 
-    // <CHECKIT> Make sure we actually need to communicate firmware here. If not, remove writing to bus
+    // <TODO> Make sure we actually need to communicate with firmware here. If not, remove write to bus
 	do {
 		err = bus->write(buf.data(), buf_len, to);
 	} while (err == EKIT_WRITE_FAILED);

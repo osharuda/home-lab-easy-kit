@@ -36,7 +36,7 @@
 /// \section sect_adxl350_01 Work with ADXL345
 ///
 /// Documentation to be written
-/// <CHECKIT> complete documentation ...
+/// <TODO> complete documentation ...
 ///
 
 #pragma pack(push, 1)

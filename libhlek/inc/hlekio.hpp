@@ -37,7 +37,7 @@
 /// \section sect_hlekio_01 Work with HLEKIO
 ///
 /// Documentation to be written
-/// <CHECKIT> complete documentation ...
+/// <TODO> complete documentation ...
 ///
 
 enum HLEKIODevType : uint8_t {

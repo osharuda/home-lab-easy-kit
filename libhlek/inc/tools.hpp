@@ -388,11 +388,14 @@ namespace tools {
     /// \brief Makes pid file
     /// \return true if success, false if file is already created and can't be overwritten (likely another such program
     ///         is running).
+    /// \note Use delete_pid_file() function in your code to delete pid file under normal termination. Abnormal termination
+    ///       will be handled by installed signal handlers.
     bool make_pid_file();
 
     /// \brief Deletes pid file. Must be called on process exit.
     void delete_pid_file();
 
+    /// \brief Returns byte with reversed bits.
     uint8_t reverse_bits(uint8_t b);
 
     /// \brief Normalizes value to 1.0L, where maximum value is 1.0, minimum value is 0.0

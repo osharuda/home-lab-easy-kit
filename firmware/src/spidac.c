@@ -171,8 +171,8 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     // Check for sample pointer overflow
     if (priv_data->current_channel_data->current_sample_ptr >= priv_data->current_channel_data->end_sample_ptr) {
         // It must be equal, otherwise either buffer or phase_increment are not aligned.
-        assert_param(priv_data->current_channel_data->current_sample_ptr==priv_data->current_channel_data->end_sample_ptr);
-        priv_data->current_channel_data->current_sample_ptr = priv_data->current_channel_data->first_sample_ptr;
+        assert_param(priv_data->current_channel_data->current_sample_ptr < (priv_data->current_channel_data->end_sample_ptr+priv_data->current_channel_data->samples_len));
+        priv_data->current_channel_data->current_sample_ptr -= priv_data->current_channel_data->samples_len;
         new_status = priv_data->current_channel_data->phase_overflow_status;
     }
 
@@ -274,7 +274,7 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     priv_data->status->repeat_count = 0;
 
     memcpy((void*)dev->default_sample_base, (void*)dev->default_values, dev->sample_size);
-    memset(priv_data->channel_data, 0, sizeof(struct SSPIDACChannelData) * dev->channel_count);
+    memset(priv_data->channel_data, 0, sizeof(struct SPIDACChannelData) * dev->channel_count);
     dev->default_start_info->period = 0;
     dev->default_start_info->prescaler = 0;
 
@@ -406,13 +406,17 @@ void spidac_init() {
 uint8_t spidac_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     struct DeviceContext* devctx = comm_dev_context(cmd_byte);
     struct SPIDACInstance* dev = (struct SPIDACInstance*)g_spidac_devs + devctx->dev_index;
-    uint16_t sampling_len = sizeof(struct SPIDACStartInfo) + dev->channel_count * sizeof(struct SPIDACChannelSamplingInfo);
+    const uint16_t start_info_len = sizeof(struct SPIDACStartInfo) + dev->channel_count * sizeof(struct SPIDACChannelSamplingInfo);
+    const uint16_t upd_phase_len = dev->channel_count * sizeof(struct SPIDACChannelPhaseInfo);
     uint8_t res = COMM_STATUS_OK;
     SPIDAC_COMMAND command = cmd_byte & COMM_CMDBYTE_DEV_SPECIFIC_MASK;
 
-    if (command==START && length == sampling_len) {
+    if (command==UPD_PHASE && length == upd_phase_len) {
+        res = spidac_update_phase(dev, (struct SPIDACChannelPhaseInfo*)data);
+    } else
+    if (command==START && length == start_info_len) {
         res = spidac_start(dev, (struct SPIDACStartInfo*)data, 1);
-    } else if (command==START_PERIOD && length == sampling_len) {
+    } else if (command==START_PERIOD && length == start_info_len) {
         res = spidac_start(dev, (struct SPIDACStartInfo*)data, 0);
     } else if (command==SETDEFAULT && length == dev->sample_size) {
         memcpy(dev->default_sample_base, data, length);
@@ -493,7 +497,7 @@ static inline void spidac_init_channels_data(struct SPIDACInstance* dev,
 
     for (uint16_t ch = 0; ch < dev->channel_count; ch++) {
         // If no sample data available we are using default sample
-        struct SSPIDACChannelData* ch_info = priv_data->channel_data + ch;
+        struct SPIDACChannelData* ch_info = priv_data->channel_data + ch;
         struct SPIDACChannelSamplingInfo* src_ch_smpl_info = start_info->channel_info + ch;
         struct SPIDACChannelSamplingInfo* dst_ch_smpl_info = priv_data->status->start_info.channel_info + ch;
         memcpy(dst_ch_smpl_info, src_ch_smpl_info, sizeof(struct SPIDACChannelSamplingInfo));
@@ -508,10 +512,11 @@ static inline void spidac_init_channels_data(struct SPIDACInstance* dev,
             /// Uploaded samples
             ch_info->first_sample_ptr = dev->sample_buffer_base + channel_offset * dev->transaction_size;
             ch_info->end_sample_ptr = ch_info->first_sample_ptr + src_ch_smpl_info->loaded_samples_number * dev->transaction_size;
-            ch_info->phase_increment = src_ch_smpl_info->phase_increment * dev->transaction_size;
-            ch_info->current_sample_ptr = ch_info->first_sample_ptr + src_ch_smpl_info->start_phase * dev->transaction_size;
-        }
+            ch_info->phase_increment = src_ch_smpl_info->phase.phase_increment * dev->transaction_size;
 
+            ch_info->current_sample_ptr = ch_info->first_sample_ptr + (src_ch_smpl_info->phase.phase % src_ch_smpl_info->loaded_samples_number) * dev->transaction_size;
+        }
+        ch_info->samples_len = ch_info->end_sample_ptr - ch_info->first_sample_ptr;
         ch_info->phase_overflow_status = overflow_status;
         channel_offset += src_ch_smpl_info->loaded_samples_number;
     }
@@ -553,6 +558,37 @@ uint8_t spidac_start(struct SPIDACInstance* dev, struct SPIDACStartInfo* start_i
     } else {
         DAC_RESTORE_IRQs
     }
+
+    return res;
+}
+
+uint8_t spidac_update_phase(struct SPIDACInstance* dev, struct SPIDACChannelPhaseInfo* phase_info) {
+    uint8_t res;
+    struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
+    struct SPIDACStatus* status = (struct SPIDACStatus*)(priv_data->status);
+    uint8_t last_status;
+    struct SPIDACChannelData* ch_data = priv_data->channel_data;
+
+    do {
+        DAC_DISABLE_IRQs
+        last_status = status->status;
+        if (last_status == WAITING) {
+            for (uint8_t i=0; i<dev->channel_count; i++, ch_data++, phase_info++) {
+                assert_param(phase_info->phase >= 0);
+                assert_param((uint32_t)phase_info->phase * dev->transaction_size < ch_data->samples_len);
+                assert_param(ch_data->current_sample_ptr >= ch_data->first_sample_ptr);
+
+                uint32_t offset = (uint32_t)ch_data->current_sample_ptr-(uint32_t)ch_data->first_sample_ptr+(uint32_t)(phase_info->phase*dev->transaction_size);
+                uint32_t length = ch_data->end_sample_ptr-ch_data->first_sample_ptr;
+
+                assert_param((offset % length) % dev->transaction_size == 0);
+                ch_data->current_sample_ptr = ch_data->first_sample_ptr + ( offset % length );
+                ch_data->phase_increment = phase_info->phase_increment * dev->transaction_size;
+            }
+        }
+        DAC_RESTORE_IRQs
+    } while(last_status==SAMPLING);
+    res = last_status == WAITING ? COMM_STATUS_OK : COMM_STATUS_FAIL;
 
     return res;
 }

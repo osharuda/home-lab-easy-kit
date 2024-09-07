@@ -243,6 +243,7 @@ class CommandHandler {
 
 	DEFINE_HANDLER_CLASS(SPIDACStartContinuousHandler);
     DEFINE_HANDLER_CLASS(SPIDACStartPeriodHandler);
+    DEFINE_HANDLER_CLASS(SPIDACUpdatePhaseHandler);
     DEFINE_HANDLER_CLASS(SPIDACSetDefaultHandler);
     DEFINE_HANDLER_CLASS(SPIDACStopHandler);
     DEFINE_HANDLER_CLASS(SPIDACStatusHandler);

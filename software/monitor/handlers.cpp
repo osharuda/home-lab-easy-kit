@@ -88,7 +88,7 @@ size_t CommandHandler::check_arg_count(const std::vector<std::string>& args, siz
     }
 
     std::string err = tools::format_string("Wrong number of arguments given the for command %s",get_command_name());
-    throw CommandHandlerException(err);    
+    throw CommandHandlerException(err);
 }
 
 size_t CommandHandler::check_arg_count_min(const std::vector<std::string>& args, size_t min) const {
@@ -98,7 +98,7 @@ size_t CommandHandler::check_arg_count_min(const std::vector<std::string>& args,
     }
 
     std::string err = tools::format_string("Too few arguments given the for command %s",get_command_name());
-    throw CommandHandlerException(err);    
+    throw CommandHandlerException(err);
 }
 
 std::string CommandHandler::arg_get(const std::vector<std::string>& args, const char* name) {
@@ -2128,7 +2128,7 @@ std::string SPIDACStartContinuousHandler::help() const {
 
 void SPIDACStartContinuousHandler::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    double frequency = 1000.0L;
+    double frequency = 50000.0L;
     unsigned int phase_inc = 1;
     if (args.size()>1) {
         check_arg_count(args, 2);
@@ -2140,10 +2140,16 @@ void SPIDACStartContinuousHandler::handle(const std::vector<std::string>& args) 
         phase_inc = arg_unsigned_int(args, "phase increment", 1,
                                                   UINT16_MAX); // <!CHECKIT!> check if the same macroes are used in whole project
     } else {
-        ui->log("Default frequency (1000Hz) and phase shift is used (1)");
+        ui->log("Default frequency (50KHz) and phase shift is used (1)");
     }
 
-    d->start_signal(frequency, 0, phase_inc, true);
+    auto addresses = d->get_channels_list();
+    for (auto address: addresses) {
+        d->set_phase(address, 0);
+        d->set_phase_increment(address, phase_inc);
+    }
+
+    d->start(frequency, true);
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -2177,7 +2183,42 @@ void SPIDACStartPeriodHandler::handle(const std::vector<std::string>& args) {
         ui->log("Default frequency (1000Hz) and phase shift is used (1)");
     }
 
-    d->start_signal(frequency, 0, phase_inc, false);
+    auto addresses = d->get_channels_list();
+    for (auto address: addresses) {
+        d->set_phase(address, 0);
+        d->set_phase_increment(address, phase_inc);
+    }
+
+    d->start(frequency, false);
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIDACUpdatePhaseHandler                                  //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUpdatePhaseHandler,"spidac::", "::update_phase")
+std::string SPIDACUpdatePhaseHandler::help() const {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    return tools::format_string("# %s updates %s device generated signal phase.\n"
+                                "Parameters are:\n"
+                                "address   - channel address.\n"
+                                "phase     - phase shift.\n"
+                                "phase_inc - phase increment.\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIDACUpdatePhaseHandler::handle(const std::vector<std::string>& args) {
+    auto d = dynamic_cast<SPIDACDev*>(device.get());
+    check_arg_count(args, 3);
+    std::string unit;
+    size_t address = arg_unsigned_int(args, "address", 0, UINT32_MAX);
+    int phase = arg_int(args, "phase", INT32_MIN, INT32_MAX, {""}, unit, "");
+    size_t phase_inc = arg_unsigned_int(args, "phase_inc", 0, UINT32_MAX);
+
+    d->set_phase(address, phase);
+    d->set_phase_increment(address, phase_inc);
+
+    d->update_phase();
 }
 
 //----------------------------------------------------------------------------------------------//
@@ -2277,7 +2318,8 @@ void SPIDACStatusHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadSinWaveform,"spidac::", "::upload_sin")
 std::string SPIDACUploadSinWaveform::help() const {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    return tools::format_string("# %s uploads sin waveform to %s device. No parameters required.\n",
+    return tools::format_string("# %s uploads sin waveform to %s device. Paramerets:\n"
+                                "n - Number of samples to use. Optional, if omitted, maximum possible number of samples will be used.",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -2286,9 +2328,13 @@ void SPIDACUploadSinWaveform::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
     size_t argc = check_arg_count_min(args, 0);
 
-    size_t channel_count = d->get_channels_count();
-    size_t sample_count = d->get_buffer_len() / channel_count;
     std::vector<uint32_t> addresses = d->get_channels_list();
+    size_t channel_count = d->get_channels_count();
+    const size_t max_sample_count = d->get_buffer_len() / channel_count;
+    unsigned int sample_count = max_sample_count;
+    if (argc==1) {
+        sample_count = arg_unsigned_int(args, "number of samples", 1, max_sample_count);
+    }
     auto samples = spidac_waveform_sin(sample_count);
 
     for (auto address : addresses) {
@@ -2310,7 +2356,8 @@ void SPIDACUploadSinWaveform::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadPosSawWaveform,"spidac::", "::upload_pos_saw")
 std::string SPIDACUploadPosSawWaveform::help() const {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    return tools::format_string("# %s uploads positive saw waveform to %s device. No parameters required.\n",
+    return tools::format_string("# %s uploads positive saw waveform to %s device.\n"
+                                "n - Number of samples to use. Optional, if omitted, maximum possible number of samples will be used.",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -2319,9 +2366,13 @@ void SPIDACUploadPosSawWaveform::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
     size_t argc = check_arg_count_min(args, 0);
 
-    size_t channel_count = d->get_channels_count();
-    size_t sample_count = d->get_buffer_len() / channel_count;
     std::vector<uint32_t> addresses = d->get_channels_list();
+    size_t channel_count = d->get_channels_count();
+    const size_t max_sample_count = d->get_buffer_len() / channel_count;
+    unsigned int sample_count = max_sample_count;
+    if (argc==1) {
+        sample_count = arg_unsigned_int(args, "number of samples", 1, max_sample_count);
+    }
     auto samples = spidac_waveform_pos_saw(sample_count);
 
     for (auto address : addresses) {
@@ -2343,7 +2394,8 @@ void SPIDACUploadPosSawWaveform::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadNegSawWaveform,"spidac::", "::upload_neg_saw")
 std::string SPIDACUploadNegSawWaveform::help() const {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    return tools::format_string("# %s uploads negative saw waveform to %s device. No parameters required.\n",
+    return tools::format_string("# %s uploads negative saw waveform to %s device.\n"
+                                "n - Number of samples to use. Optional, if omitted, maximum possible number of samples will be used.",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -2352,9 +2404,13 @@ void SPIDACUploadNegSawWaveform::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
     size_t argc = check_arg_count_min(args, 0);
 
-    size_t channel_count = d->get_channels_count();
-    size_t sample_count = d->get_buffer_len() / channel_count;
     std::vector<uint32_t> addresses = d->get_channels_list();
+    size_t channel_count = d->get_channels_count();
+    const size_t max_sample_count = d->get_buffer_len() / channel_count;
+    unsigned int sample_count = max_sample_count;
+    if (argc==1) {
+        sample_count = arg_unsigned_int(args, "number of samples", 1, max_sample_count);
+    }
     auto samples = spidac_waveform_neg_saw(sample_count);
 
     for (auto address : addresses) {
@@ -2376,7 +2432,8 @@ void SPIDACUploadNegSawWaveform::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadGaussWaveform,"spidac::", "::upload_gauss")
 std::string SPIDACUploadGaussWaveform::help() const {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    return tools::format_string("# %s uploads gauss waveform to %s device. No parameters required.\n",
+    return tools::format_string("# %s uploads gauss waveform to %s device.\n"
+                                "n - Number of samples to use. Optional, if omitted, maximum possible number of samples will be used.",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -2385,9 +2442,14 @@ void SPIDACUploadGaussWaveform::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
     size_t argc = check_arg_count_min(args, 0);
 
-    size_t channel_count = d->get_channels_count();
-    size_t sample_count = d->get_buffer_len() / channel_count;
     std::vector<uint32_t> addresses = d->get_channels_list();
+    size_t channel_count = d->get_channels_count();
+    const size_t max_sample_count = d->get_buffer_len() / channel_count;
+    unsigned int sample_count = max_sample_count;
+    if (argc==1) {
+        sample_count = arg_unsigned_int(args, "number of samples", 1, max_sample_count);
+    }
+
     auto samples = spidac_waveform_gauss(sample_count);
 
     for (auto address : addresses) {
@@ -2409,7 +2471,8 @@ void SPIDACUploadGaussWaveform::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(SPIDACUploadTriangleWaveform,"spidac::", "::upload_triangle")
 std::string SPIDACUploadTriangleWaveform::help() const {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
-    return tools::format_string("# %s uploads triangle waveform to %s device. No parameters required.\n",
+    return tools::format_string("# %s uploads triangle waveform to %s device.\n"
+                                "n - Number of samples to use. Optional, if omitted, maximum possible number of samples will be used.",
                                 get_command_name(),
                                 d->get_dev_name());
 }
@@ -2417,9 +2480,13 @@ std::string SPIDACUploadTriangleWaveform::help() const {
 void SPIDACUploadTriangleWaveform::handle(const std::vector<std::string>& args) {
     auto d = dynamic_cast<SPIDACDev*>(device.get());
     size_t argc = check_arg_count_min(args, 0);
-
     size_t channel_count = d->get_channels_count();
-    size_t sample_count = d->get_buffer_len() / channel_count;
+    const size_t max_sample_count = d->get_buffer_len() / channel_count;
+    unsigned int sample_count = max_sample_count;
+    if (argc==1) {
+        sample_count = arg_unsigned_int(args, "number of samples", 1, max_sample_count);
+    }
+
     std::vector<uint32_t> addresses = d->get_channels_list();
     auto samples = spidac_waveform_triangle(sample_count);
 
@@ -2458,7 +2525,7 @@ void SPIDACUploadConstWaveform::handle(const std::vector<std::string>& args) {
     size_t channel_count = d->get_channels_count();
     size_t sample_count = d->get_buffer_len() / channel_count;
     std::vector<uint32_t> addresses = d->get_channels_list();
-    auto samples = spidac_waveform_triangle(sample_count);
+    std::vector<double> samples = { x };
 
     for (auto address : addresses) {
         double min_val = d->get_min_value(address);

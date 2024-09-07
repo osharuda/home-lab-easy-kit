@@ -171,7 +171,6 @@ void PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct PaceMakerDevInstance* dev = g_pacemakerdev_devs + index;
     struct PaceMakerDevPrivData* priv_data = (&dev->privdata);
 
-    // <CHECKIT> Do we actually need this check?
     if (TIM_GetITStatus(dev->main_timer, TIM_IT_Update) == RESET) {
         return;
     }

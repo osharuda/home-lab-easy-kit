@@ -20,25 +20,25 @@
             "ch0" : {
               "address" : 0,
               "min_value" : 0.0,
-              "max_value" : 4.0,
+              "max_value" : 2.5,
               "default_value" : 0.0
             },
             "ch1" : {
               "address" : 1,
               "min_value" : 0.0,
-              "max_value" : 4.0,
+              "max_value" : 2.5,
               "default_value" : 0.0
             },
             "ch2" : {
               "address" : 2,
               "min_value" : 0.0,
-              "max_value" : 4.0,
+              "max_value" : 2.5,
               "default_value" : 0.0
             },
             "ch3" : {
               "address" : 3,
               "min_value" : 0.0,
-              "max_value" : 4.0,
+              "max_value" : 2.5,
               "default_value" : 0.0
             }
         },

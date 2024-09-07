@@ -73,8 +73,7 @@ class EKitFirmware final : public EKitBus,
     /// \return Corresponding #EKIT_ERROR error code.
     EKIT_ERROR process_comm_status(uint8_t cs);
 
-    /// \param yield - relinquish thread execution time in favour of other threads (may be useful in some situations)
-    EKIT_ERROR wait_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to);
+
 
 public:
 
@@ -187,7 +186,11 @@ public:
     /// \return Corresponding EKIT_ERROR error code.
     EKIT_ERROR sync_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to);
 
-
+    /// \brief Wait until previous command of the device is executed
+    /// \param hdr - Resulting command header returned by device
+    /// \param yield - relinquish thread execution time in favour of other threads (may be useful in some situations)
+    /// \param to - timeout counting object.
+    EKIT_ERROR wait_vdev(CommResponseHeader& hdr, bool yield, EKitTimeout& to);
 
     /// \brief Registers virtual device
     EKIT_ERROR register_vdev(int dev_id, EKitFirmwareCallbacks* vdev);

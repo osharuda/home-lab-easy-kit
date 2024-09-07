@@ -597,6 +597,7 @@ int main(int argc, char* argv[])
         std::shared_ptr<SPIDACDev> dev;
         std::shared_ptr<CommandHandler> spidac_start_cont_handler;
         std::shared_ptr<CommandHandler> spidac_start_period_handler;
+        std::shared_ptr<CommandHandler> spidac_update_phase_handler;
         std::shared_ptr<CommandHandler> spidac_set_default_handler;
         std::shared_ptr<CommandHandler> spidac_stop_handler;
         std::shared_ptr<CommandHandler> spidac_is_running_handler;
@@ -617,6 +618,7 @@ int main(int argc, char* argv[])
         h.dev.reset(new SPIDACDev(firmware, config));
         h.spidac_start_cont_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStartContinuousHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_start_period_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStartPeriodHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        h.spidac_update_phase_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACUpdatePhaseHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_set_default_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACSetDefaultHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_stop_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStopHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
         h.spidac_is_running_handler.reset(dynamic_cast<CommandHandler*>(new SPIDACStatusHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
@@ -630,6 +632,7 @@ int main(int argc, char* argv[])
 
         ui->add_command(cmd_index++, h.spidac_start_cont_handler);
         ui->add_command(cmd_index++, h.spidac_start_period_handler);
+        ui->add_command(cmd_index++, h.spidac_update_phase_handler);
         ui->add_command(cmd_index++, h.spidac_set_default_handler);
         ui->add_command(cmd_index++, h.spidac_stop_handler);
         ui->add_command(cmd_index++, h.spidac_is_running_handler);
