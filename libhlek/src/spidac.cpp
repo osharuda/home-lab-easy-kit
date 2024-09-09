@@ -27,6 +27,19 @@
 #include <limits.h>
 #include "tools.hpp"
 
+#define SPIDAC_CHECK_APPEND_PARAM(val, min, max)                                                               \
+    if ((min) >= (max)) {                                                                                      \
+        throw EKitException(func_name, EKIT_BAD_PARAM, "Minimum value should be less then maximum value");     \
+    }                                                                                                          \
+    if ((value) > (max)) {                                                                                     \
+        throw EKitException(func_name, EKIT_BAD_PARAM, "Value should be less then maximum value");             \
+    }                                                                                                          \
+    if ((value) < (min)) {                                                                                     \
+        throw EKitException(func_name, EKIT_BAD_PARAM, "Value should be greater or equal then minimum value"); \
+    }
+
+static bool g_spidac_software_le = tools::is_little_endian();
+
 /// \brief Appends frame with DAC8564 sample to the buffer
 /// \param value - value
 /// \param min_value - minimal value for the channel
@@ -53,19 +66,71 @@ void spidac_append_dac8564_sample(double value, double min_value, double max_val
     ///              SEL₁=1  SEL₀=1 to select buffer D
     /// PD₀ - Power down mode selection (by setting to 1)
     /// D₁₅ (MSB) - D₀ (LSB) - Data
-    const char *func_name = "SPIDACDev::append_dac8564_sample";
-    double x = tools::normalize_value(value, min_value, max_value);
+    const char *func_name = "spidac_append_dac8564_sample";
     constexpr uint16_t max_val = 0xFFFF;
+    SPIDAC_CHECK_APPEND_PARAM(value, min_value, max_value);
+    double x = tools::normalize_value(value, min_value, max_value);
     uint16_t val = (uint16_t)(max_val * x);
     uint8_t *val_ptr = (uint8_t * ) & val;
     uint8_t cmd = (((uint8_t) address) & (uint8_t) 3) << 1;
 
-
-    buffer.push_back(/*tools::reverse_bits*/(cmd)); // Normal mode.
-    buffer.push_back(/*tools::reverse_bits*/(val_ptr[1]));
-    buffer.push_back(/*tools::reverse_bits*/(val_ptr[0]));
+    buffer.push_back((cmd)); // Normal mode.
+    buffer.push_back((val_ptr[1]));
+    buffer.push_back((val_ptr[0]));
 }
 
+/// \brief Appends frame with DAC7611 sample to the buffer
+/// \param value - value
+/// \param min_value - minimal value for the channel
+/// \param max_value - maximum value for the channel
+/// \param address - address
+/// \param buffer - buffer to be appended
+/// \warning This method is reflection of the SPIDACCustomizer::get_frame_for_channel() from customizer part.
+///          Implementation of these methods should match!
+void spidac_append_dac7611_sample(double value, double min_value, double max_value, size_t address, std::vector<uint8_t>& buffer) {
+    const char *func_name = "spidac_append_dac7611_sample";
+    constexpr uint16_t max_val = 0x0FFF;
+    SPIDAC_CHECK_APPEND_PARAM(value, min_value, max_value);
+    double x = tools::normalize_value(value, min_value, max_value);
+
+    uint16_t val = (uint16_t) (max_val * x);
+
+    uint8_t bl = (uint8_t) (val & 0xFF);
+    uint8_t bh = (uint8_t) (val >> 8);
+
+    buffer.push_back(bh);
+    buffer.push_back(bl);
+}
+
+void spidac_append_dac8550_sample(double value, double min_value, double max_value, size_t address, std::vector<uint8_t>& buffer) {
+    /// DAC8550 format (Datasheet information:
+    ///     "DAC8550 16-bit, Ultra-Low Glitch, Voltage Output Digital-To-Analog Converter",
+    ///     internal shift register, page 19)
+    ///
+    /// Frame size - 24 bit (numbered as transferred)
+    /// 23 22 21 20 19 18    17  16    15   14   13   12   11   10   9   8   7   6   5   4   3   2   1   0
+    /// [  U N U S E D  ]    PD₁ PD₀   D₁₅  D₁₄  D₁₃  D₁₂  D₁₁  D₁₀  D₉  D₈  D₇  D₆  D₅  D₄  D₃  D₂  D₁  D₀
+    /// PD₁, PD₀ - Mode
+    /// PD₁=0, PD₀=0 : normal mode
+    /// PD₁=0, PD₀=1 : Output typically 1kΩ to GND
+    /// PD₁=1, PD₀=0 : Output typically 100kΩ to GND
+    /// PD₁=1, PD₀=1 : High-Z state
+    /// D₁₅ (MSB) - D₀ (LSB) - Data
+
+    const char* func_name = "spidac_append_dac8550_sample";
+    constexpr uint16_t max_val = 0xFFFF;
+    SPIDAC_CHECK_APPEND_PARAM(value, min_value, max_value);
+    double x = tools::normalize_value(value, min_value, max_value) - 0.5;
+    int16_t val = (int16_t)((double)max_val * x);
+
+    uint8_t cmd_byte = 0; // Normal mode.
+    uint8_t low_nibble = (uint8_t)(val & 0xFF);
+    uint8_t high_nibble = (uint8_t)(val >> 8);
+
+    buffer.push_back(cmd_byte);
+    buffer.push_back(high_nibble);
+    buffer.push_back(low_nibble);
+}
 
 struct SPIDACWaveformParam spidac_default_sin_cos_param = {.amplitude = 0.5L, .offset = 0.5L, .start_x=0.0L, .stop_x=2*M_PI, .sigma=0.0L};
 std::vector<double> spidac_waveform_sin(size_t n_samples, struct SPIDACWaveformParam* wf_param) {
@@ -161,7 +226,6 @@ SPIDACDev::SPIDACDev(std::shared_ptr<EKitBus>& ebus, const SPIDACConfig* cfg) :
     {
 	static const char* const func_name = "SPIDACDev::SPIDACDev";
     reset_config();
-    little_endian = tools::is_little_endian();
     switch (config->sample_format) {
         case SPIDAC_SAMPLE_FORMAT_DAC8564:
             append_spi_sample_func = std::bind(spidac_append_dac8564_sample,
@@ -170,6 +234,24 @@ SPIDACDev::SPIDACDev(std::shared_ptr<EKitBus>& ebus, const SPIDACConfig* cfg) :
                                               std::placeholders::_3,
                                               std::placeholders::_4,
                                               std::placeholders::_5);
+        break;
+
+        case SPIDAC_SAMPLE_FORMAT_DAC7611:
+            append_spi_sample_func = std::bind(spidac_append_dac7611_sample,
+                                               std::placeholders::_1,
+                                               std::placeholders::_2,
+                                               std::placeholders::_3,
+                                               std::placeholders::_4,
+                                               std::placeholders::_5);
+        break;
+
+        case SPIDAC_SAMPLE_FORMAT_DAC8550:
+            append_spi_sample_func = std::bind(spidac_append_dac8550_sample,
+                                               std::placeholders::_1,
+                                               std::placeholders::_2,
+                                               std::placeholders::_3,
+                                               std::placeholders::_4,
+                                               std::placeholders::_5);
         break;
 
         default:
@@ -491,66 +573,6 @@ void SPIDACDev::upload_data(const std::vector<uint8_t>& buffer) {
     } while (bytes_sent < buf_len);
 }
 
-/*
-void SPIDACDev::append_dac7611_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer) {
-    const char* func_name = "SPIDACDev::append_dac7611_sample";
-    double x = normalize_value(value, channel_index);
-
-    assert(config->frame_size==2);   // Two byte frames are supported only
-    assert((config->bits_per_sample > 8) && (config->bits_per_sample <= 16)); // Resolution between 9 and 16 bits only
-
-    // Conversion
-    uint64_t bits_mask = (1 << config->bits_per_sample) - 1;
-    uint64_t x64 = (uint64_t)(bits_mask * x);
-    uint16_t x16 = (uint16_t)(x64 & bits_mask);
-    uint8_t* frame = (uint8_t*)&x16;
-    size_t frame_size = 2;
-
-    switch (config->frame_format) {
-        case MSB:
-            if (little_endian) {
-                for (int i = 0; i<frame_size; i++) buffer.push_back(frame[i]);
-            } else {
-                for (int i = frame_size-1; i>=0; i--) buffer.push_back(frame[i]);
-            }
-            break;
-        case LSB:
-        default:
-            throw EKitException(func_name, EKIT_NOT_SUPPORTED, "Frame format is not implemented.");
-    };
-}
-
-void SPIDACDev::append_dac8550_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer) {
-    /// DAC8550 format (Datasheet information:
-    ///     "DAC8550 16-bit, Ultra-Low Glitch, Voltage Output Digital-To-Analog Converter",
-    ///     internal shift register, page 19)
-    ///
-    /// Frame size - 24 bit (numbered as transferred)
-    /// 23 22 21 20 19 18    17  16    15   14   13   12   11   10   9   8   7   6   5   4   3   2   1   0
-    /// [  U N U S E D  ]    PD₁ PD₀   D₁₅  D₁₄  D₁₃  D₁₂  D₁₁  D₁₀  D₉  D₈  D₇  D₆  D₅  D₄  D₃  D₂  D₁  D₀
-    /// PD₁, PD₀ - Mode
-    /// PD₁=0, PD₀=0 : normal mode
-    /// PD₁=0, PD₀=1 : Output typically 1kΩ to GND
-    /// PD₁=1, PD₀=0 : Output typically 100kΩ to GND
-    /// PD₁=1, PD₀=1 : High-Z state
-    /// D₁₅ (MSB) - D₀ (LSB) - Data
-
-    assert(config->frames_per_sample==3); // 3 frames
-    assert(config->frame_size==1);        // by 1 byte each
-    assert(config->bits_per_sample==16);  // 16 bits
-
-    const char* func_name = "SPIDACDev::append_dac8550_sample";
-    double x = normalize_value(value, channel_index);
-    constexpr uint16_t max_val = 0xFFFF;
-    uint16_t val = (uint16_t)(max_val * x);
-    uint8_t* val_ptr = (uint8_t*)&val;
-
-    buffer.push_back(val_ptr[0]);
-    buffer.push_back(val_ptr[1]);
-    buffer.push_back(0); // Normal mode.
-}
-*/
-
 
 void SPIDACDev::reset_config() {
     static const char* const func_name = "SPIDACDev::reset_config";
@@ -565,10 +587,10 @@ void SPIDACDev::reset_config() {
         ch_config.max_value = channel_descriptor->max_value;
         ch_config.default_value = channel_descriptor->default_value;
         ch_config.name = channel_descriptor->name;
+        ch_config.phase = 0;
+        ch_config.phase_increment = 1;
         ch_config.samples.clear();
 
         channels[ch_config.address] = ch_config;
     }
-
-    little_endian = tools::is_little_endian();
 }

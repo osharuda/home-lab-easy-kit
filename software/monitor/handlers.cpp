@@ -274,10 +274,10 @@ double CommandHandler::arg_double(  const std::vector<std::string>& args,
     }
 
     if (res < min_val) {
-        err = tools::format_string("Less than minimal value is specified for %s (value must be between: %f%s <= v <= %f%s)", name, min_val, max_val);
+        err = tools::format_string("Less than minimal value is specified for %s (value must be between: %f <= v <= %f)", name, min_val, max_val);
         throw CommandHandlerException(err);
     } else if (res > max_val) {
-        err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %f%s <= v <= %f%s)", name, min_val, max_val);
+        err = tools::format_string("Greater than maximum value is specified for %s (value must be between: %f <= v <= %f)", name, min_val, max_val);
         throw CommandHandlerException(err);
     }
 

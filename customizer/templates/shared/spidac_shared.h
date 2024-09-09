@@ -76,7 +76,6 @@ struct SPIDACStartInfo {{
 /// \brief Structure that describes status of the SPIDAC device
 struct SPIDACStatus {{
     volatile uint8_t status;             /// Describes status of the device.
-    uint8_t repeat_count;
     struct SPIDACStartInfo start_info;
 }};
 #pragma pack(pop)

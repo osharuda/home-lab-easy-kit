@@ -143,7 +143,7 @@ static inline void spidac_sample_next(
     // Restart DMA
     dev->tx_dma_channel->CCR   = priv_data->dma_ccr_disabled;
     dev->tx_dma_channel->CMAR  = (uint32_t)priv_data->current_channel_data->current_sample_ptr;
-    dev->tx_dma_channel->CNDTR = (uint32_t)dev->transaction_size;
+    dev->tx_dma_channel->CNDTR = (uint32_t)dev->transaction_frame_size;
     dev->tx_dma_channel->CCR   = priv_data->dma_ccr_enabled;
 }
 
@@ -271,7 +271,6 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     priv_data->sample_buffer_size = 0;
     priv_data->status             = (struct SPIDACStatus*)dev->buffer;
     priv_data->status->status     = STOPPED;
-    priv_data->status->repeat_count = 0;
 
     memcpy((void*)dev->default_sample_base, (void*)dev->default_values, dev->sample_size);
     memset(priv_data->channel_data, 0, sizeof(struct SPIDACChannelData) * dev->channel_count);
@@ -367,7 +366,7 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     priv_data->dma_tx_preinit.DMA_PeripheralBaseAddr = (uint32_t) &(dev->spi->DR);
     priv_data->dma_tx_preinit.DMA_MemoryBaseAddr = (uint32_t) dev->sample_buffer_base;
     priv_data->dma_tx_preinit.DMA_DIR = DMA_DIR_PeripheralDST;
-    priv_data->dma_tx_preinit.DMA_BufferSize = dev->transaction_size;
+    priv_data->dma_tx_preinit.DMA_BufferSize = dev->transaction_frame_size;
     priv_data->dma_tx_preinit.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
     priv_data->dma_tx_preinit.DMA_MemoryInc = DMA_MemoryInc_Enable;
     priv_data->dma_tx_preinit.DMA_PeripheralDataSize = (SPIDAC_FRAME_SIZE(dev) == 1) ? DMA_PeripheralDataSize_Byte

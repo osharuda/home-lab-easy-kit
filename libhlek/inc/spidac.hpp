@@ -207,24 +207,6 @@ class SPIDACDev final : public EKitVirtualDevice {
     void reset_config();
 
     SPIDAC_CHANNELS_CONFIG channels;
-    bool little_endian;
-/*
-    /// \brief Appends frame with DAC7611 sample to the buffer
-    /// \param value - sample value
-    /// \param channel_index - channel index
-    /// \param buffer - buffer to be appended with the frame
-    /// \warning This method is reflection of the SPIDACCustomizer::get_frame_for_channel() from customizer part.
-    ///          Implementation of these methods should match!
-    void append_dac7611_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
-
-    /// \brief Appends frame with DAC8550 sample to the buffer
-    /// \param value - sample value
-    /// \param channel_index - channel index
-    /// \param buffer - buffer to be appended with the frame
-    /// \warning This method is reflection of the SPIDACCustomizer::get_frame_for_channel() from customizer part.
-    ///          Implementation of these methods should match!
-    void append_dac8550_sample(double value, size_t channel_index, std::vector<uint8_t>& buffer);
-*/
 
     /// \brief Normalizes phase to be in range [0 ... n)
     /// \param phase - input phase

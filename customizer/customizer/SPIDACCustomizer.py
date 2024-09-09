@@ -16,10 +16,10 @@
 from DeviceCustomizer import *
 from tools import *
 from keywords import *
-import sys
+from ctypes import *
 
 
-def get_channels_definition(devname: str, channels: dict) -> (str, int, dict):
+def get_channels_definition(devname: str, channels: dict, max_channels: int) -> (str, int, dict):
     """
     :param devname: Name of the device
     :param channels: Dictionary with the channel names as keys and values as dictionaries with the following key (str)/values:
@@ -27,6 +27,7 @@ def get_channels_definition(devname: str, channels: dict) -> (str, int, dict):
                      min_value (float) - minimum value for the channel
                      max_value (float) - maximum value for the channel
                      default_value (float) - default value for the channel
+    :param max_channels: Maximum number of channels for this part number.
     :return: Returns group of three values:
              [0]: C/C++ like definition for array of SPIDACChannelDescriptor structure
              [1]: Number of the channels
@@ -46,7 +47,11 @@ def get_channels_definition(devname: str, channels: dict) -> (str, int, dict):
         ch_name = str(k)
 
         # Process address
-        ch_address = int(v["address"])
+        if max_channels > 1:
+            ch_address = int(v["address"])
+        else:
+            ch_address = 0
+
         if ch_address in ch_addresses:
             raise RuntimeError(f'Duplicate channel {ch_address} for device "{devname}"')
         ch_addresses.add(ch_address)
@@ -124,6 +129,52 @@ def spidac_append_dac8564_sample(value: float,
 
     return result
 
+
+def spidac_append_dac7611_sample(value: float,
+                                 min_value: float,
+                                 max_value: float,
+                                 address: int):
+    max_val = 0x0FFF
+    x = normalize_value(value, min_value, max_value)
+    val = int(max_val * x)
+
+    result = list()
+    result += [hex((val & 0xFF00) >> 8)]
+    result += [hex(val & 0xFF)]
+
+    return result
+
+
+def spidac_append_dac8550_sample(value: float,
+                                 min_value: float,
+                                 max_value: float,
+                                 address: int):
+    # DAC8550 format (Datasheet information:
+    # "DAC8550 16-bit, Ultra-Low Glitch, Voltage Output Digital-To-Analog Converter",
+    # internal shift register, page 19)
+    #
+    # Frame size - 24 bit (numbered as transferred)
+    # 23 22 21 20 19 18    17  16    15   14   13   12   11   10   9   8   7   6   5   4   3   2   1   0
+    # [  U N U S E D  ]    PD₁ PD₀   D₁₅  D₁₄  D₁₃  D₁₂  D₁₁  D₁₀  D₉  D₈  D₇  D₆  D₅  D₄  D₃  D₂  D₁  D₀
+    # PD₁, PD₀ - Mode
+    # PD₁=0, PD₀=0 : normal mode
+    # PD₁=0, PD₀=1 : Output typically 1kΩ to GND
+    # PD₁=1, PD₀=0 : Output typically 100kΩ to GND
+    # PD₁=1, PD₀=1 : High-Z state
+    # D₁₅ (MSB) - D₀ (LSB) - Data
+
+    max_val = 0xFFFF
+    x = normalize_value(value, min_value, max_value) - 0.5
+    val = int(max_val * x)
+
+    result = list()
+    result += [hex(0)]
+    result += [hex(val >> 8)]
+    result += [hex(val & 0xFF)]
+
+    return result
+
+
 def get_frame_for_channel(min_val: float,
                           max_val: float,
                           def_value: float,
@@ -175,18 +226,18 @@ class SPIDacChips:
                 KW_SPIDAC_FRAMES_PER_SAMPLE: 1,
                 KW_SPIDAC_LD_MODE: KW_SPIDAC_LD_MODE_FALL,
                 KW_SPIDAC_BITS_PER_SAMPLE: 12,
-                KW_SPIDAC_SAMPLE_FORMAT: 'SPIDAC_SAMPLE_FORMAT_DAC7611',
+                KW_SPIDAC_SAMPLE_FORMAT: KW_SPIDAC_SAMPLE_FORMAT_DAC7611,
                 KW_MAX_CHANNELS: 1
             },
             'DAC8550': {
-                KW_SPI_CLOCK_PHASE: KW_SPI_CLOCK_PHASE_SECOND,
+                KW_SPI_CLOCK_PHASE: KW_SPI_CLOCK_PHASE_FIRST,
                 KW_SPI_CLOCK_POLARITY: KW_SPI_CLOCK_POLARITY_IDLE_HIGH,
                 KW_SPI_CLOCK_SPEED: '9MHz',
-                KW_SPI_FRAME_FORMAT: KW_SPI_FRAME_FORMAT_MSB,
+                KW_SPI_FRAME_FORMAT: KW_SPI_FRAME_FORMAT_LSB,
                 KW_SPI_FRAME_SIZE: 8,
-                KW_SPIDAC_FRAMES_PER_SAMPLE: 2,
+                KW_SPIDAC_FRAMES_PER_SAMPLE: 3,
                 KW_SPIDAC_BITS_PER_SAMPLE: 16,
-                KW_SPIDAC_SAMPLE_FORMAT: 'SPIDAC_SAMPLE_FORMAT_DAC8550',
+                KW_SPIDAC_SAMPLE_FORMAT: KW_SPIDAC_SAMPLE_FORMAT_DAC8550,
                 KW_MAX_CHANNELS: 1
             },
             'DAC8564': {
@@ -198,7 +249,7 @@ class SPIDacChips:
                 KW_SPIDAC_FRAMES_PER_SAMPLE: 3,
                 KW_SPIDAC_LD_MODE: KW_SPIDAC_LD_MODE_RISE,
                 KW_SPIDAC_BITS_PER_SAMPLE: 16,
-                KW_SPIDAC_SAMPLE_FORMAT: 'SPIDAC_SAMPLE_FORMAT_DAC8564',
+                KW_SPIDAC_SAMPLE_FORMAT: KW_SPIDAC_SAMPLE_FORMAT_DAC8564,
                 KW_MAX_CHANNELS: 4
             }
         }
@@ -217,7 +268,7 @@ class SPIDACCustomizer(DeviceCustomizer):
         self.sw_lib_header = "spidac_conf.hpp"
         self.sw_lib_source = "spidac_conf.cpp"
 
-        self.little_endian = sys.byteorder == 'little'
+        #self.little_endian = sys.byteorder == 'little'
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
 
@@ -250,21 +301,6 @@ class SPIDACCustomizer(DeviceCustomizer):
 
         return ld_port, ld_pin, ld_rise
 
-    def read_address_configuration(self, dev_config: dict, dev_requires: dict, address_len: int, dev_name: str):
-        address_list = []
-        address_pins = []
-
-        max_addr = 2 ** address_len
-
-        if address_len > 0:
-            address_pins = get_value_from_dict_list([dev_requires], KW_SPIDAC_ADDRESS_GPIO, dev_name)
-            address_list = get_value_from_dict_list([dev_config], KW_SPIDAC_ADDRESS_LIST, dev_name)
-
-            for a in address_list:
-                if a < 0 or a >= max_addr:
-                    raise RuntimeError(f'Address {a} exceed maximum address value ({max_addr}) for device {dev_name}.')
-
-        return address_list, address_pins
 
     def get_spidac_status_length(self, channel_number: int):
         return f"sizeof(struct SPIDACStatus) + {channel_number}*sizeof(struct SPIDACChannelSamplingInfo)"
@@ -371,10 +407,11 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             # Sample format
             sample_format = get_value_from_dict_list([dev_config, part_number_config], KW_SPIDAC_SAMPLE_FORMAT, dev_name)
+            max_channels = get_value_from_dict_list([part_number_config], KW_MAX_CHANNELS, dev_name)
 
 
 
-            channels_descr, channels_count, channels_by_index = get_channels_definition(dev_name, dev_config[KW_SPIDAC_CHANNELS])
+            channels_descr, channels_count, channels_by_index = get_channels_definition(dev_name, dev_config[KW_SPIDAC_CHANNELS], max_channels)
             channels_addresses = sorted(list(channels_by_index.keys()))
             channels_descr_varname = f"g_{dev_name.lower()}_channel_descriptors"
             sw_channels_descriptors.append(f"const struct SPIDACChannelDescriptor {channels_descr_varname}[] = {{ {channels_descr} }};")
@@ -433,8 +470,12 @@ class SPIDACCustomizer(DeviceCustomizer):
                 max_value = float(channels_by_index[address]["max_value"])
                 def_value = float(channels_by_index[address]["def_value"])
 
-                if sample_format == 'SPIDAC_SAMPLE_FORMAT_DAC8564':
+                if sample_format == KW_SPIDAC_SAMPLE_FORMAT_DAC8564:
                     init_frames_buffer.extend(spidac_append_dac8564_sample(def_value, min_value, max_value, address))
+                elif sample_format == KW_SPIDAC_SAMPLE_FORMAT_DAC8550:
+                    init_frames_buffer.extend(spidac_append_dac8550_sample(def_value, min_value, max_value, address))
+                elif sample_format == KW_SPIDAC_SAMPLE_FORMAT_DAC7611:
+                    init_frames_buffer.extend(spidac_append_dac7611_sample(def_value, min_value, max_value, address))
                 else:
                     raise RuntimeError(f'Unknown sample format, are you sure "{KW_SPIDAC_PART_NUMBER}" was specified in json config file.')
 
@@ -483,7 +524,8 @@ class SPIDACCustomizer(DeviceCustomizer):
     {buffer_size} + {spi_dac_status_len}, /* Buffer size (status and samples) */\\
     {buffer_size - sample_size}, /* Maximum sample buffer size (one sample is dedicated to default values) */\\
     {sample_size}, /* Sample (data for all channels) size in bytes */\\
-    {transaction_size}, /* SPI Transaction size (size of the sample data for single channel) */\\
+    {transaction_size}, /* SPI Transaction size (size of the sample data for single channel, in bytes) */\\
+    {transaction_size // (frame_size + 1)}, /* SPI Transaction size (size of the sample data for single channel, in frames) */\\ 
     {tx_dma_irqn},              /* TX DMA IRQn value */\\
     {timer_irqn},               /* TIMER IRQn value */\\
     {baud_rate_control},        /* Baud rate control value for SPI */\\
@@ -501,7 +543,7 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             sw_device_desсriptors.append(f"""{{\
     "{dev_name}",               /* Name of the device */\\
-    {buffer_size},              /* Device buffer length */\\
+    {buffer_size - sample_size},/* Maximum sample buffer size (one sample is dedicated to default values) */\\
     {frames_per_sample},        /* Frames per sample */\\
     {frame_size + 1},           /* Frame size, in bytes */\\
     {max_bytes_per_transaction},       /* Max bytes per i2c transaction */\\

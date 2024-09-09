@@ -131,7 +131,9 @@ struct __attribute__ ((aligned)) SPIDACInstance {
 
     uint16_t                   sample_size;              ///< Sample (data for all channels) size in bytes
 
-    uint16_t                   transaction_size;         ///< SPI Transaction size (size of the sample data for single channel)
+    uint16_t                   transaction_size;         ///< SPI Transaction size (size of the sample data for single channel, in bytes)
+
+    uint16_t                   transaction_frame_size;    ///< SPI Transaction size (size of the sample data for single channel, in frames)
 
     IRQn_Type                  tx_dma_complete_irqn;     ///< DMA TX transfer complete irqn
 
