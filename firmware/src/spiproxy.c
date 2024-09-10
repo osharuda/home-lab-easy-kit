@@ -94,7 +94,13 @@ void spiproxy_stop(struct SPIProxyInstance* dev);
 
 /// \brief Common TX DMA IRQ handler (DMA mode only)
 /// \param index - index of the virtual device
+/// \note Protecting data from race condition is not required here because we are in context of interrupt. SPIProxy has
+///       two modes:
+///       interrupt mode: In this mode just single interrupt is active - SPI_COMMON_IRQ_HANDLER.
+///       DMA mode: In this mode just two interrupts may be active - SPI_COMMON_TX_DMA_IRQ_HANDLER and SPI_COMMON_RX_DMA_IRQ_HANDLER.
+///                 But their priorities are equal and they don't preempt each other.
 void SPI_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
+    assert_param(IN_INTERRUPT);
     assert_param(index<SPIPROXY_DEVICE_COUNT);
     struct SPIProxyInstance* dev = g_spiproxy_devs+index;
     struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&(dev->privdata);
@@ -103,18 +109,21 @@ void SPI_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     DMA_ClearITPendingBit(dev->dma_tx_it);
     DMA_Cmd(dev->tx_dma_channel, DISABLE);
 
-    SPI_PROXY_DISABLE_IRQ
     assert_param(priv_data->status->running);
     priv_data->send_frame_counter = priv_data->frame_number;
     if (priv_data->recv_frame_counter==(priv_data->frame_number & priv_data->recv_frames_mask)) {
         spiproxy_stop(dev);
     }
-    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_TX_DMA_IRQ_HANDLERS
 
 /// \brief Common TX DMA IRQ handler (DMA mode only)
 /// \param index - index of the virtual device
+/// \note Protecting data from race condition is not required here because we are in context of interrupt. SPIProxy has
+///       two modes:
+///       interrupt mode: In this mode just single interrupt is active - SPI_COMMON_IRQ_HANDLER.
+///       DMA mode: In this mode just two interrupts may be active - SPI_COMMON_TX_DMA_IRQ_HANDLER and SPI_COMMON_RX_DMA_IRQ_HANDLER.
+///                 But their priorities are equal and they don't preempt each other.
 void SPI_COMMON_RX_DMA_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIPROXY_DEVICE_COUNT);
     struct SPIProxyInstance* dev = g_spiproxy_devs+index;
@@ -125,18 +134,21 @@ void SPI_COMMON_RX_DMA_IRQ_HANDLER(uint16_t index) {
     DMA_ClearITPendingBit(dev->dma_rx_it);
     DMA_Cmd(dev->rx_dma_channel, DISABLE);
 
-    SPI_PROXY_DISABLE_IRQ
     assert_param(priv_data->status->running);
     priv_data->recv_frame_counter = priv_data->frame_number & priv_data->recv_frames_mask;
     if (priv_data->send_frame_counter==priv_data->frame_number) {
         spiproxy_stop(dev);
     }
-    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_RX_DMA_IRQ_HANDLERS
 
 /// \brief Common SPIProxy IRQ handler (interrupt mode only)
 /// \param index - index of the virtual device
+/// \note Protecting data from race condition is not required here because we are in context of interrupt. SPIProxy has
+///       two modes:
+///       interrupt mode: In this mode just single interrupt is active - SPI_COMMON_IRQ_HANDLER.
+///       DMA mode: In this mode just two interrupts may be active - SPI_COMMON_TX_DMA_IRQ_HANDLER and SPI_COMMON_RX_DMA_IRQ_HANDLER.
+///                 But their priorities are equal and they don't preempt each other.
 void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
     assert_param(index<SPIPROXY_DEVICE_COUNT);
     struct SPIProxyInstance* dev = g_spiproxy_devs+index;
@@ -170,7 +182,6 @@ void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
         assert_param(0);
     }
 
-    SPI_PROXY_DISABLE_IRQ
     if (    (priv_data->send_frame_counter==priv_data->frame_number) &&
             (priv_data->recv_frame_counter==(priv_data->frame_number & priv_data->recv_frames_mask)) &&
              priv_data->status->running) {
@@ -178,7 +189,6 @@ void SPI_COMMON_IRQ_HANDLER(uint16_t index) {
         dev_ctx->bytes_available =  sizeof(struct SPIProxyStatus) +
                                     (priv_data->transmit_len & priv_data->recv_frames_mask);
     }
-    SPI_PROXY_RESTORE_IRQ
 }
 SPI_FW_IRQ_HANDLERS
 
@@ -217,6 +227,12 @@ uint8_t spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
         goto done;
     }
 
+    if (dev->privdata.status->running) {
+        assert_param(0);
+        res = COMM_STATUS_BUSY;
+        goto done;
+    }
+
     // Copy data to the buffer
     memcpy((void*)dev->out_buffer, data, length);
     priv_data->frame_number = SPI_FRAME_COUNT(dev, length);
@@ -225,9 +241,7 @@ uint8_t spiproxy_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length) {
     priv_data->transmit_len = length;
     devctx->bytes_available = sizeof(struct SPIProxyStatus);   // Allow read status until data is fully received
 
-    SPI_PROXY_DISABLE_IRQ
     spiproxy_start(dev);
-    SPI_PROXY_RESTORE_IRQ
 
     res = COMM_STATUS_OK;
 
@@ -402,28 +416,35 @@ void spiproxy_init_interrupt_mode(struct SPIProxyInstance* dev) {
 
 /// \brief Sends a frame to SPI (interrupt mode only)
 /// \param dev - SPIProxy instance definition structure.
+/// \note Protecting data from race condition is not required here because we are in context of interrupt. SPIProxy has
+///       two modes:
+///       interrupt mode: In this mode just single interrupt is active - SPI_COMMON_IRQ_HANDLER.
+///       DMA mode: In this mode just two interrupts may be active - SPI_COMMON_TX_DMA_IRQ_HANDLER and SPI_COMMON_RX_DMA_IRQ_HANDLER.
+///                 But their priorities are equal and they don't preempt each other.
 void spiproxy_send(struct SPIProxyInstance* dev) {
     uint16_t data = 0;
     uint8_t* pdata = (uint8_t*)&data;
     uint16_t data_offset;
+    assert_param(IN_INTERRUPT); // Must be called from interrupt only!
     struct SPIProxyPrivData* priv_data = &(dev->privdata);
-    SPI_PROXY_DISABLE_IRQ
     data_offset = priv_data->send_frame_counter << dev->frame_size;
     assert_param(data_offset < dev->buffer_size);
-    SPI_PROXY_RESTORE_IRQ
 
     pdata[0] = dev->out_buffer[data_offset];
     pdata[dev->frame_size] = dev->out_buffer[data_offset+dev->frame_size];
     SPI_I2S_SendData(dev->spi, data);
 
-    SPI_PROXY_DISABLE_IRQ
     priv_data->send_frame_counter++;
     assert_param(priv_data->send_frame_counter <= priv_data->frame_number);
-    SPI_PROXY_RESTORE_IRQ
 }
 
 /// \brief Receives a frame from SPI (interrupt mode only)
 /// \param dev - SPIProxy instance definition structure.
+/// \note Protecting data from race condition is not required here because we are in context of interrupt. SPIProxy has
+///       two modes:
+///       interrupt mode: In this mode just single interrupt is active - SPI_COMMON_IRQ_HANDLER.
+///       DMA mode: In this mode just two interrupts may be active - SPI_COMMON_TX_DMA_IRQ_HANDLER and SPI_COMMON_RX_DMA_IRQ_HANDLER.
+///                 But their priorities are equal and they don't preempt each other.
 void spiproxy_receive(struct SPIProxyInstance* dev) {
     uint16_t data = 0;
     uint8_t* pdata = (uint8_t*)&data;
@@ -437,18 +458,15 @@ void spiproxy_receive(struct SPIProxyInstance* dev) {
 
     data = SPI_I2S_ReceiveData(dev->spi);
 
-    SPI_PROXY_DISABLE_IRQ
+    assert_param(IN_INTERRUPT);
     data_offset = priv_data->recv_frame_counter << dev->frame_size;
     assert_param(data_offset < dev->buffer_size);
-    SPI_PROXY_RESTORE_IRQ
 
     priv_data->in_data_buffer[data_offset] = pdata[0];
     priv_data->in_data_buffer[data_offset+dev->frame_size] = pdata[dev->frame_size];
 
-    SPI_PROXY_DISABLE_IRQ
     priv_data->recv_frame_counter++;
     assert_param(priv_data->recv_frame_counter <= priv_data->frame_number);
-    SPI_PROXY_RESTORE_IRQ
 
 done:
     return;
@@ -460,22 +478,21 @@ void spiproxy_start(struct SPIProxyInstance* dev) {
     START_PIN_DECLARATION;
     struct SPIProxyPrivData* priv_data = (struct SPIProxyPrivData*)&dev->privdata;
 
+    // Start
+    // Synchronization is not required here, because we are writing single byte, which is atomic operation as per ARM
+    // specification.
+    dev->privdata.status->running = 1;
+
+    SPI_SSOutputCmd(dev->spi, ENABLE);
+    DECLARE_PIN(dev->nss_port, 1 << dev->nss_pin, GPIO_Mode_AF_PP);
+
+    SPI_Cmd(dev->spi, ENABLE);
+
     // Enable DMA if needed
     if (SPI_DMA_MODE(dev)) {
-        priv_data->dma_tx_preinit->DMA_BufferSize = priv_data->frame_number;
-        DMA_Init(dev->tx_dma_channel, priv_data->dma_tx_preinit);
 
-        // Enable DMA channel
-        DMA_Cmd(dev->tx_dma_channel, ENABLE);
-
-        // Enable DMA interrupt
-        NVIC_SetPriority(dev->tx_dma_complete_irqn, IRQ_PRIORITY_DMA);
-        NVIC_EnableIRQ(dev->tx_dma_complete_irqn);
-        DMA_ITConfig(dev->tx_dma_channel, DMA_IT_TC, ENABLE);
-
-        // Enable DMA mode in SPI
-        SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
-
+        // If required, receive DMA should be initialized before transmit, because we are master and clock is controlled
+        // by transmission.
         if (SPI_IS_BIDIR(dev)) {
             priv_data->dma_rx_preinit->DMA_BufferSize = priv_data->frame_number;
             DMA_Init(dev->rx_dma_channel, priv_data->dma_rx_preinit);
@@ -491,15 +508,22 @@ void spiproxy_start(struct SPIProxyInstance* dev) {
             // Enable DMA mode in SPI
             SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Rx, ENABLE);
         }
+
+        // Setup transmit DMA
+        priv_data->dma_tx_preinit->DMA_BufferSize = priv_data->frame_number;
+        DMA_Init(dev->tx_dma_channel, priv_data->dma_tx_preinit);
+
+        // Enable DMA channel
+        DMA_Cmd(dev->tx_dma_channel, ENABLE);
+
+        // Enable DMA interrupt
+        NVIC_SetPriority(dev->tx_dma_complete_irqn, IRQ_PRIORITY_DMA);
+        NVIC_EnableIRQ(dev->tx_dma_complete_irqn);
+        DMA_ITConfig(dev->tx_dma_channel, DMA_IT_TC, ENABLE);
+
+        // Enable DMA mode in SPI
+        SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
     }
-
-    // Start
-    SPI_SSOutputCmd(dev->spi, ENABLE);
-    SPI_Cmd(dev->spi, ENABLE);
-
-    DECLARE_PIN(dev->nss_port, 1 << dev->nss_pin, GPIO_Mode_AF_PP);
-
-    dev->privdata.status->running = 1;
 }
 
 /// \brief Stops SPI transaction.

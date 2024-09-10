@@ -117,7 +117,6 @@ void SPIFlash::read(uint16_t address, uint16_t len, std::vector<uint8_t>& data) 
     EKitTimeout to(get_timeout());
 
     // Lock bus
-    auto bus = super::get_bus();
     BusLocker blocker(bus, to);
 
     // Send command

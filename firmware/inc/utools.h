@@ -484,7 +484,7 @@ extern "C" {
 /// \param state - IRQn state returned by NVIC_IRQ_STATE macro
 #define NVIC_RESTORE_IRQ(irqn, state)   NVIC->ISER[((uint32_t)(irqn) >> 5)] = (state)
 
-#define IN_INTERRUPT (SCB->ICSR & SCB_ICSR_VECTACTIVE_Pos)
+#define IN_INTERRUPT (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)
 /// \brief This function is used to calculate optimal prescaller and period values to schedule timer.
 /// \param us - input number of microseconds, must not be greater than #MCU_MAXIMUM_TIMER_US.
 /// \param prescaller - pointer to the output value of prescaller.

@@ -5,7 +5,7 @@
       "clock_speed" : 100000,
       "buffer_size" : 512,
       "address" : 19,
-      "requires" :  {"i2c" : "I2C1"}},
+      "requires" :  {"i2c" : "I2C2"}},
       "sys_tick": {"requires" : {"timer": "TIM3"}}},
 
   "devices" : {
@@ -15,12 +15,12 @@
         "use_dma" : 1,
         "bidirectional" : 1,
         "buffer_size" : 256,
-        "clock_phase" : "first",
-        "clock_polarity" : "idle_low",
+        "clock_phase" : "second",
+        "clock_polarity" : "idle_high",
         "clock_speed" : "281KHz",
         "frame_format" : "msb",
         "frame_size" : 8,
-        "requires" :  { "SPI" : {"spi": "SPI1"}},
+        "requires" :  { "SPI" : {"spi": "SPI1_REMAP"}},
         "hint": "25lc640"
       }
     }

@@ -34,6 +34,7 @@
 #include <libhlek/ad9850dev.hpp>
 #include <libhlek/spidac.hpp>
 #include <libhlek/spiproxy.hpp>
+#include <libhlek/spiflash.hpp>
 #include <libhlek/gsmmodem.hpp>
 #include <libhlek/uartdev.hpp>
 #include <libhlek/lcd1602a.hpp>
@@ -2065,6 +2066,51 @@ void SPIProxyWriteHandler::handle(const std::vector<std::string>& args) {
     } else {
         ui->log(tools::str_format("OK"));
     }
+}
+
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIFlashReadHandler                                       //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIFlashReadHandler,"spiflash::", "::read")
+std::string SPIFlashReadHandler::help() const {
+    auto d = std::dynamic_pointer_cast<SPIFlash>(device);
+    return tools::format_string("# %s reads data from %s. Requires two parameters:\n"
+                                "<address> - data offset\n"
+                                "<size> - data size\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIFlashReadHandler::handle(const std::vector<std::string>& args) {
+    auto d = std::dynamic_pointer_cast<SPIFlash>(device);
+    check_arg_count(args, 2);
+    uint16_t address = (uint16_t)arg_unsigned_int(args, "address", 0, std::numeric_limits<uint16_t>::max());
+    uint16_t size = (uint16_t)arg_unsigned_int(args, "size", 0, std::numeric_limits<uint16_t>::max());
+    std::vector<uint8_t> data;
+    d->read(address, size, data);
+    ui->log(tools::buffer_to_hex(data.data(), data.size(), true, " "));
+}
+
+//----------------------------------------------------------------------------------------------//
+//                                    SPIFlashWriteHandler                                   //
+//----------------------------------------------------------------------------------------------//
+DEFINE_HANDLER_DEFAULT_IMPL(SPIFlashWriteHandler,"spiflash::", "::write")
+std::string SPIFlashWriteHandler::help() const {
+    auto d = std::dynamic_pointer_cast<SPIFlash>(device);
+    return tools::format_string("# %s causes %s device to perform soft reset procedure. Requires two parameters:\n"
+                                "<address> - data offset\n"
+                                "<buffer> - hex buffer to write\n",
+                                get_command_name(),
+                                d->get_dev_name());
+}
+
+void SPIFlashWriteHandler::handle(const std::vector<std::string>& args) {
+    auto d = std::dynamic_pointer_cast<SPIFlash>(device);
+    check_arg_count(args, 2);
+    uint16_t address = (uint16_t)arg_unsigned_int(args, "address", 0, std::numeric_limits<uint16_t>::max());
+    std::vector<uint8_t> buffer = tools::buffer_from_hex(arg_get(args, "buffer"));
+    d->write(address, buffer);
 }
 
 //----------------------------------------------------------------------------------------------//

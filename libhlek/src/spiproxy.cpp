@@ -40,14 +40,20 @@ SPIProxyDev::~SPIProxyDev() {
 }
 
 EKIT_ERROR SPIProxyDev::lock(EKitTimeout& to) {
+    bus_lock.lock();
     return std::dynamic_pointer_cast<EKitFirmware>(bus)->lock(get_addr(), to);
+}
+
+EKIT_ERROR SPIProxyDev::unlock() {
+    EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->unlock();
+    bus_lock.unlock();
+    return err;
 }
 
 EKIT_ERROR SPIProxyDev::write(const void* ptr, size_t len, EKitTimeout& to) {
     static const char* const func_name = "SPIProxyDev::write";
 
-    // Lock bus
-    BusLocker blocker(bus, get_addr(), to);
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     EKIT_ERROR err = spi_proxy_wait(to);
     if (err==EKIT_OK) {
@@ -63,13 +69,11 @@ EKIT_ERROR SPIProxyDev::read(void* ptr, size_t len, EKitTimeout& to) {
     static_assert(sizeof(SPIProxyStatus)==1, "SPIProxyStatus size must be 1 byte, check structure padding and alignment.");
     EKIT_ERROR res = EKIT_OK;
     std::vector<uint8_t> data;
-    bool expired = false;
 
     data.resize(sizeof(SPIProxyStatus));
     struct SPIProxyStatus* status = (struct SPIProxyStatus*)data.data();
 
-    // Lock bus
-    BusLocker blocker(bus, get_addr(), to);
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     res = spi_proxy_wait(to);
     if (res != EKIT_OK) {
@@ -101,14 +105,12 @@ EKIT_ERROR SPIProxyDev::read_all(std::vector<uint8_t>& buffer, EKitTimeout& to) 
     static_assert(sizeof(SPIProxyStatus)==1, "SPIProxyStatus size must be 1 byte, check structure padding and alignment.");
     EKIT_ERROR res = EKIT_OK;
     std::vector<uint8_t> data;
-    bool expired = false;
     size_t data_len;
 
     data.resize(sizeof(struct SPIProxyStatus));
     struct SPIProxyStatus* status;
 
-    // Lock bus
-    BusLocker blocker(bus, get_addr(), to);
+    CHECK_SAFE_MUTEX_LOCKED(bus_lock);
 
     res = spi_proxy_wait(to);
     if (res != EKIT_OK) {

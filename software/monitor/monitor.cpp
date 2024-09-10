@@ -34,6 +34,7 @@
 #include <libhlek/ad9850dev.hpp>
 #include <libhlek/spidac.hpp>
 #include <libhlek/spiproxy.hpp>
+#include <libhlek/spiflash.hpp>
 #include <libhlek/gsmmodem.hpp>
 #include <libhlek/uartdev.hpp>
 #include <libhlek/lcd1602a.hpp>
@@ -559,14 +560,29 @@ int main(int argc, char* argv[])
         SPIProxyCommandHandlers& h = spiproxy_handlers.at(index);
         h.dev.reset(new SPIProxyDev(firmware, config));
 
-        // Initialize SPIProxy
-        h.spiproxy_info_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyInfoHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.spiproxy_read_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
-        h.spiproxy_write_handler.reset(dynamic_cast<CommandHandler*>(new SPIProxyWriteHandler(std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+        if (info_descr->hint == INFO_DEV_HINT_25LC640) {
+            // Initialize SPIFLASH
+            std::shared_ptr<EKitBus> spibus = std::dynamic_pointer_cast<EKitBus>(h.dev);
+            std::shared_ptr<SPIFlash> spiflash(new SPIFlash(spibus, -1, info_descr->name, info_descr->hint));
 
-        ui->add_command(cmd_index++, h.spiproxy_info_handler);
-        ui->add_command(cmd_index++, h.spiproxy_read_handler);
-        ui->add_command(cmd_index++, h.spiproxy_write_handler);
+            std::shared_ptr<CommandHandler> spiflash_read_handler(dynamic_cast<CommandHandler*>(new SPIFlashReadHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spiflash), ui)));
+            std::shared_ptr<CommandHandler> spiflash_write_handler(dynamic_cast<CommandHandler*>(new SPIFlashWriteHandler(std::dynamic_pointer_cast<EKitDeviceBase>(spiflash), ui)));
+
+            ui->add_command(cmd_index++, spiflash_read_handler);
+            ui->add_command(cmd_index++, spiflash_write_handler);
+        } else {
+            // Initialize SPIProxy
+            h.spiproxy_info_handler.reset(dynamic_cast<CommandHandler *>(new SPIProxyInfoHandler(
+                    std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+            h.spiproxy_read_handler.reset(dynamic_cast<CommandHandler *>(new SPIProxyReadHandler(
+                    std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+            h.spiproxy_write_handler.reset(dynamic_cast<CommandHandler *>(new SPIProxyWriteHandler(
+                    std::dynamic_pointer_cast<EKitDeviceBase>(h.dev), ui)));
+
+            ui->add_command(cmd_index++, h.spiproxy_info_handler);
+            ui->add_command(cmd_index++, h.spiproxy_read_handler);
+            ui->add_command(cmd_index++, h.spiproxy_write_handler);
+        }
     }
 #endif  
 
