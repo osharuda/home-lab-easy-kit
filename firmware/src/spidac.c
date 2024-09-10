@@ -358,9 +358,6 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     SPI_SSOutputCmd(dev->spi, ENABLE);
     SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
 
-    // Stop spi ----------------------------------------------------------------------------
-    /* spidac_stop(dev); */
-
     // Pre-initialize SPI TX DMA ----------------------------------------------------------------------------
     DMA_DeInit(dev->tx_dma_channel);
     priv_data->dma_tx_preinit.DMA_PeripheralBaseAddr = (uint32_t) &(dev->spi->DR);
