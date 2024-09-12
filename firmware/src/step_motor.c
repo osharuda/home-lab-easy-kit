@@ -573,6 +573,7 @@ void step_motor_init(void) {
         struct DeviceContext* dev_ctx = (struct DeviceContext*)&(dev->dev_ctx);
 
         // initialize device
+        memset((void*)dev_ctx, 0, sizeof(struct DeviceContext));
         dev_ctx->device_id = dev->dev_id;
         dev_ctx->on_command = step_motor_dev_execute;
         dev_ctx->on_sync = step_motor_dev_sync;

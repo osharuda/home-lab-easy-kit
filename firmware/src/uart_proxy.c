@@ -111,6 +111,7 @@ void uart_proxy_init(void)
 
 		circbuf_init(&g_uart_proxies[i].circ_buffer, g_uart_proxies[i].dev_buffer,g_uart_proxies[i].dev_buffer_len);
 		struct DeviceContext* dev_ctx = (struct DeviceContext*)&(g_uart_proxies[i].dev_ctx);
+        memset((void*)dev_ctx, 0, sizeof(struct DeviceContext));
 		dev_ctx->device_id = g_uart_proxies[i].dev_id;
 		dev_ctx->buffer = 0;
 		dev_ctx->circ_buffer = &(g_uart_proxies[i].circ_buffer);

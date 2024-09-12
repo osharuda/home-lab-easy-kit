@@ -35,7 +35,7 @@
 /// \brief When this macro is not zero, a special array is filled with debug information related to the I2C communication.
 ///        It is possible to dump this array with 'p/x g_i2c_track' gdb command, and to use output value to get the latest
 ///        event inside I2C bus. If disabled tracking is not used.
-#define USE_I2C_TRACKING 1
+#define USE_I2C_TRACKING 0
 
 #if USE_I2C_TRACKING
 struct _I2C_DBG_STRUCT {
@@ -313,22 +313,21 @@ void i2c_check_command(void) {
         switch (g_cmd_type) {
             case BUS_CMD_READ:
                 status = g_cur_device->on_read_done(g_cur_device->device_id, g_tran_dev_pos);
-                g_returned_comm_status = status & (~COMM_MAX_DEV_ADDR);
-                g_processed_cmd_count++;
             break;
 
             case BUS_CMD_WRITE:
                 status = g_cur_device->on_command(g_cmd_header.command_byte, g_recv_buffer, g_recv_data_pos);
-                g_returned_comm_status = status & (~COMM_MAX_DEV_ADDR);
-                g_processed_cmd_count++;
             break;
 
             case BUS_CMD_SYNC:
                 status = g_cur_device->on_sync(g_cmd_header.command_byte, g_recv_total_pos);
-                g_returned_comm_status = status & (~COMM_MAX_DEV_ADDR);
-                g_processed_cmd_count++;
             break;
+            default:
+                assert_param(0); // We should never be here
+                status = COMM_STATUS_FAIL;
         }
+        g_cur_device->comm_status = status & (~COMM_MAX_DEV_ADDR);
+        g_processed_cmd_count++;
     }
 }
 
@@ -479,7 +478,6 @@ void i2c_receive_byte(void) {
 			g_cur_device = g_devices[dev_id];
             g_device_id = dev_id;
             assert_param(IS_CLEARED(g_comm_status, COMM_STATUS_BUSY));
-			// g_comm_status = 0;
             I2C_STATUS_TRACK(0, dev_id, 0xC2);
 		}
 
@@ -596,7 +594,7 @@ void i2c_stop(void) {
 		// special case : if series of bytes are transmitted one (the last) byte is always discarded because it is stored in data register, while NACK
 		// is returned when shift register becomes empty. In the same time DR is not empty, therefore we have to reverse this byte back
 
-		// decrease counters
+		// Decrease counters
 		if (g_tran_dev_pos>0 && g_tran_total-g_tran_dev_pos==sizeof(struct CommResponseHeader)) {
 			// MCU was required to sent fake buffers because no more data was in buffer
 			g_tran_dev_pos--;
@@ -609,7 +607,7 @@ void i2c_stop(void) {
 
 	if (g_transmit==1 && IS_CLEARED(g_resp_header.comm_status, COMM_STATUS_BUSY) && g_tran_dev_pos > 0) {
         if (	g_cur_device->on_read_done!=0 &&
-                IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC) &&
+                /* IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC) && */
                 g_tran_dev_pos>0) {
             assert_param(g_cmd_count == g_processed_cmd_count);
             SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
@@ -621,14 +619,16 @@ void i2c_stop(void) {
         if (g_recv_total_pos >= sizeof(struct CommCommandHeader)) {
             if(g_cmd_header.length!=g_recv_data_pos) {
                 SET_FLAGS(g_comm_status, COMM_STATUS_FAIL);
+                goto i2c_stop_done;
             }
 
             if (g_cmd_header.control_crc!=g_crc) {
                 SET_FLAGS(g_comm_status, COMM_STATUS_CRC);
+                goto i2c_stop_done;
             }
 
-            if (g_cur_device->on_command!=0 &&
-                IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC)) {
+            if (g_cur_device->on_command!=0 /* &&
+                IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC) */) {
                 assert_param(g_cmd_count == g_processed_cmd_count);
                 SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
                 g_cmd_type = BUS_CMD_WRITE;
@@ -641,7 +641,7 @@ void i2c_stop(void) {
             g_cmd_count++;
         }
 	}
-
+i2c_stop_done:
     // Make sure g_transmit is initialized the same way every time communication starts (when ADDR is received).
     // It will allow reliably distinguish between transmit and receive. It is related to the way how EV ISR detects
     // operation mode

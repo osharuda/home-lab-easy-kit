@@ -1,0 +1,21 @@
+{
+  "firmware" : {
+    "mcu_model" : "stm32f103",
+    "i2c_bus" : {
+      "clock_speed" : 100000,
+      "buffer_size" : 100,
+      "address" : 29,
+      "requires" :  {"i2c" : "I2C2"}},
+      "sys_tick": {"requires" : {"timer": "TIM3"}}},
+
+  "devices" : {
+    "CanCustomizer": {
+      "can_b" : {
+        "dev_id" : 1,
+        "buffered_msg_count" : 256,
+        "bitrate": 1000,
+        "requires" :  {"can" : "CAN1_REMAP"}
+      }
+    }
+  }
+}
