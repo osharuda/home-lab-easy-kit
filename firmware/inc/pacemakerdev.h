@@ -45,7 +45,7 @@ typedef void(*PFN_PACEMAKER_SET_GPIO)(uint32_t);
 /// \struct tag_PaceMakerDevPrivData
 /// \brief Structure that describes private PaceMakerDev data
 struct PaceMakerDevPrivData {
-    struct PaceMakerStatus*       status;                 ///< Status of the virtual device.
+    struct PaceMakerStatus        status;                 ///< Status of the virtual device.
     struct PaceMakerTransition*   transitions;            ///< Data buffer.
     volatile uint32_t             main_cycle_number;      ///< Number of main cycles remains to the finish. If zero infinite cycling is used.
     volatile uint16_t             main_cycle_prescaller;  ///< Main time cycle prescaller.
@@ -60,13 +60,13 @@ struct PaceMakerDevPrivData {
 struct __attribute__ ((aligned)) PaceMakerDevInstance {
         struct DeviceContext          dev_ctx  __attribute__ ((aligned)); ///< Virtual device context
 
-        struct PaceMakerDevPrivData   privdata;              ///< Private data used by this PaceMakerDev device
+        struct PaceMakerDevPrivData     privdata;              ///< Private data used by this PaceMakerDev device
 
         PFN_PACEMAKER_INIT_GPIO         pfn_init_gpio;         ///< GPIO initializer function pointer
         
 	    PFN_PACEMAKER_SET_GPIO          pfn_set_gpio;          ///< GPIO setter function pointer
 
-        uint8_t*               buffer;                ///< Internal buffer
+        uint8_t*                        buffer;                ///< Internal buffer
 
         TIM_TypeDef*                    main_timer;            ///< Main timer to generate pulses
 
@@ -98,6 +98,12 @@ uint8_t pacemakerdev_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 /// \param length - amount of bytes read.
 /// \return Result of the operation as communication status.
 uint8_t pacemakerdev_read_done(uint8_t device_id, uint16_t length);
+
+/// \brief #ON_SYNC callback for all PaceMakerDev devices
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
+/// \param length - total length of the received data during the i2c transmittion.
+/// \return Result of the operation as communication status.
+uint8_t pacemakerdev_sync(uint8_t cmd_byte, uint16_t length);
 
 /// @}
 #endif

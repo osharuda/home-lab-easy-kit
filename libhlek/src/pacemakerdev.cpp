@@ -101,10 +101,16 @@ void PaceMakerDev::reset() {
 
 void PaceMakerDev::status(PaceMakerStatus& s) {
     const char* func_name = "PaceMakerDev::status";
+    CommResponseHeader hdr;
     EKitTimeout to(get_timeout());
     BusLocker blocker(bus, get_addr(), to);
 
-    EKIT_ERROR err = bus->read(&s, sizeof(PaceMakerStatus), to);
+    EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->sync_vdev(hdr, false, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "sync_vdev() failed");
+    }
+
+    err = bus->read(&s, sizeof(PaceMakerStatus), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "status read failed.");
     }

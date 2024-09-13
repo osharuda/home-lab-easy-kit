@@ -26,8 +26,8 @@
 #include <string.h>
 #include "utools.h"
 #include "i2c_bus.h"
-#include "pacemakerdev.h"
 #include "pacemakerdev_conf.h"
+#include "pacemakerdev.h"
 #include <stm32f10x.h>
 
 
@@ -97,7 +97,7 @@ uint8_t pacemaker_set_data(struct PaceMakerDevPrivData* pdata, struct PaceMakerD
 /// \param dev - device instance to be stopped.
 /// \param pdata - pointer to the virtual device private data.
 static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, struct PaceMakerDevPrivData* pdata, EKIT_ERROR err) {
-    assert_param(pdata->status->started); // Must be started
+    assert_param(pdata->status.started); // Must be started
 
     // Disable all interrupts
     timer_disable(dev->internal_timer, dev->internal_timer_irqn);
@@ -107,10 +107,10 @@ static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, s
     timer_disable_ex(dev->main_timer);
 
     // Clear status
-    pdata->status->started = 0;
-    pdata->status->internal_index = 0;
-    pdata->status->main_counter = 0;
-    pdata->status->last_error = err;
+    pdata->status.started = 0;
+    pdata->status.internal_index = 0;
+    pdata->status.main_counter = 0;
+    pdata->status.last_error = err;
 
     // Switch to default pin state
     dev->pfn_set_gpio(dev->default_pin_state);
@@ -122,16 +122,16 @@ static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
     PACEMAKER_DISABLE_IRQs
     trans = pdata->transitions;
     dev->pfn_set_gpio(dev->default_pin_state);
-    pdata->status->internal_index = 0;
+    pdata->status.internal_index = 0;
 
     if (pdata->main_cycle_number > 0) {
-        if (pdata->status->main_counter == 0) {
+        if (pdata->status.main_counter == 0) {
             // limited mode, stop signal generation and switch to default gpio
             pacemaker_stop_generation(dev, pdata, EKIT_OK);
             PACEMAKER_RESTORE_IRQs
             return;
         }
-        pdata->status->main_counter--;
+        pdata->status.main_counter--;
     }
 
     timer_start_ex(dev->internal_timer,
@@ -147,12 +147,12 @@ static inline void pacemaker_next_transition( struct PaceMakerDevInstance* dev,
                                               struct PaceMakerDevPrivData* pdata) {
     struct PaceMakerTransition* trans;
     PACEMAKER_DISABLE_IRQs
-    trans = pdata->transitions + pdata->status->internal_index;
+    trans = pdata->transitions + pdata->status.internal_index;
     dev->pfn_set_gpio(trans->signal_mask);
-    pdata->status->internal_index++;
+    pdata->status.internal_index++;
 
     // setup next transition
-    if (pdata->status->internal_index >= pdata->trans_number) {
+    if (pdata->status.internal_index >= pdata->trans_number) {
         timer_disable(dev->internal_timer, dev->internal_timer_irqn);
         timer_disable_ex(dev->internal_timer);
     } else {
@@ -177,7 +177,7 @@ void PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
 
     TIM_ClearITPendingBit(dev->main_timer, TIM_IT_Update);
 
-    if (priv_data->status->internal_index < priv_data->trans_number) {
+    if (priv_data->status.internal_index < priv_data->trans_number) {
         PACEMAKER_DISABLE_IRQs
         pacemaker_stop_generation(dev, priv_data, EKIT_TOO_FAST);
         PACEMAKER_RESTORE_IRQs
@@ -211,6 +211,7 @@ void pacemakerdev_init_vdev(struct PaceMakerDevInstance* dev, uint16_t index) {
     devctx->dev_index    = index;
     devctx->on_command   = pacemakerdev_execute;
     devctx->on_read_done = pacemakerdev_read_done;
+    devctx->on_sync      = pacemakerdev_sync;
     devctx->buffer       = dev->buffer;
     devctx->bytes_available = dev->buffer_size;
 
@@ -289,13 +290,13 @@ uint8_t pacemaker_reset(struct PaceMakerDevInstance* dev, struct PaceMakerDevPri
 
     // Clean status and private data
     memset((void*)pdata, 0, sizeof(struct PaceMakerDevPrivData));
-    pdata->status = (struct PaceMakerStatus*)dev->buffer;
+    memset((void*)&pdata->status, 0, sizeof(struct PaceMakerStatus));
+    memset((void*)dev->buffer, 0, sizeof(struct PaceMakerStatus));
     pdata->transitions = (struct PaceMakerTransition*)(dev->buffer + sizeof(struct PaceMakerStatus));
-    memset((void*)pdata->status, 0, sizeof(struct PaceMakerStatus));
 
     uint32_t trans_buffer_size = dev->buffer_size - sizeof(struct PaceMakerStatus);
     if ((trans_buffer_size % sizeof(struct PaceMakerTransition)) != 0) {
-        pdata->status->last_error = EKIT_UNALIGNED;
+        pdata->status.last_error = EKIT_UNALIGNED;
         goto done;
     }
     pdata->max_trans_number = trans_buffer_size / sizeof(struct PaceMakerTransition);
@@ -313,20 +314,19 @@ uint8_t pacemaker_start(    struct PaceMakerDevInstance* dev,
                             struct PaceMakerStartCommand* data,
                             uint16_t length) {
     uint8_t result = COMM_STATUS_FAIL;
-    struct PaceMakerStatus* status = priv_data->status;
 
-    if (status->started) {
-        status->last_error = EKIT_NOT_STOPPED;
+    if (priv_data->status.started) {
+        priv_data->status.last_error = EKIT_NOT_STOPPED;
         goto done; // Device must be stopped.
     }
 
     if (priv_data->trans_number == 0) {
-        status->last_error = EKIT_NO_DATA;
+        priv_data->status.last_error = EKIT_NO_DATA;
         goto done; // Data must be passed first.
     }
 
     if (length != sizeof(struct PaceMakerStartCommand)) {
-        status->last_error = EKIT_BAD_PARAM;
+        priv_data->status.last_error = EKIT_BAD_PARAM;
         goto done; // Bad buffer.
     }
 
@@ -334,10 +334,10 @@ uint8_t pacemaker_start(    struct PaceMakerDevInstance* dev,
     priv_data->main_cycle_prescaller = data->main_prescaller;
     priv_data->main_cycle_counter = data->main_counter;
 
-    status->started = 1;
-    status->last_error = EKIT_OK;
-    status->main_counter = priv_data->main_cycle_number;
-    status->internal_index = priv_data->trans_number;
+    priv_data->status.started = 1;
+    priv_data->status.last_error = EKIT_OK;
+    priv_data->status.main_counter = priv_data->main_cycle_number;
+    priv_data->status.internal_index = priv_data->trans_number;
     result = COMM_STATUS_OK;
 
     // Start main timer
@@ -353,10 +353,9 @@ done:
 
 uint8_t pacemaker_stop(struct PaceMakerDevInstance* dev, struct PaceMakerDevPrivData* pdata) {
     uint8_t result = COMM_STATUS_FAIL;
-    struct PaceMakerStatus* status = pdata->status;
 
-    if (status->started == 0) {
-        status->last_error = EKIT_NOT_STARTED;
+    if (pdata->status.started == 0) {
+        pdata->status.last_error = EKIT_NOT_STARTED;
         goto done; // Device must be stopped.
     }
 
@@ -369,37 +368,53 @@ done:
 
 uint8_t pacemaker_set_data(struct PaceMakerDevPrivData* pdata, struct PaceMakerDevData* data, uint16_t length) {
     uint8_t result = COMM_STATUS_FAIL;
-    struct PaceMakerStatus* status = pdata->status;
 
-    if (status->started) {
-        status->last_error = EKIT_NOT_SUSPENDED;
+    if (pdata->status.started) {
+        pdata->status.last_error = EKIT_NOT_SUSPENDED;
         goto done; // Device must be stopped.
     }
     if (length < sizeof(struct PaceMakerDevData) + sizeof(struct PaceMakerTransition)) {
-        status->last_error = EKIT_NO_DATA;
+        pdata->status.last_error = EKIT_NO_DATA;
         goto done; // Minimal data length
     }
     uint32_t trans_data_len = length - sizeof(struct PaceMakerDevData);
     if ((trans_data_len % sizeof(struct PaceMakerTransition)) != 0) {
-        status->last_error = EKIT_UNALIGNED;
+        pdata->status.last_error = EKIT_UNALIGNED;
         goto done; // Unaligned data
     }
 
     uint32_t trans_num = trans_data_len / sizeof(struct PaceMakerTransition);
     if (trans_num > pdata->max_trans_number) {
-        status->last_error = EKIT_OVERFLOW;
+        pdata->status.last_error = EKIT_OVERFLOW;
         goto done;
     }
 
     // All is good, copy data
     pdata->trans_number = trans_num;
-    pdata->status->internal_index = 0;
+    pdata->status.internal_index = 0;
     memcpy((void*)pdata->transitions, (void*)data->transitions, trans_data_len);
 
-    status->last_error = EKIT_OK;
+    pdata->status.last_error = EKIT_OK;
     result = COMM_STATUS_OK;
 done:
     return result;
 }
+
+uint8_t pacemakerdev_sync(uint8_t cmd_byte, uint16_t length) {
+    UNUSED(length);
+    struct DeviceContext* dev_ctx = comm_dev_context(cmd_byte);
+    struct PaceMakerDevInstance* dev = (struct PaceMakerDevInstance*)(g_pacemakerdev_devs + dev_ctx->dev_index);
+    struct PaceMakerStatus* status = &dev->privdata.status;
+    struct PaceMakerStatus* comm_status = (struct PaceMakerStatus*)dev->buffer;
+
+    PACEMAKER_DISABLE_IRQs
+    /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
+    /// reads should fail because of this reason.
+    memcpy(comm_status, status, sizeof(struct PaceMakerStatus));
+    PACEMAKER_RESTORE_IRQs
+
+    return COMM_STATUS_OK;
+}
+
 
 #endif

@@ -132,7 +132,7 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
 
             buffer_size  = f"( sizeof(struct PaceMakerStatus) + {max_samples}*sizeof(struct PaceMakerTransition) )"
-            fw_device_descriptors.append(f"{{ {{0}}, {{0}}, {init_gpio_func_name}, {set_gpio_func_name}, {fw_buffer_name}, {main_timer}, {internal_timer}, {default_pin_state}, {main_timer_irqn}, {internal_timer_irqn}, {buffer_size}, {dev_id} }}")
+            fw_device_descriptors.append(f"{{ {{0}}, {{ {{0}}, 0, 0, 0, 0, 0, 0 }}, {init_gpio_func_name}, {set_gpio_func_name}, {fw_buffer_name}, {main_timer}, {internal_timer}, {default_pin_state}, {main_timer_irqn}, {internal_timer_irqn}, {buffer_size}, {dev_id} }}")
             fw_device_buffers.append("uint8_t {0}[{1} + sizeof(struct PaceMakerStatus)];\\".format(fw_buffer_name, buffer_size))
 
             sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size}, {self.mcu_hw.get_TIMER_freq(main_timer)}, {self.mcu_hw.get_TIMER_freq(internal_timer)}, {signal_index}, {default_pin_state}, {max_samples} }}')
