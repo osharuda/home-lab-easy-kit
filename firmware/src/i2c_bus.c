@@ -326,7 +326,7 @@ void i2c_check_command(void) {
                 assert_param(0); // We should never be here
                 status = COMM_STATUS_FAIL;
         }
-        g_cur_device->comm_status = status & (~COMM_MAX_DEV_ADDR);
+        g_comm_status = status & (~COMM_MAX_DEV_ADDR);
         g_processed_cmd_count++;
     }
 }

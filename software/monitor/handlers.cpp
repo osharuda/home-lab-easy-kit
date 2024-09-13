@@ -559,13 +559,25 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
             {INFO_DEV_HINT_25LC640, "FLASH MEMORY (25LC640)"},
             {INFO_DEV_HINT_ADXL350, "3AXIS ACCELR. SECNSOR (ADXL350)"}};
 
-    std::map<uint8_t, std::string> device_type_map;
-    for (size_t i=0; i<INFO_DEVICE_ADDRESSES; i++) {
-        const InfoDeviceDescriptor* dev = LIBCONFIG_NAMESPACE::info_config_ptr->devices + i;
-        if (dev->type != INFO_DEV_TYPE_NONE) {
-            device_type_map[dev->type] = dev->name;
-        }
-    }
+    std::map<uint8_t, std::string> device_type_map {
+            {INFO_DEV_TYPE_NONE, "NONE"},
+            {INFO_DEV_TYPE_INFO, "INFO"},
+            {INFO_DEV_TYPE_DESKDEV, "DESKDEV"},
+            {INFO_DEV_TYPE_IRRC, "IRRC"},
+            {INFO_DEV_TYPE_LCD1602a, "LCD1602a"},
+            {INFO_DEV_TYPE_RTC, "RTC"},
+            {INFO_DEV_TYPE_UART_PROXY, "UART_PROXY"},
+            {INFO_DEV_TYPE_GPIO, "GPIO"},
+            {INFO_DEV_TYPE_SPWM, "SPWM"},
+            {INFO_DEV_TYPE_ADC, "ADC"},
+            {INFO_DEV_TYPE_STEP_MOTOR, "STEP_MOTOR"},
+            {INFO_DEV_TYPE_CAN, "CAN"},
+            {INFO_DEV_TYPE_SPIPROXY, "SPIPROXY"},
+            {INFO_DEV_TYPE_AD9850DEV, "AD9850DEV"},
+            {INFO_DEV_TYPE_SPIDAC, "SPIDAC"},
+            {INFO_DEV_TYPE_PACEMAKERDEV, "PACEMAKERDEV"},
+            {INFO_DEV_TYPE_TIMETRACKERDEV, "TIMETRACKERDEV"}
+    };
 
     ui->log(tools::str_format("Project: %s", pname.c_str()));
 
@@ -582,7 +594,7 @@ void InfoDevHandler::handle(const std::vector<std::string>& args) {
             std::string name =di->name;
             ui->log(tools::str_format("%d) name=%s dev_id=%d, type=%s, hint=%s", li++, name.c_str(), i, dev_type.c_str(), hint.c_str()));
         } catch(const std::out_of_range& e) {
-            ui->log("error");
+            ui->log("error: value is not found");
         }
     }
 }
