@@ -241,7 +241,13 @@ void CanDev::can_send(uint32_t id, std::vector<uint8_t>& data, bool remote_frame
 void CanDev::can_status_priv(CanStatus& status, EKitTimeout& to) {
     static const char* const func_name = "CanDev::can_status_priv";
 
-    EKIT_ERROR err = bus->read((uint8_t*)(&status), sizeof(CanStatus), to);
+    CommResponseHeader hdr;
+    EKIT_ERROR err = std::dynamic_pointer_cast<EKitFirmware>(bus)->sync_vdev(hdr, false, to);
+    if (err != EKIT_OK) {
+        throw EKitException(func_name, err, "sync_vdev() failed");
+    }
+
+    err = bus->read((uint8_t*)(&status), sizeof(CanStatus), to);
     if (err != EKIT_OK) {
         throw EKitException(func_name, err, "read() failed");
     }

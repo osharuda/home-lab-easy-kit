@@ -40,8 +40,8 @@
 /// \struct tag_CanPrivData
 /// \brief Structure that describes private Can data
 struct CanPrivData {
-    struct CanStatus status;
-
+    struct CanStatus status;          ///< Status to be used by device.
+    struct CanStatus comm_status;     ///< Status to be read by I2C bus.
     CAN_FilterInitTypeDef can_filters[CAN_MAX_FILTER_COUNT];   ///< CAN filters to be applied
 };
 
@@ -109,6 +109,12 @@ uint8_t can_read_done(uint8_t device_id, uint16_t length);
 /// \brief #ON_POLLING callback for all Can devices
 /// \param device_id - Device ID of the virtual device which data was read
 void can_polling(uint8_t device_id);
+
+/// \brief #ON_SYNC callback for all CAN devices
+/// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
+/// \param length - total length of the received data during the i2c transmittion.
+/// \return Result of the operation as communication status.
+uint8_t can_sync(uint8_t cmd_byte, uint16_t length);
 
 /// @}
 #endif

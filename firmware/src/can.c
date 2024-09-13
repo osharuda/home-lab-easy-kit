@@ -248,13 +248,14 @@ void can_init_vdev(struct CanInstance* dev, uint16_t index) {
     devctx->on_command     = can_execute;
     devctx->on_read_done   = can_read_done;
     devctx->on_polling     = can_polling;
+    devctx->on_sync        = can_sync;
     devctx->polling_period = CAN_POLLING_EVERY_US;
 
     // Init circular buffer
     struct CircBuffer* circbuf = (struct CircBuffer*) &(dev->circ_buffer);
     circbuf_init(circbuf, (uint8_t *)dev->buffer, dev->buffer_size);
     circbuf_init_block_mode(circbuf, sizeof(struct CanRecvMessage));
-    circbuf_init_status(circbuf, (uint8_t*)&(dev->privdata.status), sizeof(struct CanStatus));
+    circbuf_init_status(circbuf, (uint8_t*)&(dev->privdata.comm_status), sizeof(struct CanStatus));
     devctx->circ_buffer = circbuf;
 
     // Initialize GPIO and remap if required
@@ -562,6 +563,22 @@ void can_put_message_on_buffer( struct CanInstance* dev,
 
     circbuf_commit_block(circ_buffer);
     status->data_len = circbuf_total_len(circ_buffer);
+}
+
+uint8_t can_sync(uint8_t cmd_byte, uint16_t length) {
+    UNUSED(length);
+    struct DeviceContext* dev_ctx = comm_dev_context(cmd_byte);
+    struct CanInstance* dev = (struct CanInstance*)(g_can_devs + dev_ctx->dev_index);
+    struct CanStatus* status = &dev->privdata.status;
+    struct CanStatus* comm_status = &dev->privdata.comm_status;
+
+    CAN_DISABLE_IRQs
+    /// It is safe to copy status information because device have COMM_STATUS_BUSY status at the moment. All status
+    /// reads should fail because of this reason.
+    memcpy(comm_status, status, sizeof(struct CanStatus));
+    CAN_RESTORE_IRQs
+
+    return COMM_STATUS_OK;
 }
 
 #endif
