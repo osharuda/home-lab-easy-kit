@@ -70,34 +70,4 @@ List below describes sequential actions required to start:
 6. Make all electrical connections for your project.
 
 ## Available peripherals
-
-Currently Home Lab Easy Kit support the following functionalities that represent peripherals which require STM32F103C8T6:
-
-| Name      | Description | Exclusive | Remapping |
-|:----------|:------------|:----------|:----------|
-| INFODev | Firmware identification and information support | Yes | No |
-| ADCDev | 12-bit Analogue to Digital Converter support | No | No |
-| DESKDev | Simple set of four buttons and one encoder | Yes | No |
-| GPIODev | General purpose input/output support | Yes | No |
-| IRRCDev | NEC standard IR remote control support | Yes | No |
-| LCD1602ADev | Simple LCD1602a screen support | Yes | No |
-| RTCDev | Real Time Clock support | Yes | No |
-| SPWMDev | Multichannel software PWM support | Yes | No |
-| StepMotorDev | Support for A4998 and DRV8825 stepper motor drivers | No | No |
-| UARTDev | UART proxy ( allow to communicate with UART devices connected to micro controller ) | No | No |
-| CanDev | CAN bus support (beta) | No | Yes |
-| CanDev | CAN bus support (beta) | No | Yes |
-| CanDev | CAN bus support (beta) | No | Yes |
-| CanDev | CAN bus support (beta) | No | Yes |
-
-Exclusive means that the only virtual device may be enabled on the particular MCU. Non-exclusive features may provide several virtual devices of similar functionality but using different peripherals and working independently.
-
-The following table lists supported devices that doesn't require neither MCU nor JSON file.
-
-| Name      | Description | Bus type  | Proxy support |
-|:----------|:------------|:----------|:--------------|
-| ADXL345 | 3-axis accelerometer | `SPI` | `Yes` |
-| SPIFlash | Support for some SPI based flash chips | `SPI` | `Yes` |
-| GSMModem | Simple GSM modem support (SIM800, etc) | `UART` | `No, in development` |
-
-`Proxy support` means possibility to use this device using MCU peripherals (MCU acts as an proxy).
+Please refer [supported devices](../doc/DEVICES.md) section in order to get list of currently supported virtual devices and features.

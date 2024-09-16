@@ -1,9 +1,11 @@
 # <p align="center">IRRCDev</p>
 <p align="center"><img src="../images/hlek.svg"></p>
 
+
+## Description
 IRRCDev virtual device allows to control your experimental build with IR remote controller. It must use NEC standard. This will allow you to control your experiments from short distance, from sofa for example.
 
-Example JSON configuration for IRRCDev:
+## JSON configuration file
 
 ```
 "IRRCCustomizer" : {
@@ -23,6 +25,11 @@ Example JSON configuration for IRRCDev:
 | `"data"` | Describes data input. Must contain `"gpio"` dependency. | `"gpio"` | Yes |
 
 There are wide spectrum of special three terminal receivers (like TSOP384 series) to handle IR remote controllers optical signals. One of these, or equivalent must be connected to data pin in order to make this functionality working.
+
+## libHLEK device interface
+<p align="center"><img src="../../doc/images/under_construction.svg"></p>
+
+## Notes
 
 Note, there are many different types of IR remote controls. They may be different by a signal standard and by IR signal carrier frequency. In order to make your IR remote control working, the following must be true:
 - IR remote control works in NEC standard. Here is a a good description of [NEC standard](https://techdocs.altium.com/display/FPGA/NEC+Infrared+Transmission+Protocol).

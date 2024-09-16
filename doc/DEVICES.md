@@ -16,15 +16,16 @@ HLEK project provides support for some devices, which may be used to construct y
 ## Devices documentation
 ### Measurements related devices
 | Device | Description | Type | Exclusive | Status | Notes      
-|:-|:-|:-|:-|:-|:-
+|:-|:-|:-|:-|:-|:-|
+[INFODev](devices/INFODev.md) |Provides identification information about particular firmware| `virtual` | Yes        |`Completed`| 
 |[TimeTrackerDev](devices/TimeTrackerDev.md) |Time measurement support| `virtual` | No        |`Completed`| 
-|[ADCDev](devices/ADCDev.md) |Analogue to Digital Converter| `virtual` | No        |`In progress`| External synchronization is being added
-|[SPIDac](devices/SPIDac.md) |SPI Digital to Analog Converters| `virtual` | No        |`In progress`| External synchronization is being added
-|[StepMotorDev](devices/StepMotorDev.md) |Stepper motors support| `virtual` | No        |`In progress`| External synchronization is being added
+|[ADCDev](devices/ADCDev.md) |Analogue to Digital Converter| `virtual` | No        |`Completed`| External synchronization to be added.
+|[SPIDac](devices/SPIDac.md) |SPI Digital to Analog Converters| `virtual` | No        |`Completed`| External synchronization to be added.
+|[StepMotorDev](devices/StepMotorDev.md) |Stepper motors support| `virtual` | No        |`Completed`| External synchronization to be added.
 |[PaceMakerDev](devices/PaceMakerDev.md) |External synchronization| `virtual` | No        |`Completed`|
-|[SPWMDev](devices/SPWMDev.md) |Timer based software PWM| `virtual` | Yes        |`In progress`| Conversion to virtual device required
-|[GPIODev](devices/GPIODev.md) |GPIO support| `virtual` | Yes        |`Completed`| Conversion to virtual device required
-|[AD9850Dev](devices/AD9850Dev.md) |AD9850 signal generator support| `virtual` | No        |`Completed`|
+|[SPWMDev](devices/SPWMDev.md) |Timer based software PWM| `virtual` | Yes        |`Completed`| To be converted to non-exclusive device.
+|[GPIODev](devices/GPIODev.md) |GPIO support| `virtual` | Yes        |`Completed`| To be converted to non-exclusive device with excternal synchronization.
+|[AD9850Dev](devices/AD9850Dev.md) |AD9850 signal generator support| `virtual` | No        |`Completed`| External synchronization to be added.
 |[ADXL345](devices/ADXL345.md) |3-axis accelerometer support| `generic` | N/A        |`In progress`| 
 |[HMC5883L](devices/HMC5883L.md) |Magnetic field measurement support| `generic` | N/A        |`Planned`| 
 
@@ -38,10 +39,10 @@ HLEK project provides support for some devices, which may be used to construct y
 ### Other devices
 | Device | Description | Type | Exclusive | Status | Notes      
 |:-|:-|:-|:-|:-|:-
-|[LCD1602ADev](devices/LCD1602ADev.md) |Simple 16x2 LCD screen support| `virtual` | Yes        |`Completed`|  Development is frozen
-|[IRRCDev](devices/IRRCDev.md) |Infra-red remote control support| `virtual` | Yes        |`Completed`|  Development is frozen
-|[RTCDev](devices/RTCDev.md) |Real Time Clock support| `virtual` | Yes        |`Completed`|  Development is frozen
-|[DESKDev](devices/DESKDev.md) |Simple keyboard consisting of 4 buttons| `virtual` | Yes        |`Completed`| Development is frozen
-|[GSMModem](devices/GSMModem.md) |SIM900 GSM modem support| `generic` | N/A        |`Completed`| Development is frozen
+|[LCD1602ADev](devices/LCD1602ADev.md) |Simple 16x2 LCD screen support| `virtual` | Yes        |`Completed`|
+|[IRRCDev](devices/IRRCDev.md) |Infra-red remote control support| `virtual` | Yes        |`Completed`|
+|[RTCDev](devices/RTCDev.md) |Real Time Clock support| `virtual` | Yes        |`Completed`|
+|[DESKDev](devices/DESKDev.md) |Simple keyboard consisting of 4 buttons| `virtual` | Yes        |`Completed`|
+|[GSMModem](devices/GSMModem.md) |SIM900 GSM modem support| `generic` | N/A        |`Completed`|
 
 
