@@ -17,7 +17,6 @@ KW_EV_IRQ_HLR   = "ev_irq_handler"
 KW_ER_IRQ_HLR   = "er_irq_handler"
 
 KW_TIMER_IRQ_HANDLER = "timer_handler"
-
 KW_MAIN_TIMER   = "main_timer"
 KW_INT_TIMER    = "internal_timer"
 

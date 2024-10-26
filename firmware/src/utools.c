@@ -195,6 +195,10 @@ void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us) {
     CLEAR_FLAGS(timer->CR1, TIM_CR1_UDIS); // ENABLE UPDATE INTERRUPT GENERATION
 }
 
+void timer_disable_ex(TIM_TypeDef* timer) {
+    timer->CR1 = 0;
+}
+
 void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn) {
     assert_param(IS_TIM_ALL_PERIPH(timer));
     timer->DIER &= (uint16_t)~TIM_IT_Update;

@@ -174,7 +174,7 @@ void PaceMakerDev::add_set(double offset, uint32_t signal_value){
     assert(offset >= 0.0L);
     assert(signal_value <= all_signals);
 
-    // TEST CODE - WTF IS THIS, REMOVE?
+    // TEST CODE - TO BE REMOVED
     /*
     if (signals.empty() && offset > 0.0L) {
         // insert empty signal with default values
