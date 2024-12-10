@@ -1,7 +1,8 @@
 #!/bin/bash
 
 OPENOCD_SCRIPTS=/usr/share/openocd/scripts
-ADAPTER="${OPENOCD_SCRIPTS}"/interface/stlink-v2-1.cfg
+#ADAPTER="${OPENOCD_SCRIPTS}"/interface/stlink-v2-1.cfg
+ADAPTER="${OPENOCD_SCRIPTS}"/interface/stlink.cfg
 TARGET="${OPENOCD_SCRIPTS}"/target/stm32f1x.cfg
 LOCATION=${1}
 

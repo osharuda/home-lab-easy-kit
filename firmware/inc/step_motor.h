@@ -25,6 +25,7 @@
 #ifdef STEP_MOTOR_DEVICE_ENABLED
 
 #include "circbuffer.h"
+#include "timers.h"
 #include "step_motor_conf.h"
 
 /// \addtogroup group_step_motor_dev
@@ -245,12 +246,11 @@ struct __attribute__ ((aligned)) StepMotorDescriptor {
 struct __attribute__ ((aligned)) StepMotorDevice {
     struct   DeviceContext         dev_ctx   __attribute__ ((aligned)); ///< Device context structure (available in firmware part only)
     struct   StepMotorDevPrivData  priv_data __attribute__ ((aligned)); ///< Private data unique for each stepper motor device.  (available in firmware part only).
-    TIM_TypeDef*                   timer;         ///< Timer being used by device (available in firmware part only). Do not change this field.
+    struct   TimerData     timer_data __attribute__ ((aligned)); ///< Timer initialization structure.
     struct   StepMotorContext*     motor_context; ///< Array of the #StepMotorContext structures, one per each stepper motor controlled by the device.  (available in firmware part only).
     struct   StepMotorDevStatus*   status;        ///< Pointer to the #StepMotorDevStatus. It is used as bufer to read information by software. Firmware code should make changes to this structure with interrupts disabled.  (available in firmware part only)
     uint16_t                       status_size;   ///< Size of the StepMotorDevice#status structure in bytes. (available in firmware part only). Do not change this field.
-    IRQn_Type                      timer_irqn;    ///< Timer interrupt number being used by device (available in firmware part only). Do not change this field.
-    struct   StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
+        struct   StepMotorDescriptor** motor_descriptor; ///< Array of the pointers to #StepMotorDescriptor for each stepper motor controlled by the device. Do not change this field.
     uint8_t                        motor_count;   ///< Number of stepper motors controled by this device. Do not change this field.
     uint8_t                        dev_id;        ///< Device ID for the stepper motor device. Do not change this field.
 };
@@ -263,11 +263,7 @@ void step_motor_init(void);
 /// \brief Step motor timer function
 /// \param dev - pointer to #StepMotorDevice structure corresponding to selected stepper motor device
 /// \param now - 64-bit timestamp that represents current time
-/// \param is_irq_handler - non-zero if function is called in context of IRQ handler. Zero if function is called in other
-///        than IRQ handler context. This parameter is used to detect when sequence of timer events is started. For the very
-///        first time this function is being called from #step_motor_dev_execute() function. All subsequent calls are made in
-///        IRQ handler context.
-void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t is_irq_handler);
+void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now);
 
 /// \brief Starts execution of stepper motor device commands
 /// \param dev - pointer to #StepMotorDevice structure corresponding to selected stepper motor device

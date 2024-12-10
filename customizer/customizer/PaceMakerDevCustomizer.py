@@ -66,20 +66,17 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
             sw_dev_namespace_declarations.append(f"{self.tab}namespace {dev_name} {{")
             sw_dev_namespace_values.append(f"{self.tab}namespace {dev_name} {{")
 
-            sw_signal_descriptors_array_name = f'signal_descriptors'
             sw_signal_descriptors = []
 
             check_items(dev_requires, {KW_MAIN_TIMER: dict, KW_INT_TIMER: dict})
             rtype, main_timer = self.unpack_resource(self.get_requirement(dev_requires, KW_MAIN_TIMER, RT_TIMER))
             main_time_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(main_timer)
-            main_timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(main_time_irq_handler)
             main_timer_irq_handler_list.append(
                 "MAKE_ISR_WITH_INDEX({0}, PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(main_time_irq_handler, index))
             dev_requires["MAIN_TIMER_IRQ"] = {"irq_handlers": main_time_irq_handler}
 
             rtype, internal_timer = self.unpack_resource(self.get_requirement(dev_requires, KW_INT_TIMER, RT_TIMER))
             internal_time_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(internal_timer)
-            internal_timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(internal_time_irq_handler)
             internal_timer_irq_handler_list.append(
                 "MAKE_ISR_WITH_INDEX({0}, PACEMAKER_INTERNAL_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(internal_time_irq_handler, index))
             dev_requires["INTERNAL_TIMER_IRQ"] = {"irq_handlers": internal_time_irq_handler}
@@ -132,7 +129,18 @@ class PaceMakerDevCustomizer(DeviceCustomizer):
             fw_buffer_name = "g_{0}_buffer".format(dev_name)
 
             buffer_size  = f"( sizeof(struct PaceMakerStatus) + {max_samples}*sizeof(struct PaceMakerTransition) )"
-            fw_device_descriptors.append(f"{{ {{0}}, {{ {{0}}, 0, 0, 0, 0, 0, 0 }}, {init_gpio_func_name}, {set_gpio_func_name}, {fw_buffer_name}, {main_timer}, {internal_timer}, {default_pin_state}, {main_timer_irqn}, {internal_timer_irqn}, {buffer_size}, {dev_id} }}")
+            fw_device_descriptors.append(f"""{{    {{0}}, \\
+    {{ {{0}}, 0, 0, 0, 0, 0, 0 }}, \\
+    {self.mcu_hw.get_TIMER_definition(main_timer)}, \\
+    {self.mcu_hw.get_TIMER_definition(internal_timer)}, \\
+    {init_gpio_func_name}, \\
+    {set_gpio_func_name}, \\
+    {fw_buffer_name}, \\
+    {default_pin_state}, \\
+    {buffer_size}, \\
+    {dev_id} }} \\
+""")
+
             fw_device_buffers.append("uint8_t {0}[{1} + sizeof(struct PaceMakerStatus)];\\".format(fw_buffer_name, buffer_size))
 
             sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size}, {self.mcu_hw.get_TIMER_freq(main_timer)}, {self.mcu_hw.get_TIMER_freq(internal_timer)}, {signal_index}, {default_pin_state}, {max_samples} }}')

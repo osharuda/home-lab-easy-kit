@@ -39,7 +39,7 @@ CMake requires the following CMake options to be specified:
 
 Typical value of the `"CMake options"` value (single line):
 ```
--DCMAKE_BUILD_TYPE=Debug -DHLEK_ROOT="/mnt/SHARE/home-lab-easy-kit" -DHLEK_CONFIG="step_motors" -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_TOOLCHAIN_FILE:PATH="../firmware/toolchain.cmake"
+-DHLEK_CONFIG="step_motors" -DHLEK_ROOT="/mnt/SHARE/home-lab-easy-kit" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -DCMAKE_TOOLCHAIN_FILE:PATH="../firmware/toolchain.cmake"
 ```
 # 3. Regenerate CMake
 `File`->`Reload CMake Project`

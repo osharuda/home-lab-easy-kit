@@ -1246,7 +1246,7 @@ void ADCDevStatusHandler::handle(const std::vector<std::string>& args) {
 DEFINE_HANDLER_DEFAULT_IMPL(ADCDevStartHandler,"adc::", "::start")
 std::string ADCDevStartHandler::help() const {
     return tools::format_string("# %s Starts ADC conversion.\n"
-                                "# usage: <count>,<period><unit>\n"
+                                "# usage: <count>\n"
                                 "#        <count> number of samples to sample\n"
                                 "# note: actual delay between samples may be inaccurate, especially if very little delays specified\n",
                                 get_command_name());
@@ -2698,7 +2698,7 @@ void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
     check_arg_count(args, 1);
     double quant = arg_double(args, "quant", 0.0, DBL_MAX, {"us", "ms", "s"}, unit, "s");
     quant = arg_time_to_sec(quant, unit);
-    double inter_test_delay = quant * 10.0L;
+    double inter_test_delay = quant * 5.0L;
 
 
     uint32_t affected_signals = d->all_signals_mask() ^ 1;  // Signal 1 is for main clock tracking
@@ -2712,6 +2712,7 @@ void PaceMakerDevSetDataHandler::handle(const std::vector<std::string>& args) {
 
     // Pwm and clock (it's the same)
     d->add_pwm(inter_test_delay, quant, 0.33, 3, affected_signals);
+    d->add_pwm(inter_test_delay, quant/100, 0.33, 3, affected_signals);
     d->add_default(inter_test_delay);
 
     d->set_data();

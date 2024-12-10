@@ -726,6 +726,12 @@ def USART_to_resources(usart: str) -> tuple:
 def TIMER_to_IRQHandler(timer: str, kind: str = KW_TIMER_IRQ_HANDLER) -> str:
     return mcu_resources[timer][KW_REQUIRES][kind][RT_IRQ_HANDLER]
 
+def get_TIMER_definition(timer: str):
+    irq_handler = TIMER_to_IRQHandler(timer)
+    irqn = ISRHandler_to_IRQn(irq_handler)
+
+    return f"{{ {timer}, {irqn}, {{0}} }}"
+
 
 def get_TIMER_freq(timer: str, prescaller: int = 1) -> int:
     if prescaller < 1 or prescaller > 65535:

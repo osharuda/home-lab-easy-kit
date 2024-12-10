@@ -79,9 +79,9 @@ uint8_t dac_irq_disabled = 0;
 /// \define DAC_DISABLE_IRQs
 /// \brief Saves current DACDev NVIC IRQ state, and temporary disables specified IRQ
 #define DAC_DISABLE_IRQs                                                    \
-    uint32_t timer_state = NVIC_IRQ_STATE(dev->timer_irqn);                 \
+    uint32_t timer_state = NVIC_IRQ_STATE(dev->timer.irqn);                 \
     uint32_t tx_dma_state = NVIC_IRQ_STATE(dev->tx_dma_complete_irqn);      \
-    NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);                         \
+    NVIC_DISABLE_IRQ(dev->timer.irqn, timer_state);                         \
     NVIC_DISABLE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);              \
     DAC_CHECK_IRQ_ENTER
 
@@ -91,7 +91,7 @@ uint8_t dac_irq_disabled = 0;
 #define DAC_RESTORE_IRQs                                                    \
     DAC_CHECK_IRQ_LEAVE                                                     \
     NVIC_RESTORE_IRQ(dev->tx_dma_complete_irqn, tx_dma_state);              \
-    NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);                         \
+    NVIC_RESTORE_IRQ(dev->timer.irqn, timer_state);                         \
 
 
 static inline void spidac_sample_first(
@@ -181,7 +181,7 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
     // However this will introduce a bug (for example: LD signal will appear BEFORE SPI transaction ends). Do this very
     // carefully, check results with oscilloscope to make sure code above this comment is enough to 'wait' for SPI
     // transaction end. If not, commenting out this line will cause issues. Do not comment it out when using slow SPI speeds.
-    while ((spi->SR & SPI_I2S_FLAG_BSY) != 0) {}
+    SPI_WAIT(spi);
 
     // Disable SPI
     spi->CR1 = priv_data->spi_cr1_disabled;
@@ -204,19 +204,12 @@ void SPIDAC_COMMON_TX_DMA_IRQ_HANDLER(uint16_t index) {
 #endif
 
     priv_data->status->status = new_status;
-
 }
 SPIDAC_FW_TX_DMA_IRQ_HANDLERS
 
 
-static inline void spidac_wait(struct SPIDACInstance* dev, struct SPIDACPrivData* priv_data) {
-    assert_param(IN_INTERRUPT == 0);// Must not be called from ISR
-    uint8_t last_status;
-    do {
-        DAC_DISABLE_IRQs
-        last_status = priv_data->status->status;
-        DAC_RESTORE_IRQs
-    } while (last_status != STOPPED);
+static inline void spidac_wait(struct SPIDACPrivData* priv_data) {
+    do {} while (priv_data->status->status != STOPPED);
 }
 
 /// \brief Common TIMER IRQ handler
@@ -226,8 +219,8 @@ void SPIDAC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct SPIDACInstance* dev       = (struct SPIDACInstance*)g_spidac_devs+index;
     struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&(dev->priv_data);
 
-    if (dev->timer->SR & TIM_IT_Update) {
-        TIM_ClearITPendingBit(dev->timer, TIM_IT_Update);
+    if (dev->timer.timer->SR & TIM_IT_Update) {
+        TIM_ClearITPendingBit(dev->timer.timer, TIM_IT_Update);
 
         if (priv_data->status->status == WAITING) {
             priv_data->status->status = SAMPLING;
@@ -250,7 +243,7 @@ void SPIDAC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
                 STOPPED);
 
         spidac_sample_first(dev, priv_data);
-        spidac_wait(dev, priv_data);
+        spidac_wait(priv_data);
 
         spidac_shutdown(dev, final_status);
     }
@@ -277,7 +270,6 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     dev->default_start_info->period = 0;
     dev->default_start_info->prescaler = 0;
 
-
     if (dev->ld_port != NULL) {
         if (dev->ld_rise) {
             priv_data->ld_port_BSRR = &(dev->ld_port->BSRR);
@@ -299,6 +291,12 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     devctx->bytes_available = sizeof(struct SPIDACStatus);
     devctx->on_command   = spidac_execute;
     devctx->on_read_done = spidac_read_done;
+
+    // Pre-initialize timer
+    timer_init(&dev->timer,
+               IRQ_PRIORITY_DAC_TIMER,
+               TIM_CounterMode_Up,
+               TIM_CKD_DIV1);
 
     comm_register_device(devctx);
 
@@ -331,30 +329,22 @@ void spidac_init_vdev(struct SPIDACInstance* dev, uint16_t index) {
     SPI_InitTypeDef  init_struct;
 
     init_struct.SPI_Direction = SPI_Direction_1Line_Tx;
-
     init_struct.SPI_Mode      = SPI_Mode_Master;
-
     init_struct.SPI_DataSize  = dev->frame_size ?
                                 SPI_DataSize_16b :
                                 SPI_DataSize_8b;
-
     init_struct.SPI_CPOL      = dev->clock_polarity ?
                                 SPI_CPOL_High :
                                 SPI_CPOL_Low;
-
     init_struct.SPI_CPHA      = dev->clock_phase ?
                                 SPI_CPHA_2Edge :
                                 SPI_CPHA_1Edge;
-
     init_struct.SPI_NSS       = SPI_NSS_Hard;
-
     init_struct.SPI_BaudRatePrescaler = dev->baud_rate_control;
-
     init_struct.SPI_FirstBit =  SPI_FirstBit_MSB; // Always use MSB, actual frame structure is controlled by software.
-
     init_struct.SPI_CRCPolynomial = 7;
-
     SPI_Init(dev->spi, &init_struct);
+
     SPI_SSOutputCmd(dev->spi, ENABLE);
     SPI_I2S_DMACmd(dev->spi, SPI_I2S_DMAReq_Tx, ENABLE);
 
@@ -394,7 +384,7 @@ void spidac_init() {
                 STOPPED);
 
         spidac_sample_first(dev, priv_data);
-        spidac_wait(dev, priv_data);
+        spidac_wait(priv_data);
         spidac_shutdown(dev, STOPPED);
     }
 }
@@ -442,7 +432,6 @@ uint8_t spidac_read_done(uint8_t device_id, uint16_t length) {
 
 uint8_t spidac_stop(struct SPIDACInstance* dev) {
     struct SPIDACPrivData* priv_data = (struct SPIDACPrivData*)&dev->priv_data;
-
     DAC_DISABLE_IRQs
         spidac_shutdown(dev, STOPPED);
     DAC_RESTORE_IRQs
@@ -454,7 +443,7 @@ uint8_t spidac_stop(struct SPIDACInstance* dev) {
             STOPPED);
 
     spidac_sample_first(dev, priv_data);
-    spidac_wait(dev, priv_data);
+    spidac_wait(priv_data);
     spidac_shutdown(dev, STOPPED);
 
     return COMM_STATUS_OK;
@@ -541,12 +530,9 @@ uint8_t spidac_start(struct SPIDACInstance* dev, struct SPIDACStartInfo* start_i
                 start_info,
                 continuous != 0 ? WAITING : STOPPED);
 
-        timer_start_periodic_ex(dev->timer,
+        periodic_timer_start(&dev->timer,
                                 start_info->prescaler,
-                                start_info->period,
-                                dev->timer_irqn,
-                                IRQ_PRIORITY_DAC_TIMER,
-                                0);
+                                start_info->period);
 
         spidac_sample_first(dev, priv_data);
 
@@ -594,15 +580,19 @@ void spidac_shutdown(struct SPIDACInstance* dev, uint8_t status) {
     assert_param(status==STOPPED || status==STOPPED_ABNORMAL);
 
     // Disable timer
-    timer_disable(dev->timer, dev->timer_irqn);
+    timer_disable(&dev->timer);
 
     // Disable DMA
     DMA_DeInit(dev->tx_dma_channel);
 
     // Disable SPI
-    while ((dev->spi->SR & SPI_I2S_FLAG_BSY) != 0) {}
+    SPI_WAIT(dev->spi);
     assert_param(SPI_I2S_GetFlagStatus(dev->spi, SPI_I2S_FLAG_BSY)==RESET);
     SPI_Cmd(dev->spi, DISABLE);
+
+    // Clear interrupt flags
+    dev->dma->IFCR = dev->dma_tx_it;
+    NVIC_ClearPendingIRQ(dev->tx_dma_complete_irqn);
 
     // Handle statuses
     priv_data->status->status = status;

@@ -62,7 +62,6 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             motors_count = len(motors_cfg)
             timer = self.get_timer(dev_requires)
             timer_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)
-            timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(timer_irq_handler)
             dev_descriptor_name = "g_" + dev_name.lower() + "_devices"
             dev_motor_descr_list = []
             sw_dev_motor_descr_list = []
@@ -138,11 +137,10 @@ class StepMotorDevCustomizer(DeviceCustomizer):
             fw_device_descriptors.append(f"struct StepMotorDevice {dev_descriptor_name} = {{ "
                                          f"{{0}},"
                                          f"{{0, (struct StepMotorDevStatus*){dev_internal_status_name} }},"
-                                         f"{timer},"
+                                         f"{self.mcu_hw.get_TIMER_definition(timer)},"
                                          f" (struct StepMotorContext*){motor_context_arrays_name},"
                                          f" (struct StepMotorDevStatus*){dev_status_name}, "
                                          f"{dev_mstatus_size},"
-                                         f" {timer_irqn},"
                                          f"(struct StepMotorDescriptor**){motor_descriptors_array_name},"
                                          f"{motors_count},"
                                          f"{dev_id}}}; \\")

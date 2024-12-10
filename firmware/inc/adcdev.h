@@ -101,6 +101,8 @@ struct __attribute__ ((aligned)) ADCDevFwInstance {
 
         struct ADCDevFwChannel*   channels;           ///< Pointer to #tag_ADCDevFwChannel channel description array
 
+        struct TimerData  timer_data;      ///< Timer preinit data.
+
         uint16_t*                 measurement_buffer; ///< Buffer for values to be measured (and averaged later).
 
         uint8_t*                  sample_time_buffer; ///< Sample time buffer, used to keep current sample time settings.
@@ -110,8 +112,6 @@ struct __attribute__ ((aligned)) ADCDevFwInstance {
         uint8_t*                  buffer;             ///< Memory block used for circular buffer as storage
 
         ADC_TypeDef*              adc;                ///< ADC being used
-
-        TIM_TypeDef*              timer;              ///< Timer being used
 
         uint32_t                  adc_dr_address;     ///< ADC data register address
 
@@ -126,8 +126,6 @@ struct __attribute__ ((aligned)) ADCDevFwInstance {
         uint16_t                  sample_block_size;  ///< Amount of bytes used for sample buffer
 
         uint16_t                  max_measurement_per_sample; ///< Maximum number of measurements per sample
-
-        IRQn_Type                 timer_irqn;         ///< Timer interrupt number
 
         IRQn_Type                 scan_complete_irqn; ///< Either DMA transfer complete or ADC complete interrupt number
 

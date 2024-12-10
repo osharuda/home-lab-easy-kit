@@ -212,12 +212,12 @@ class ADCDevCustomizer(DeviceCustomizer):
     {self.circular_buffer_initializer},\\
     {{0}},\\
     {fw_inputs_name},\\
+    {self.mcu_hw.get_TIMER_definition(timer)},\\
     {fw_measurement_buffer_name},\\
     {fw_sample_time_buffer_name},\\
     {fw_accumulator_buffer_name},\\
     {fw_buffer_name},\\
     {adc},\\
-    {timer},\\
     {dr_address},\\
     {dma_channel},\\
     {dma},\\
@@ -225,7 +225,6 @@ class ADCDevCustomizer(DeviceCustomizer):
     {buffer_size},\\
     {sample_block_size},\\
     {measurements_per_sample}, \\
-    {self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler)},\\
     {scan_complete_irqn},\\
     {dev_id},\\
     {adc_input_number} }}""")

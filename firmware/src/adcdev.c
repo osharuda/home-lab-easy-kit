@@ -25,7 +25,7 @@
 #ifdef ADCDEV_DEVICE_ENABLED
 
 #include <string.h>
-#include "utools.h"
+#include "timers.h"
 #include "i2c_bus.h"
 #include "adcdev.h"
 #include "adc_conf.h"
@@ -145,10 +145,11 @@ void ADC_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct ADCDevFwInstance* dev = g_adc_devs+index;
     struct ADCDevFwPrivData* pdata = (&dev->privdata);
 
-    if (TIM_GetITStatus(dev->timer, TIM_IT_Update) == RESET) {
+    if (TIMER_IS_UPDATE_EV(&dev->timer_data) == 0) {
         return;
     }
-    TIM_ClearITPendingBit(dev->timer, TIM_IT_Update);
+
+    TIMER_CLEAR_IT_PENDING_EV(&dev->timer_data);
 
     // Set sampling flag
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_SAMPLING)) {
@@ -170,13 +171,13 @@ ADCDEV_FW_TIMER_IRQ_HANDLERS
 #define ADC_DISABLE_IRQs                                                    \
     uint32_t scan_complete_state = NVIC_IRQ_STATE(dev->scan_complete_irqn); \
     NVIC_DISABLE_IRQ(dev->scan_complete_irqn, scan_complete_state);         \
-    uint32_t timer_state = NVIC_IRQ_STATE(dev->timer_irqn);                 \
-    NVIC_DISABLE_IRQ(dev->timer_irqn, timer_state);
+    uint32_t timer_state = TIMER_NVIC_IRQ_STATE(&dev->timer_data);        \
+    TIMER_NVIC_DISABLE_IRQ(&dev->timer_data, timer_state);
 
 #define ADC_RESTORE_IRQs                                                    \
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {           \
+        TIMER_NVIC_RESTORE_IRQ(&dev->timer_data, timer_state);            \
         NVIC_RESTORE_IRQ(dev->scan_complete_irqn, scan_complete_state);     \
-        NVIC_RESTORE_IRQ(dev->timer_irqn, timer_state);                     \
     }
 
 static inline void adc_suspend(struct ADCDevFwInstance* dev) {
@@ -194,7 +195,7 @@ void adc_stop(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData* pdata) {
 
     if (IS_SET(pdata->status, (uint16_t)ADCDEV_STATUS_STARTED)) {
         adc_suspend(dev);
-        timer_disable(dev->timer, dev->timer_irqn);
+        timer_disable(&dev->timer_data);
         NVIC_DisableIRQ(dev->scan_complete_irqn);
         CLEAR_FLAGS(pdata->status, (uint16_t) (ADCDEV_STATUS_STARTED | ADCDEV_STATUS_SAMPLING));
     }
@@ -302,12 +303,9 @@ uint8_t adc_start(struct ADCDevFwInstance* dev,
     pdata->current_measurement = dev->measurement_buffer;
     pdata->end_measurement = dev->measurement_buffer + pdata->measurement_count;
     NVIC_EnableIRQ(dev->scan_complete_irqn);
-    timer_start_ex(dev->timer,
+    periodic_timer_start_and_fire(&dev->timer_data,
                    dev->privdata.prescaller,
-                   dev->privdata.period,
-                   dev->timer_irqn,
-                   dev->privdata.interrupt_priority,
-                   1);
+                   dev->privdata.period);
 
     result = COMM_STATUS_OK;
 
@@ -321,7 +319,6 @@ uint8_t adc_read_done(uint8_t device_id, uint16_t length) {
     volatile struct CircBuffer* circbuf = (volatile struct CircBuffer*)&(dev->circ_buffer);
     uint8_t status = circbuf_get_ovf(circbuf) ? COMM_STATUS_OVF : COMM_STATUS_OK;
     circbuf_stop_read(circbuf, length);
-//    circbuf_clear_ovf(circbuf);
     return status;
 }
 
@@ -380,10 +377,6 @@ void adc_init() {
             DECLARE_PIN(channel_data->port, channel_data->pin, GPIO_Mode_AIN)
         }
 
-        // Reset hardware and internal structures
-        TIM_DeInit(dev->timer);
-        timer_disable_ex(dev->timer);
-
         // Init private data (by default zeroed)
         memset((void*)pdata, 0, sizeof(struct ADCDevFwPrivData));
 
@@ -404,6 +397,9 @@ void adc_init() {
             pdata->adc_continue_sampling_ptr = adc_continue_dma_sampling;
             pdata->adc_hw_reset_ptr = adc_dma_reset;
         }
+
+        // Initialize timer preinit structure
+        timer_init(&dev->timer_data, dev->privdata.interrupt_priority, TIM_CounterMode_Up, TIM_CKD_DIV1);
 
         // Reset peripherals
         adc_reset_peripherals(dev, pdata);
@@ -430,8 +426,8 @@ void adc_reset_peripherals(struct ADCDevFwInstance* dev, struct ADCDevFwPrivData
     // Must be stopped
     assert_param(IS_CLEARED(pdata->status, ADCDEV_STATUS_STARTED));
 
-    TIM_DeInit(dev->timer);
-    timer_disable_ex(dev->timer);
+    timer_disable(&dev->timer_data);
+
     ADC_DeInit(dev->adc);
     CLEAR_FLAGS(dev->adc->CR2, (uint32_t)ADC_CR2_FLAG_ADON); // Disable ADC
 

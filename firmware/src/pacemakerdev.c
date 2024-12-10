@@ -24,7 +24,7 @@
 #ifdef PACEMAKERDEV_DEVICE_ENABLED
 
 #include <string.h>
-#include "utools.h"
+#include "timers.h"
 #include "i2c_bus.h"
 #include "pacemakerdev_conf.h"
 #include "pacemakerdev.h"
@@ -51,14 +51,14 @@ struct PaceMakerDevInstance g_pacemakerdev_devs[] = PACEMAKERDEV_FW_DEV_DESCRIPT
 /// @}
 
 #define PACEMAKER_DISABLE_IRQs                                              \
-    uint32_t int_timer_state = NVIC_IRQ_STATE(dev->internal_timer_irqn);    \
-    uint32_t main_timer_state = NVIC_IRQ_STATE(dev->main_timer_irqn);       \
-    NVIC_DISABLE_IRQ(dev->internal_timer_irqn, int_timer_state);            \
-    NVIC_DISABLE_IRQ(dev->main_timer_irqn, main_timer_state);
+    uint32_t int_timer_state = NVIC_IRQ_STATE(dev->internal_timer.irqn);    \
+    uint32_t main_timer_state = NVIC_IRQ_STATE(dev->main_timer.irqn);       \
+    NVIC_DISABLE_IRQ(dev->internal_timer.irqn, int_timer_state);            \
+    NVIC_DISABLE_IRQ(dev->main_timer.irqn, main_timer_state);
 
 #define PACEMAKER_RESTORE_IRQs                                              \
-    NVIC_RESTORE_IRQ(dev->main_timer_irqn, main_timer_state);               \
-    NVIC_RESTORE_IRQ(dev->internal_timer_irqn, int_timer_state);
+    NVIC_RESTORE_IRQ(dev->main_timer.irqn, main_timer_state);               \
+    NVIC_RESTORE_IRQ(dev->internal_timer.irqn, int_timer_state);
 
 
 //---------------------------- FORWARD DECLARATIONS ----------------------------
@@ -100,11 +100,9 @@ static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, s
     assert_param(pdata->status.started); // Must be started
 
     // Disable all interrupts
-    timer_disable(dev->internal_timer, dev->internal_timer_irqn);
-    timer_disable_ex(dev->internal_timer);
+    timer_disable(&dev->internal_timer);
 
-    timer_disable(dev->main_timer, dev->main_timer_irqn);
-    timer_disable_ex(dev->main_timer);
+    timer_disable(&dev->main_timer);
 
     // Clear status
     pdata->status.started = 0;
@@ -118,8 +116,8 @@ static inline void pacemaker_stop_generation(struct PaceMakerDevInstance* dev, s
 
 static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
                                                struct PaceMakerDevPrivData* pdata) {
+    assert_param(IN_INTERRUPT); // Must be called from interrupt only!
     struct PaceMakerTransition* trans;
-    PACEMAKER_DISABLE_IRQs
     trans = pdata->transitions;
     dev->pfn_set_gpio(dev->default_pin_state);
     pdata->status.internal_index = 0;
@@ -128,42 +126,45 @@ static inline void pacemaker_first_transition( struct PaceMakerDevInstance* dev,
         if (pdata->status.main_counter == 0) {
             // limited mode, stop signal generation and switch to default gpio
             pacemaker_stop_generation(dev, pdata, EKIT_OK);
-            PACEMAKER_RESTORE_IRQs
             return;
         }
         pdata->status.main_counter--;
     }
 
-    timer_start_ex(dev->internal_timer,
+    dynamic_timer_start(&dev->internal_timer,
                    trans->prescaller,
                    trans->counter,
-                   dev->internal_timer_irqn,
-                   IRQ_PRIORITY_PACEMAKER_INTERNAL,
-                   0);
-    PACEMAKER_RESTORE_IRQs
+                   (trans+1)->prescaller);
 }
 
 static inline void pacemaker_next_transition( struct PaceMakerDevInstance* dev,
                                               struct PaceMakerDevPrivData* pdata) {
     struct PaceMakerTransition* trans;
+    uint8_t stop_int_timer;
     PACEMAKER_DISABLE_IRQs
     trans = pdata->transitions + pdata->status.internal_index;
     dev->pfn_set_gpio(trans->signal_mask);
     pdata->status.internal_index++;
+    stop_int_timer = pdata->status.internal_index >= pdata->trans_number;
+    PACEMAKER_RESTORE_IRQs
 
     // setup next transition
-    if (pdata->status.internal_index >= pdata->trans_number) {
-        timer_disable(dev->internal_timer, dev->internal_timer_irqn);
-        timer_disable_ex(dev->internal_timer);
+    if (stop_int_timer) {
+        timer_disable(&dev->internal_timer);
     } else {
         trans++;
-        timer_reschedule(dev->internal_timer, trans->prescaller, trans->counter);
+        dynamic_timer_update(&dev->internal_timer,
+                             trans->prescaller,
+                             trans->counter,
+                             (trans+1)->prescaller);
     }
-    PACEMAKER_RESTORE_IRQs
+
 }
 
 /// \brief Common MAIN TIMER IRQ handler
 /// \param index - index of the virtual device
+/// \note This is the highest priority interrupt for pacemaker device, therefor no need to disable
+///       interrupt here.
 void PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     assert_param(index<PACEMAKERDEV_DEVICE_COUNT);
 
@@ -171,16 +172,16 @@ void PACEMAKER_MAIN_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct PaceMakerDevInstance* dev = g_pacemakerdev_devs + index;
     struct PaceMakerDevPrivData* priv_data = (&dev->privdata);
 
-    if (TIM_GetITStatus(dev->main_timer, TIM_IT_Update) == RESET) {
+    if (TIM_GetITStatus(dev->main_timer.timer, TIM_IT_Update) == RESET) {
         return;
     }
 
-    TIM_ClearITPendingBit(dev->main_timer, TIM_IT_Update);
+    TIM_ClearITPendingBit(dev->main_timer.timer, TIM_IT_Update);
 
     if (priv_data->status.internal_index < priv_data->trans_number) {
-        PACEMAKER_DISABLE_IRQs
+        //PACEMAKER_DISABLE_IRQs
         pacemaker_stop_generation(dev, priv_data, EKIT_TOO_FAST);
-        PACEMAKER_RESTORE_IRQs
+        //PACEMAKER_RESTORE_IRQs
     } else {
         pacemaker_first_transition(dev, priv_data);
     }
@@ -194,11 +195,11 @@ void PACEMAKER_INTERNAL_COMMON_TIMER_IRQ_HANDLER(uint16_t index) {
     struct PaceMakerDevInstance* device = g_pacemakerdev_devs+index;
     struct PaceMakerDevPrivData* priv_data = (&device->privdata);
 
-    if (TIM_GetITStatus(device->internal_timer, TIM_IT_Update) == RESET) {
+    if (TIM_GetITStatus(device->internal_timer.timer, TIM_IT_Update) == RESET) {
         return;
     }
 
-    TIM_ClearITPendingBit(device->internal_timer, TIM_IT_Update);
+    TIM_ClearITPendingBit(device->internal_timer.timer, TIM_IT_Update);
 
     pacemaker_next_transition(device, priv_data);
 }
@@ -215,7 +216,18 @@ void pacemakerdev_init_vdev(struct PaceMakerDevInstance* dev, uint16_t index) {
     devctx->buffer       = dev->buffer;
     devctx->bytes_available = dev->buffer_size;
 
+    timer_init(&dev->internal_timer,
+               IRQ_PRIORITY_PACEMAKER_INTERNAL,
+               TIM_CounterMode_Up,
+               TIM_CKD_DIV1);
+
+    timer_init(&dev->main_timer,
+               IRQ_PRIORITY_PACEMAKER_MAIN,
+               TIM_CounterMode_Up,
+               TIM_CKD_DIV1);
+
     pacemaker_reset(dev, &(dev->privdata));
+
     comm_register_device(devctx);
 }
 
@@ -283,10 +295,8 @@ uint8_t pacemaker_reset(struct PaceMakerDevInstance* dev, struct PaceMakerDevPri
     uint8_t result = COMM_STATUS_FAIL;
 
     // Stop all timers
-    timer_disable(dev->main_timer, dev->main_timer_irqn);
-    timer_disable_ex(dev->main_timer);
-    timer_disable(dev->internal_timer, dev->internal_timer_irqn);
-    timer_disable_ex(dev->internal_timer);
+    timer_disable(&dev->main_timer);
+    timer_disable(&dev->internal_timer);
 
     // Clean status and private data
     memset((void*)pdata, 0, sizeof(struct PaceMakerDevPrivData));
@@ -341,12 +351,9 @@ uint8_t pacemaker_start(    struct PaceMakerDevInstance* dev,
     result = COMM_STATUS_OK;
 
     // Start main timer
-    timer_start_ex(dev->main_timer,
+    periodic_timer_start_and_fire(&dev->main_timer,
                    priv_data->main_cycle_prescaller,
-                   priv_data->main_cycle_counter,
-                   dev->main_timer_irqn,
-                   IRQ_PRIORITY_PACEMAKER_MAIN,
-                   1);
+                   priv_data->main_cycle_counter);
 done:
     return result;
 }

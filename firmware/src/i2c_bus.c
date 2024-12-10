@@ -209,7 +209,7 @@ void i2c_bus_init_peripherals(void) {
 
     // Remap i2c if required
     if (I2C_BUS_PINS_REMAP) {
-        REMAP_GPIO_PIN(I2C_BUS_SDA_PORT, I2C_BUS_SDA_PIN_MASK);
+        REMAP_I2C_PIN(I2C_BUS_SDA_PORT, I2C_BUS_SDA_PIN_MASK);
     }
 
     // Change GPIO as required
@@ -627,8 +627,7 @@ void i2c_stop(void) {
                 goto i2c_stop_done;
             }
 
-            if (g_cur_device->on_command!=0 /* &&
-                IS_CLEARED(g_comm_status, COMM_STATUS_FAIL | COMM_STATUS_CRC) */) {
+            if (g_cur_device->on_command!=0) {
                 assert_param(g_cmd_count == g_processed_cmd_count);
                 SET_FLAGS(g_comm_status, COMM_STATUS_BUSY);
                 g_cmd_type = BUS_CMD_WRITE;

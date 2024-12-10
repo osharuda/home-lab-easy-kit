@@ -200,7 +200,12 @@ extern volatile uint8_t g_irq_disabled;
          ((port)==GPIOA && (pin)==(1<<15)) ) {                          \
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
         GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);        \
-    }                                                                   \
+    }
+
+/// \brief This macro will remap pin(s) specified by port and pin if they have to be used as I2C.
+/// \param port - GPIO port
+/// \param pin - pin mask (see GPIO_Pin_XX values in CMSIS)
+#define REMAP_I2C_PIN(port, pin)                                        \
     if ( ((port)==GPIOB && (pin)==(1<<8)) ||                            \
          ((port)==GPIOB && (pin)==(1<<9))) {                            \
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);            \
@@ -230,6 +235,7 @@ extern volatile uint8_t g_irq_disabled;
 #define PIN_RESET_SET(port, pin)    (port)->BRR = pin; \
                                     (port)->BSRR = pin;
 
+#define SPI_WAIT(spi)   while (((spi)->SR & (SPI_I2S_FLAG_BSY | SPI_I2S_FLAG_TXE)) != SPI_I2S_FLAG_TXE) {}
 
 
 /// \brief Set's BASEPI register value
@@ -308,80 +314,6 @@ void debug_checks_init(void);
 #endif
 
 void delay_loop(uint32_t n);
-
-/// \brief Initialize TIMER to generate single update event using prescaller and period values.
-/// \param timer - timer to be initialized.
-/// \param prescaller - prescaller value.
-/// \param period - period value.
-/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
-/// \param priority of the interrup.
-void timer_start(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
-
-/// \brief Initialize TIMER to generate single update event using prescaller and period values.
-/// \param timer - timer to be initialized.
-/// \param prescaller - prescaller value.
-/// \param period - period value.
-/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
-/// \param priority of the interrup.
-/// \param force_first_call specify non-zero if you need timer to trigger immidiately.
-void timer_start_ex(TIM_TypeDef* timer,
-                    uint16_t prescaller,
-                    uint16_t period,
-                    IRQn_Type irqn,
-                    uint32_t priority,
-                    uint8_t force_first_call);
-
-
-/// \brief Initialize TIMER to generate repeatitive update event using prescaller and period values.
-/// \param timer - timer to be initialized.
-/// \param prescaller - prescaller value.
-/// \param period - period value.
-/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
-/// \param priority of the interrup.
-void timer_start_periodic(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period, IRQn_Type irqn, uint32_t priority);
-
-/// \brief Initialize TIMER to generate repeatitive update event using prescaller and period values.
-/// \param timer - timer to be initialized.
-/// \param prescaler - prescaller value.
-/// \param period - period value.
-/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
-/// \param priority of the interrup.
-/// \param force_first_call specify non-zero if you need timer to trigger immidiately.
-void timer_start_periodic_ex(TIM_TypeDef* timer, uint16_t prescaler, uint16_t period, IRQn_Type irqn, uint32_t priority, uint8_t force_first_call);
-
-/// \brief Initialize TIMER update event using time period in microseconds.
-/// \param timer - timer to be initialized.
-/// \param us - number of microseconds when timer should trigger.
-/// \param irqn - interrupt number (see IRQn_Type type in CMSIS library).
-/// \param priority of the interrup.
-void timer_start_us(TIM_TypeDef* timer, uint32_t us, IRQn_Type irqn, uint32_t priority);
-
-/// \brief Reschedule update event timer using prescaller and period values.
-/// \param timer - timer to be reinitialized.
-/// \param prescaller - prescaller value.
-/// \param period - period value.
-/// \details Timer should be previously initialized, this function just changes when this timer will be triggered next time.
-/// \details Also, this function may be called in interrupt context. It is designed to be called from very same timer interrupt handler.
-void timer_reschedule(TIM_TypeDef* timer, uint16_t prescaller, uint16_t period);
-
-/// \brief Reschedule update event timer using time period in microseconds.
-/// \param timer - timer to be reinitialized.
-/// \param us - number of microseconds when timer should trigger.
-/// \details Timer should be previously initialized, this function just changes when this timer will be triggered next time.
-/// \details Also, this function may be called in interrupt context. It is designed to be called from very same timer interrupt handler.
-void timer_reschedule_us(TIM_TypeDef* timer, uint32_t us);
-
-/// \brief Disables timer.
-/// \param timer - timer to be disabled.
-void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
-
-/// \brief Disables timer.
-/// \param timer - timer to be disabled.
-void timer_disable_ex(TIM_TypeDef* timer);
-
-/// \brief Disables timer.
-/// \param timer - timer to be reinitialized.
-void timer_disable(TIM_TypeDef* timer, IRQn_Type irqn);
 
 /// Define this macro to 1 if you need some help during debugging. It allows counted breaks and debug pins.
 #define EMERGENCY_DEBUG_TOOLS 0
@@ -485,11 +417,7 @@ extern "C" {
 #define NVIC_RESTORE_IRQ(irqn, state)   NVIC->ISER[((uint32_t)(irqn) >> 5)] = (state)
 
 #define IN_INTERRUPT (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk)
-/// \brief This function is used to calculate optimal prescaller and period values to schedule timer.
-/// \param us - input number of microseconds, must not be greater than #MCU_MAXIMUM_TIMER_US.
-/// \param prescaller - pointer to the output value of prescaller.
-/// \param period - pointer to the output value of period.
-void timer_get_params(uint32_t us, volatile uint16_t* prescaller, volatile uint16_t* period);
+
 
 /// \brief Checks if pointer is aligned as required
 /// \param _ptr - pointer

@@ -62,21 +62,17 @@ struct __attribute__ ((aligned)) PaceMakerDevInstance {
 
         struct PaceMakerDevPrivData     privdata;              ///< Private data used by this PaceMakerDev device
 
+        struct TimerData        main_timer;            ///< Main timer data.
+
+        struct TimerData        internal_timer;        ///< Internal timer data.
+
         PFN_PACEMAKER_INIT_GPIO         pfn_init_gpio;         ///< GPIO initializer function pointer
         
 	    PFN_PACEMAKER_SET_GPIO          pfn_set_gpio;          ///< GPIO setter function pointer
 
         uint8_t*                        buffer;                ///< Internal buffer
 
-        TIM_TypeDef*                    main_timer;            ///< Main timer to generate pulses
-
-        TIM_TypeDef*                    internal_timer;        ///< Internal timer to generate pulses
-
         uint32_t                        default_pin_state;     ///< Default pin state
-
-        IRQn_Type                       main_timer_irqn;       ///< Main timer interrupt number
-
-        IRQn_Type                       internal_timer_irqn;   ///< Internal timer interrupt number
 
         uint16_t                        buffer_size;           ///< Buffer size
 

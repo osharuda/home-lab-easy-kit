@@ -23,7 +23,7 @@
 #include "fw.h"
 #if ENABLE_SYSTICK!=0
 
-#include "utools.h"
+#include "timers.h"
 #include "sys_tick_counter.h"
 
 
@@ -39,6 +39,11 @@ MAKE_ISR(SYS_TICK_ISR) {
 
 void systick_init(void) {
     IS_SIZE_ALIGNED(&g_systick_irq_cnt);
-    timer_start_periodic(SYS_TICK_PERIPH, SYSTICK_PRESCALLER, SYSTICK_PERIOD, SYS_TICK_IRQ, IRQ_PRIORITY_SYSTICK);
+    struct TimerData timer_data;
+    timer_data.timer = SYS_TICK_PERIPH;
+    timer_data.irqn = SYS_TICK_IRQ;
+    timer_init(&timer_data, IRQ_PRIORITY_SYSTICK, TIM_CounterMode_Up, TIM_CKD_DIV1);
+
+    periodic_timer_start_and_fire(&timer_data, SYSTICK_PRESCALLER, SYSTICK_PERIOD);
 }
 #endif // of ENABLE_SYSTICK

@@ -24,7 +24,7 @@
 
 #ifdef STEP_MOTOR_DEVICE_ENABLED
 
-#include "utools.h"
+#include "timers.h"
 #include "circbuffer.h"
 #include <string.h>
 #include "step_motor.h"
@@ -61,13 +61,14 @@ static inline uint8_t step_motor_get_ustep_bitshift(struct StepMotorDescriptor* 
 
 void STEP_MOTOR_COMMON_TIMER_IRQ_HANDLER(uint16_t dev_index) {
     struct StepMotorDevice* dev = MOTOR_DEVICE(dev_index);
-    if (TIM_GetITStatus(dev->timer, TIM_IT_Update) == RESET) {
+    if (TIMER_IS_UPDATE_EV(&dev->timer_data) == 0) {
         return;
     }
 
     uint64_t now = get_us_clock();
-    step_motor_timer_event(dev, now, 1);
-    TIM_ClearITPendingBit(dev->timer, TIM_IT_Update);
+    step_motor_timer_event(dev, now);
+    //TIM_ClearITPendingBit(dev->timer, TIM_IT_Update);
+    TIMER_CLEAR_IT_PENDING_EV(&dev->timer_data);
 }
 
 STEP_MOTOR_FW_TIMER_IRQ_HANDLERS
@@ -581,6 +582,9 @@ void step_motor_init(void) {
         dev_ctx->bytes_available = dev->status_size;
         dev_ctx->dev_index = dev_index;
 
+        // Initialize timer preinit cache
+        timer_init(&dev->timer_data, IRQ_PRIORITY_STEP_MOTOR_TIMER, TIM_CounterMode_Up, TIM_CKD_DIV1);
+
         // Test for alignment
         for (int i=0; i<dev->motor_count; i++) {
             IS_SIZE_ALIGNED(&(dev->status->mstatus[i].pos));
@@ -644,7 +648,7 @@ static inline uint16_t step_motor_fetch_cmd(struct CircBuffer* circ, struct Step
 }
 
 // <TODO> Inline this function
-void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t is_irq_handler) {
+void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now) {
     uint32_t w = MCU_MAXIMUM_TIMER_US;
     struct StepMotorDevPrivData* priv_data = MOTOR_DEV_PRIV_DATA(dev);
     uint64_t last_wait = now - priv_data->last_event_timestamp;
@@ -715,14 +719,12 @@ void step_motor_timer_event(struct StepMotorDevice* dev, uint64_t now, uint8_t i
     if (all_done==0) {
         priv_data->last_event_timestamp = now;
 
-        //<TODO> - it is very likely it is possible to avoid this if statement
-        if (is_irq_handler) {
-            timer_reschedule_us(dev->timer, w);
-        } else {
-            timer_start_us(dev->timer, w, dev->timer_irqn, IRQ_PRIORITY_STEP_MOTOR_TIMER);
-        }
+        uint16_t prescaller, period;
+        timer_get_params(w, &prescaller, &period);
+        periodic_timer_start(&dev->timer_data, prescaller, period);
+
     } else {
-        timer_disable(dev->timer, dev->timer_irqn);
+        timer_disable(&dev->timer_data);
         step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, any_error ? STEP_MOTOR_DEV_STATUS_ERROR : STEP_MOTOR_DEV_STATUS_IDLE);
     }
 }
@@ -733,7 +735,7 @@ void step_motor_dev_start(struct StepMotorDevice* dev) {
     step_motor_set_dev_status(dev, STEP_MOTOR_DEV_STATUS_STATE_MASK, STEP_MOTOR_DEV_STATUS_RUN);
 
     priv_data->last_event_timestamp = get_us_clock();
-    step_motor_timer_event(dev, priv_data->last_event_timestamp, 0);
+    step_motor_timer_event(dev, priv_data->last_event_timestamp);
 }
 
 void step_motor_dev_stop(struct StepMotorDevice* dev) {
@@ -757,7 +759,7 @@ uint8_t step_motor_update_pos_change_by_step(struct StepMotorDescriptor* mdescr,
 void step_motor_dev_reset(struct StepMotorDevice* dev, uint8_t full_reset) {
     struct StepMotorDevStatus* dev_status = MOTOR_DEV_STATUS(dev);
 
-    timer_disable(dev->timer, dev->timer_irqn);
+    timer_disable(&dev->timer_data);
 
     RECURSIVE_CRITICAL_SECTION_ENTER
     dev_status->status = STEP_MOTOR_DEV_STATUS_IDLE;

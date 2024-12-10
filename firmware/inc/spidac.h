@@ -23,6 +23,7 @@
 #pragma once
 
 #ifdef SPIDAC_DEVICE_ENABLED
+#include "timers.h"
 #include "spidac_conf.h"
 /// \defgroup group_spidac SPIDAC
 /// \brief SPIDAC support
@@ -97,17 +98,17 @@ struct __attribute__ ((aligned)) SPIDACInstance {
 
     struct SPIDACStartInfo*    default_start_info;         ///< Default start information
 
-    const uint8_t*                   buffer;                    ///< Buffer
+    struct TimerData   timer;            ///< DAC timer.
 
-    const uint8_t*                   default_values;            ///< Default values to be put after reset
+    const uint8_t*             buffer;                    ///< Buffer
 
-    uint8_t*                         default_sample_base;       ///< Default sample (value) buffer base
+    const uint8_t*             default_values;            ///< Default values to be put after reset
 
-    const uint8_t*                   sample_buffer_base;        ///< Sample buffer base
+    uint8_t*                   default_sample_base;       ///< Default sample (value) buffer base
+
+    const uint8_t*             sample_buffer_base;        ///< Sample buffer base
 
     SPI_TypeDef*               spi;                       ///< SPI peripheral device.
-
-    TIM_TypeDef*               timer;                     ///< Timer to be used.
 
     DMA_Channel_TypeDef*       tx_dma_channel;            ///< DMA channel being used for transmit
 
@@ -136,8 +137,6 @@ struct __attribute__ ((aligned)) SPIDACInstance {
     uint16_t                   transaction_frame_size;    ///< SPI Transaction size (size of the sample data for single channel, in frames)
 
     IRQn_Type                  tx_dma_complete_irqn;     ///< DMA TX transfer complete irqn
-
-    IRQn_Type                  timer_irqn;               ///< Timer interrupt number
 
     uint8_t                    baud_rate_control;        ///< Baud rate control value
 

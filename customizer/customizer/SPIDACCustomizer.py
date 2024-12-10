@@ -16,7 +16,6 @@
 from DeviceCustomizer import *
 from tools import *
 from keywords import *
-from ctypes import *
 
 
 def get_channels_definition(devname: str, channels: dict, max_channels: int) -> (str, int, dict):
@@ -268,7 +267,6 @@ class SPIDACCustomizer(DeviceCustomizer):
         self.sw_lib_header = "spidac_conf.hpp"
         self.sw_lib_source = "spidac_conf.cpp"
 
-        #self.little_endian = sys.byteorder == 'little'
         self.add_template(os.path.join(self.fw_inc_templ, self.fw_header),
                           [os.path.join(self.fw_inc_dest, self.fw_header)])
 
@@ -354,7 +352,6 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             timer = self.get_timer(dev_requires)
             time_irq_handler = self.mcu_hw.TIMER_to_IRQHandler(timer)
-            timer_irqn = self.mcu_hw.ISRHandler_to_IRQn(time_irq_handler)
             timer_irq_handler_list.append(
                 "MAKE_ISR_WITH_INDEX({0}, SPIDAC_COMMON_TIMER_IRQ_HANDLER, {1}) \\".format(time_irq_handler, index))
             dev_requires["TIMER_IRQ"] = {"irq_handlers": time_irq_handler}
@@ -391,7 +388,7 @@ class SPIDACCustomizer(DeviceCustomizer):
             v = get_value_from_dict_list([dev_config, part_number_config], KW_SPI_FRAME_SIZE, dev_name)
             frame_size = int(self.mcu_hw.spi_get_frame_size(v))
 
-            # Frames Per Sample ???
+            # Frames Per Sample
             v = get_value_from_dict_list([dev_config, part_number_config], KW_SPIDAC_FRAMES_PER_SAMPLE, dev_name)
             frames_per_sample = int(v)
 
@@ -409,8 +406,6 @@ class SPIDACCustomizer(DeviceCustomizer):
             sample_format = get_value_from_dict_list([dev_config, part_number_config], KW_SPIDAC_SAMPLE_FORMAT, dev_name)
             max_channels = get_value_from_dict_list([part_number_config], KW_MAX_CHANNELS, dev_name)
 
-
-
             channels_descr, channels_count, channels_by_index = get_channels_definition(dev_name, dev_config[KW_SPIDAC_CHANNELS], max_channels)
             channels_addresses = sorted(list(channels_by_index.keys()))
             channels_descr_varname = f"g_{dev_name.lower()}_channel_descriptors"
@@ -427,13 +422,6 @@ class SPIDACCustomizer(DeviceCustomizer):
                     f"Number of samples for device {dev_name} may not be zero")
             buffer_size = int((samples_number + channels_count)*frames_per_sample*(frame_size+1))
 
-            dma_tx = self.mcu_hw.dma_request_map[spi + "_TX"]
-            dma_tx_it = "0"
-            dma_tx_preinit = "NULL"
-
-            spi_miso_port = "NULL"
-            spi_miso_pin = 0
-
             tx_dma_channel = self.mcu_hw.get_DMA_Channel(spi + "_TX")
             tx_dma_irq_handler = self.mcu_hw.DMA_Channel_to_IRQHandler(tx_dma_channel)
             tx_dma_irqn = self.mcu_hw.ISRHandler_to_IRQn(tx_dma_irq_handler)
@@ -446,7 +434,6 @@ class SPIDACCustomizer(DeviceCustomizer):
 
             dma_tx_preinit = "g_spi_dma_tx_preinit_" + str(index)
             fw_dma_tx_preinit_list.append(self.tab + f"DMA_InitTypeDef {dma_tx_preinit}; \\")
-            dma_tx_preinit = "&" + dma_tx_preinit
             dma_tx_it = self.mcu_hw.get_DMA_IT_Flag(tx_dma_channel, "TC")
 
             spi_mosi = self.get_required_resource(spi_confg_dev, "SPI_MOSI", RT_GPIO)
@@ -507,12 +494,12 @@ class SPIDACCustomizer(DeviceCustomizer):
     {{0}},                      /* Device context */\\
     {self.get_private_data_initializer(fw_channel_data_name, channels_count)}, \\
     (struct SPIDACStartInfo*){fw_default_start_info_name}, /* Default start information */ \\
+    {self.mcu_hw.get_TIMER_definition(timer)}, \\
     {fw_buffer_name},           /* Buffer (for status and samples) */\\
     {init_frames_default_value_name}, /* Default values to be put after reset */\\
     {fw_buffer_name} + {spi_dac_status_len}, /* Default sample (value) buffer base */\\
     {fw_buffer_name} + {spi_dac_status_len} + {sample_size}, /* Sample buffer base */\\
     {spi},                      /* SPI Device */\\
-    {timer},                    /* Timer */\\
     {tx_dma_channel},           /* TX DMA Channel */\\
     {spi_mosi_port},            /* MOSI port */\\
     {spi_sck_port},             /* SCK port */\\
@@ -527,7 +514,6 @@ class SPIDACCustomizer(DeviceCustomizer):
     {transaction_size}, /* SPI Transaction size (size of the sample data for single channel, in bytes) */\\
     {transaction_size // (frame_size + 1)}, /* SPI Transaction size (size of the sample data for single channel, in frames) */\\ 
     {tx_dma_irqn},              /* TX DMA IRQn value */\\
-    {timer_irqn},               /* TIMER IRQn value */\\
     {baud_rate_control},        /* Baud rate control value for SPI */\\
     {frame_size},               /* Frame size */\\
     {int(remap)},               /* Indicates if SPI port is remapped */\\

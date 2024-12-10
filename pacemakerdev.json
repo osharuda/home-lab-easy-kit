@@ -7,7 +7,7 @@
     "i2c_bus" : {
       "clock_speed" : 100000,
       "buffer_size" : 512,
-      "address" : 19,
+      "address" : 29,
       "requires" :  {"i2c" : "I2C2"}
     }},
 
