@@ -98,37 +98,28 @@ class {DevName}Customizer(DeviceCustomizer):
             # Do not forget to add IRQs, DMA and other related resources
             if "__DEVICE_BUFFER_TYPE__" == "DEV_NO_BUFFER":
                 # No buffers
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {0} }}".format(
-                    dev_id))
+                fw_device_descriptors.append(f"{{ {{0}}, {{0}}, {{ {{0}}, {{0}}, 0 }}, {dev_id} }}")
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", 0}}'.format(
-                    dev_id, dev_name))
+                sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", 0}}')
 
                 fw_device_buffers = []
             elif "__DEVICE_BUFFER_TYPE__" == "DEV_LINIAR_BUFFER":
                 # Buffer is present
                 fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
+                fw_device_descriptors.append(f"{{ {{0}}, {{0}}, {{ {{0}}, {{0}}, 0 }}, {fw_buffer_name}, {buffer_size}, {dev_id} }}")
 
-                sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
-                    dev_id, dev_name, buffer_size))
+                sw_device_desсriptors.append(f'{{ {dev_id}, "{dev_name}", {buffer_size} }}')
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+                fw_device_buffers.append(f"uint8_t {fw_buffer_name}[{buffer_size}];\\")
             elif "__DEVICE_BUFFER_TYPE__" == "DEV_CIRCULAR_BUFFER":
                 # Buffer is present
                 fw_buffer_name = "g_{0}_buffer".format(dev_name)
-                fw_device_descriptors.append("{{ {{0}}, {{0}}, {{0}}, {2}, {1}, {0} }}".format(
-                    dev_id,
-                    buffer_size,
-                    fw_buffer_name))
+                fw_device_descriptors.append(f"{{ {{0}}, {self.circular_buffer_initializer}, {{0}}, {{ {{0}}, {{0}}, 0 }}, {fw_buffer_name}, {buffer_size}, {dev_id} }}")
 
                 sw_device_desсriptors.append('{{ {0}, "{1}", {2} }}'.format(
                     dev_id, dev_name, buffer_size))
 
-                fw_device_buffers.append("volatile uint8_t {0}[{1}];\\".format(fw_buffer_name, buffer_size))
+                fw_device_buffers.append(f"uint8_t {fw_buffer_name}[{buffer_size}];\\")
 
             sw_config_name = "{devname}_{0}_config_ptr".format(dev_name)
             sw_config_declarations.append(f"extern const {DevName}Config* {sw_config_name};")

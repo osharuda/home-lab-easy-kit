@@ -24,6 +24,8 @@
 
 #ifdef {DEVNAME}_DEVICE_ENABLED
 
+#include "{devname}_conf.h"
+
 /// \defgroup group_{devname} {DevName}
 /// \brief {DevName} support
 /// @{
@@ -37,30 +39,31 @@
 
 /// \struct {DevName}PrivData
 /// \brief Structure that describes private {DevName} data
- struct {DevName}PrivData {
-    uint8_t priv_data;  ///< Some private data.
+
+struct __attribute__ ((aligned)) {DevName}PrivData {
+    struct {DevName}Status status     __attribute__ ((aligned)); ///< Private, actual status of the device
+    struct {DevName}Settings settings __attribute__ ((aligned)); ///< Device settings
+    uint64_t priv_data                __attribute__ ((aligned)); ///< Some Device data.
 } {DevName}PrivData;
 
 
 /// \struct {DevName}Instance
 /// \brief Structure that describes {DevName} virtual device
 struct __attribute__ ((aligned)) {DevName}Instance {
-        DeviceContext      dev_ctx __attribute__ ((aligned));            ///< Virtual device context
+        struct DeviceContext        dev_ctx __attribute__ ((aligned));     ///< Virtual device context
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE == DEV_CIRCULAR_BUFFER
-        CircBuffer         circ_buffer;        ///< Circular buffer control structure
+        struct CircBuffer           circ_buffer __attribute__ ((aligned)); ///< Circular buffer control structure
 #endif
-
-        {DevName}PrivData   privdata;          ///< Private data used by this {DevName} device
+        struct {DevName}Status      status __attribute__ ((aligned));     ///< Public status available to software,
+                                                                          ///< a copy of the privdata->status made during {devname}_sync() call.
+        struct {DevName}PrivData    privdata __attribute__ ((aligned));   ///< Private data used by this {DevName} device
 
 #if {DEVNAME}_DEVICE_BUFFER_TYPE != DEV_NO_BUFFER
-        uint8_t*           buffer;             ///< Internal buffer
-
+        uint8_t*                    buffer;             ///< Internal buffer
         uint16_t                    buffer_size;        ///< Buffer size
 #endif
-
         uint8_t                     dev_id;             ///< Device ID for {DevName} virtual device
-
 };
 
 /// \brief Initializes all {DevName} virtual devices
@@ -70,12 +73,21 @@ void {devname}_init();
 /// \param cmd_byte - command byte received from software. Corresponds to CommCommandHeader#command_byte
 /// \param data - pointer to data received
 /// \param length - length of the received data.
-void {devname}_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
+/// \return Updated device status (later synchronously copied to g_comm_status)
+uint8_t {devname}_execute(uint8_t cmd_byte, uint8_t* data, uint16_t length);
 
 /// \brief #ON_READDONE callback for all {DevName} devices
-/// \param device_id - Device ID of the virtual device which data was read
-/// \param length - amount of bytes read.
-void {devname}_read_done(uint8_t device_id, uint16_t length);
+/// \param device_id - device id of the device whose data was read
+/// \param length - length of the read (transmitted) data.
+/// \return Updated device status (later synchronously copied to g_comm_status)
+uint8_t {devname}_read_done(uint8_t device_id, uint16_t length);
+
+/// \brief Synchronizes {DevName} status before reading it by software
+/// \param device_id - device id of the device whose data was read
+/// \param length - length of the read (transmitted) data. In this case it is total number of bytes, those which belong to
+///        incomplete CommCommandHeader. Obviously this value may not be >= then sizeof(CommCommandHeader).
+/// \return Updated device status (later synchronously copied to g_comm_status)
+uint8_t {devname}_sync(uint8_t cmd_byte, uint16_t length);
 
 /// @}
 #endif

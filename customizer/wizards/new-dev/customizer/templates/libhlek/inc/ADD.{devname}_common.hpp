@@ -36,7 +36,8 @@
 /// @{{
 
 /// \struct {DevName}Config
-/// \brief {DevName} configuration structure.
+/// \brief {DevName} configuration structure that describe immutable (hardware) properties of the device.
+///        These parameters may not be changed by libhlek (software) side.
 struct {DevName}Config{{
     uint8_t         dev_id;             ///< Device ID for {DevName} virtual device
     const char*     dev_name;           ///< Name of the {DevName} virtual device as given in JSON configuration file

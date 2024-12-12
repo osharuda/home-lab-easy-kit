@@ -37,7 +37,7 @@
 
 /// \def {DEVNAME}_FW_DEV_DESCRIPTOR
 /// \brief Defines array with configurations for {DevName} virtual devices
-#define {DEVNAME}_FW_DEV_DESCRIPTOR {{  {__{DEVNAME}_FW_DEV_DESCRIPTOR__} }}
+#define {DEVNAME}_FW_DEV_DESCRIPTOR {{ {__{DEVNAME}_FW_DEV_DESCRIPTOR__} }}
 
 /// @}}
 
