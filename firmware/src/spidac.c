@@ -66,10 +66,10 @@ struct SPIDACInstance g_spidac_devs[] = SPIDAC_FW_DEV_DESCRIPTOR;
 
 #ifndef NDEBUG
 uint8_t dac_irq_disabled = 0;
-#define DAC_CHECK_IRQ_ENTER assert(dac_irq_disabled==0); \
+#define DAC_CHECK_IRQ_ENTER assert_param(dac_irq_disabled==0); \
                             dac_irq_disabled = 1;
 
-#define DAC_CHECK_IRQ_LEAVE assert(dac_irq_disabled==1); \
+#define DAC_CHECK_IRQ_LEAVE assert_param(dac_irq_disabled==1); \
                             dac_irq_disabled = 0;
 #else
 #define DAC_CHECK_IRQ_ENTER (void)(0);

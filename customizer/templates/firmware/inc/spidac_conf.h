@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #define SPIDAC_DEVICE_ENABLED 1
 /// \addtogroup group_spidac
 /// @{{

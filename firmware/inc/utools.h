@@ -27,8 +27,8 @@
 #define UNUSED(x) (void)(x)
 
 #ifdef DISABLE_NOT_TESTABLE_CODE
-#include "stdint.h"
-#include "limits.h"
+#include <stdint.h>
+#include <limits.h>
 #include <assert.h>
 
 /// Defines required by code to be tested
