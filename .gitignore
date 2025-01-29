@@ -85,3 +85,9 @@ misc/*/software
 /dac8550
 /dac8564
 misc/time_track_test
+
+# Scripts which are not intended to be commited
+work.sh
+testcopy.sh
+test.sh
+monitor.sh
