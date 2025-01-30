@@ -23,6 +23,7 @@ else()
     set(CMAKE_C_FLAGS "${{CMAKE_C_FLAGS}} -T mem.ld -T libs.ld -T sections.ld -Xlinker --gc-sections -L\"${{PROJECT_COMMON_DIR}}/ldscripts\"")
     set(CMAKE_C_FLAGS "${{CMAKE_C_FLAGS}} -Wl,-Map,\"${{FW_NAME}}.map\" --specs=nano.specs -o \"${{FW_NAME}}.elf\"")
     set(CMAKE_C_FLAGS  "${{CMAKE_C_FLAGS}} -std=c99" )
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
 set(CMAKE_C_FLAGS  "${{CMAKE_C_FLAGS}} ${{EXTRA_FLAGS}}" )
@@ -38,6 +39,7 @@ include_directories(    ${{STDPERIF_PATH}}/Libraries/CMSIS/CM3/CoreSupport
                         ${{STDPERIF_PATH}}/Libraries/STM32F10x_StdPeriph_Driver/inc
                         ${{PROJECT_COMMON_DIR}}/inc
                         ${{HLEK_ROOT}}/${{HLEK_CONFIG}}/firmware/inc)
+
 
 add_executable( ${{FW_NAME}}.elf
                 ${{FW_SRC}}

@@ -3,28 +3,10 @@
 # In order to build without LIBHLEK set NO_LIBHLEK variable like in the example below:
 # NO_LIBHLEK=1 ./build.sh <.....>
 
-function get_file_path() {
-  local FN="${1}"
+SCRIPT="$(readlink -f "$0")"
+SCRIPT_DIR="$(cd "$( dirname "${SCRIPT}" )" >/dev/null 2>&1 && pwd)"
+. "${SCRIPT_DIR}/scripts/hlekenv.sh"
 
-  while [ -L "${FN}" ]; do
-    # Resolve symbolic links
-    local RP=$(readlink "${FN}")
-    if [[ ${RP} == /* ]]; then
-      local FN=${RP}
-    else
-      local FN="$( dirname "${FN}" )/${RP}"
-    fi
-  done
-
-  local RP=$( cd -P "$( dirname "${FN}" )" >/dev/null 2>&1 && pwd )
-  RES=${RP}
-}
-get_file_path "$BASH_SOURCE"
-SCRIPT_DIR=${RES}
-
-
-
-source ${SCRIPT_DIR}/utils.sh
 
 set -e
 INITDIR="$(pwd)"
@@ -33,6 +15,7 @@ BUILDDIR="build"
 NCPU=$(grep -c ^processor /proc/cpuinfo)
 BUILDCONF="Debug"
 CLEAN_BUILD=0
+SCRIPT_DIR="scripts"
 ROOTDIR=$(pwd)
 LOGFILE="${ROOTDIR}/build.log"
 FINISH_SUCCESS=0
@@ -63,7 +46,11 @@ function exit_handler() {
 make_sym_link () {
     local bn=$(basename ${3})
     local src_file="${1}/${bn}"
-    local dst_file="${2}/${bn}"
+    if [ -z "${4}" ]; then
+        local dst_file="${2}/${bn}"
+    else
+        local dst_file="${2}/${4}"
+    fi
 
     # Check if required symlink is already created
     if [ -h ${dst_file} ]; then
@@ -140,18 +127,18 @@ i=0
 JSONS=()
 for ARG in $@
 do
-	if [ ${ARG^^} == "RELEASE" ]
+	if [ ${ARG^^} = "RELEASE" ]
 	then
 		BUILDCONF="Release"
 		continue
 	fi
 
-	if [ ${ARG^^} == "DEBUG" ]
+	if [ ${ARG^^} = "DEBUG" ]
 	then
 		continue
 	fi
 
-	if [ ${ARG^^} == "CLEAN" ]
+	if [ ${ARG^^} = "CLEAN" ]
 	then
 		CLEAN_BUILD=1
 		continue
@@ -257,6 +244,13 @@ function build_firmware {
 	make -j${NCPU} >> "${LOGFILE}" 2>&1
 	cd "${INITDIR}"
 	echo_progess_ok
+
+    if [ ${BUILDCONF} = "Debug" ]; then
+        echo_progess_begin "Creating static analyzer symlink"
+        make_sym_link "${HLEKDIR}/${SCRIPT_DIR}" "${CONFIGDIR}/firmware" static_check_fw.sh static_check.sh
+        echo_progess_ok
+    fi
+
 }
 
 function clean_build {

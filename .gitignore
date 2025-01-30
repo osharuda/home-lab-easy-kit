@@ -91,3 +91,6 @@ work.sh
 testcopy.sh
 test.sh
 monitor.sh
+
+# Python ,venv
+.venv

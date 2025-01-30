@@ -133,3 +133,20 @@ function get_file_path() {
   RES=${RP}
 }
 
+function get_file_path() {
+  local FN="${1}"
+
+  while [ -L "${FN}" ]; do
+    # Resolve symbolic links
+    local RP=$(readlink "${FN}")
+    if [[ ${RP} == /* ]]; then
+      local FN=${RP}
+    else
+      local FN="$( dirname "${FN}" )/${RP}"
+    fi
+  done
+
+  local RP=$( cd -P "$( dirname "${FN}" )" >/dev/null 2>&1 && pwd )
+  RES=${RP}
+}
+
