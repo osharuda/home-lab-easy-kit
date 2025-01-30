@@ -1,6 +1,10 @@
 #!/bin/bash
-PROJECTDIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd)"
+
+CUR_SCRIPT=$(readlink -f "${BASH_SOURCE[0]}")
+PROJECTDIR="$(cd "$( dirname "${CUR_SCRIPT}" )" >/dev/null 2>&1 && pwd)"
+. "${PROJECTDIR}/scripts/hlekenv.sh"
+
 CURDIR="$(pwd)"
 cd "${PROJECTDIR}/customizer/customizer"
-python3 Wizard.py "${1}" "new-dev" "add"
+PROJECTDIR=${PROJECTDIR} "${PROJECTDIR}/.venv/bin/python" Wizard.py "${1}" "new-dev" "add"
 cd "${CURDIR}"
