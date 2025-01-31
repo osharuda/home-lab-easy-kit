@@ -404,7 +404,7 @@ extern "C" {
 
 /// \brief This macro remembers IRQ state (enabled or disabled). Use returned value to disable/recover IRQ.
 /// \param irqn - IRQn to specify in state
-#define NVIC_IRQ_STATE(irqn)            NVIC->ISER[((uint32_t)(irqn) >> 5)] & (1 << ((uint32_t)(irqn) & 0x1F))
+#define NVIC_IRQ_STATE(irqn)            (NVIC->ISER[((uint32_t)(irqn) >> 5)] & (1 << ((uint32_t)(irqn) & 0x1F)))
 
 /// \brief This macro allows to disable IRQ.
 /// \param irqn - IRQn to specify in state
@@ -434,7 +434,7 @@ extern "C" {
 /// \brief Checks if pointer is aligned by word
 /// \param _ptr - pointer
 #define IS_SIZE_ALIGNED(_ptr) \
-    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(*_ptr))) == 0);
+    assert_param( (((uintptr_t) ( (const void*)(_ptr))) % (sizeof(*(_ptr)))) == 0);
 
 #ifdef __cplusplus
 }

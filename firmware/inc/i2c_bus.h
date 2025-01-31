@@ -144,7 +144,7 @@ struct __attribute__ ((aligned (8))) DeviceContext {
 
     uint8_t next_pooling_ovrrun; 	    ///< Used by communication part to indicate next_pooling_ev passed through the maximum value. With 64 bit counters added it is not possible. Deprecated.
 
-    uint8_t i2c_circular_buffer;        ///< 0 if linear buffer, 1 if circular buffer. Note these two values must be identical to the
+    int8_t i2c_circular_buffer;         ///< 0 if linear buffer, 1 if circular buffer. Note these two values must be identical to the
                                         ///< i2c bus finite state machine values (
 };
 

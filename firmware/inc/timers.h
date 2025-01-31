@@ -118,7 +118,7 @@ void timer_disable(struct TimerData* timer_data);
 
 /// \brief This macro remembers timer NVIC IRQ state (enabled or disabled). Use returned value to disable/recover IRQ.
 /// \param preinit_cache - Preinitialized cache with timer specific values.
-#define TIMER_NVIC_IRQ_STATE(preinit_cache)            (*(preinit_cache)->preinit_data.iser_register) & ((preinit_cache)->preinit_data.iser_icer_value)
+#define TIMER_NVIC_IRQ_STATE(preinit_cache)            ((*(preinit_cache)->preinit_data.iser_register) & ((preinit_cache)->preinit_data.iser_icer_value))
 
 /// \brief This macro allows to disable IRQ.
 /// \param preinit_cache - Preinitialized cache with timer specific values.

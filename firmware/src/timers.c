@@ -181,7 +181,7 @@ void timer_get_params(uint32_t us, volatile uint16_t* prescaller, volatile uint1
         return;
     }
 
-    k = us * MCU_FREQUENCY_MHZ;
+    k = (uint64_t)us * MCU_FREQUENCY_MHZ;
 
     psc = k >> 16;
     if (psc > 0) {

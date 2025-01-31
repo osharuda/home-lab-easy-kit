@@ -174,10 +174,10 @@ uint8_t g_last_byte = 0;
 /// \brief Cached next byte to be transmitted. It is updated by i2c_refresh_transmit_cache()
 uint8_t g_i2c_transmit_cache;
 
-#define I2C_BUS_READ_RESPONSE_HEADER -1
-#define I2C_BUS_READ_LINEAR_BUFFER   0
-#define I2C_BUS_READ_CIRC_BUFFER     1
-#define I2C_BUS_READ_BAD_BYTE        2
+#define I2C_BUS_READ_RESPONSE_HEADER ((int8_t)(-1))
+#define I2C_BUS_READ_LINEAR_BUFFER   ((int8_t)(0))
+#define I2C_BUS_READ_CIRC_BUFFER     ((int8_t)(1))
+#define I2C_BUS_READ_BAD_BYTE        ((int8_t)(2))
 
 int8_t i2c_bus_finite_state_macnine;
 
@@ -533,9 +533,9 @@ void i2c_update_transmit_cache(void) {
             g_i2c_transmit_cache = g_resp_header_ptr[g_tran_total];
             i2c_device_buffer_increment = 0;
 
-            i2c_bus_finite_state_macnine = ( g_tran_total < ( sizeof(struct CommResponseHeader) - 1) ) ?
+            i2c_bus_finite_state_macnine = (int8_t)(( g_tran_total < (sizeof(struct CommResponseHeader) - 1) ) ?
                             I2C_BUS_READ_RESPONSE_HEADER:
-                            g_cur_device->i2c_circular_buffer;
+                            g_cur_device->i2c_circular_buffer);
 
 
             if (g_tran_total == (sizeof(struct CommResponseHeader) - 1)) {
